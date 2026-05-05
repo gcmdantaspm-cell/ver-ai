@@ -15,6 +15,7 @@ import {
   X, 
   History, 
   CheckCircle2, 
+  Check,
   ListTodo, 
   FileText, 
   BookOpen, 
@@ -122,9 +123,9 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
 
     const tableData: any[] = [];
     edital.areas.forEach(area => {
-      tableData.push([{ content: `ÁREA: ${area.titulo}`, colSpan: 2, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }]);
+      tableData.push([{ content: `ÁREA: ${area.area}`, colSpan: 2, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }]);
       area.materias.forEach(materia => {
-        tableData.push([{ content: `MATÉRIA: ${materia.titulo}`, colSpan: 2, styles: { fillColor: [245, 245, 245], fontStyle: 'bold', textColor: [50, 50, 50] } }]);
+        tableData.push([{ content: `MATÉRIA: ${materia.nome}`, colSpan: 2, styles: { fillColor: [245, 245, 245], fontStyle: 'bold', textColor: [50, 50, 50] } }]);
         materia.topicos.forEach(topico => {
            let status = topico.visto ? "Concluído" : "Pendente";
            tableData.push([topico.titulo, status]);
@@ -319,52 +320,52 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                  return (
                                      <div key={topico.id}>
                                       {tMatch && (
-                                        <div className={`grid lg:grid-cols-12 border-b border-slate-200 py-4 px-8 items-center group/item transition-colors ${topico.visto ? 'bg-slate-50/50' : 'hover:bg-slate-50'}`}>
+                                        <div className={`grid lg:grid-cols-12 border-b border-slate-200 py-4 px-8 items-center group/item transition-colors ${topico.visto ? 'bg-blue-900' : 'hover:bg-slate-50'}`}>
                                            <div className="col-span-6 flex items-center gap-4">
                                               <label className="relative flex items-center justify-center cursor-pointer shrink-0">
                                                 <input type="checkbox" checked={topico.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id)} />
-                                                <div className="w-4 h-4 border border-slate-300 rounded peer-checked:bg-blue-900 peer-checked:border-blue-900 transition-all flex items-center justify-center">
-                                                   <CheckCircle2 className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                                <div className={`w-4 h-4 border rounded transition-all flex items-center justify-center ${topico.visto ? 'bg-white border-white' : 'border-slate-300 peer-checked:bg-blue-900 peer-checked:border-blue-900'}`}>
+                                                   <Check className={`w-3 h-3 opacity-0 peer-checked:opacity-100 transition-opacity ${topico.visto ? 'text-blue-900' : 'text-white'}`} strokeWidth={3} />
                                                 </div>
                                               </label>
-                                              <div className={`text-[11px] font-medium flex-1 flex items-center gap-3 ${topico.visto ? 'text-slate-500' : 'text-slate-800'}`}>
+                                              <div className={`text-[11px] font-medium flex-1 flex items-center gap-3 ${topico.visto ? 'text-white' : 'text-slate-800'}`}>
                                                 {editingItemId === topico.id ? (
-                                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'topico')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'topico')} className="bg-transparent text-slate-900 w-full outline-none" />
+                                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'topico')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'topico')} className={`bg-transparent w-full outline-none ${topico.visto ? 'text-white' : 'text-slate-900'}`} />
                                                 ) : (
                                                   <span onDoubleClick={() => handleEdit(topico.id, topico.titulo)} className="cursor-text">{topico.titulo}</span>
                                                 )}
                                                 {topicoProgress !== null && topicoProgress > 0 && (
-                                                   <span className="text-[9px] font-bold text-blue-800 bg-blue-900/10 px-1.5 py-0.5 rounded-md self-center">{topicoProgress}%</span>
+                                                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md self-center ${topico.visto ? 'text-white bg-white/20' : 'text-blue-800 bg-blue-900/10'}`}>{topicoProgress}%</span>
                                                 )}
                                               </div>
                                            </div>
                                            
                                            <div className="col-span-2 flex justify-center">
-                                              <div className="flex bg-white shadow-sm border border-slate-300 rounded-md overflow-hidden text-[10px]">
-                                                 <input type="number" placeholder="Ac." value={topico.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, parseInt(e.target.value)||0, topico.erros||0)} className="w-9 text-center bg-transparent py-1 text-emerald-400 outline-none font-mono" />
-                                                 <div className="w-px bg-slate-200 h-3 self-center"></div>
-                                                 <input type="number" placeholder="Er." value={topico.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, topico.acertos||0, parseInt(e.target.value)||0)} className="w-9 text-center bg-transparent py-1 text-rose-400 outline-none font-mono" />
+                                              <div className={`flex shadow-sm border rounded-md overflow-hidden text-[10px] ${topico.visto ? 'bg-white/10 border-white/20' : 'bg-white border-slate-300'}`}>
+                                                 <input type="number" placeholder="Ac." value={topico.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, parseInt(e.target.value)||0, topico.erros||0)} className={`w-9 text-center bg-transparent py-1 outline-none font-mono ${topico.visto ? 'text-emerald-300 placeholder-white/30' : 'text-emerald-400'}`} />
+                                                 <div className={`w-px h-3 self-center ${topico.visto ? 'bg-white/20' : 'bg-slate-200'}`}></div>
+                                                 <input type="number" placeholder="Er." value={topico.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, topico.acertos||0, parseInt(e.target.value)||0)} className={`w-9 text-center bg-transparent py-1 outline-none font-mono ${topico.visto ? 'text-rose-300 placeholder-white/30' : 'text-rose-400'}`} />
                                               </div>
                                            </div>
 
-                                           <div className="col-span-1 text-center font-mono text-[10px] text-slate-500">
-                                              <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className="hover:text-blue-800 transition-colors uppercase">
+                                           <div className={`col-span-1 text-center font-mono text-[10px] ${topico.visto ? 'text-white/70' : 'text-slate-500'}`}>
+                                              <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={`uppercase transition-colors ${topico.visto ? 'hover:text-white' : 'hover:text-blue-800'}`}>
                                                  {topico.data_estudo ? format(new Date(topico.data_estudo), "dd/MM") : "—"}
                                               </button>
                                            </div>
 
                                            <div className="col-span-2 text-center font-mono text-[10px]">
                                               {nextRevT ? (
-                                                <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={isDelayedT ? 'text-rose-400 hover:opacity-75' : isDueTodayT ? 'text-amber-400 hover:opacity-75' : 'text-blue-800 underline decoration-blue-800/30 hover:opacity-75'}>
+                                                <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={isDelayedT ? (topico.visto ? 'text-rose-200 hover:opacity-75' : 'text-rose-400 hover:opacity-75') : isDueTodayT ? (topico.visto ? 'text-amber-200 hover:opacity-75' : 'text-amber-400 hover:opacity-75') : (topico.visto ? 'text-white underline decoration-white/30 hover:opacity-75' : 'text-blue-800 underline decoration-blue-800/30 hover:opacity-75')}>
                                                   {format(new Date(nextRevT), "dd/MM")}
                                                 </button>
-                                              ) : <span className="text-slate-700">—</span>}
+                                              ) : <span className={topico.visto ? 'text-white/50' : 'text-slate-700'}>—</span>}
                                            </div>
 
                                            <div className="col-span-1 flex justify-end gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                              <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, currentNote: topico.notas || '', title: topico.titulo })} className="p-1 text-slate-500 hover:text-amber-400"><StickyNote className="w-3 h-3" /></button>
-                                              <button onClick={() => addItem(edital.id, area.id, materia.id, topico.id)} className="p-1 text-slate-500 hover:text-blue-800"><Plus className="w-3 h-3" /></button>
-                                              <button onClick={() => confirm("Excluir tópico?") && deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className="p-1 text-slate-500 hover:text-rose-400"><Trash2 className="w-3 h-3" /></button>
+                                              <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, currentNote: topico.notas || '', title: topico.titulo })} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-amber-400'}`}><StickyNote className="w-3 h-3" /></button>
+                                              <button onClick={() => addItem(edital.id, area.id, materia.id, topico.id)} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-blue-800'}`}><Plus className="w-3 h-3" /></button>
+                                              <button onClick={() => confirm("Excluir tópico?") && deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-500 hover:text-rose-400'}`}><Trash2 className="w-3 h-3" /></button>
                                            </div>
                                         </div>
                                       )}
@@ -377,18 +378,18 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                               const isDueTodayS = nextRSub && isToday(nextRSub);
 
                                               return (
-                                                <div key={sub.id} className={`grid lg:grid-cols-12 border-b border-slate-200 py-3 px-8 items-center bg-slate-50/10 group/sub transition-colors ${sub.visto ? 'bg-slate-50/50' : 'hover:bg-slate-50'}`}>
+                                                <div key={sub.id} className={`grid lg:grid-cols-12 border-b border-slate-200 py-3 px-8 items-center bg-slate-50/10 group/sub transition-colors ${sub.visto ? 'bg-blue-900 border-blue-800' : 'hover:bg-slate-50'}`}>
                                                    <div className="col-span-6 flex items-center gap-4 pl-6">
-                                                      <CornerDownRight className="w-3.5 h-3.5 text-slate-400" />
+                                                      <CornerDownRight className={`w-3.5 h-3.5 ${sub.visto ? 'text-white/40' : 'text-slate-400'}`} />
                                                       <label className="relative flex items-center justify-center cursor-pointer shrink-0">
                                                         <input type="checkbox" checked={sub.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id, sub.id)} />
-                                                        <div className="w-3.5 h-3.5 border border-slate-300 rounded peer-checked:bg-blue-900 peer-checked:border-blue-900 transition-all flex items-center justify-center">
-                                                           <CheckCircle2 className="w-2.5 h-2.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                                        <div className={`w-3.5 h-3.5 border rounded transition-all flex items-center justify-center ${sub.visto ? 'bg-white border-white' : 'border-slate-300 peer-checked:bg-blue-900 peer-checked:border-blue-900'}`}>
+                                                           <Check className={`w-2.5 h-2.5 opacity-0 peer-checked:opacity-100 transition-opacity ${sub.visto ? 'text-blue-900' : 'text-white'}`} strokeWidth={3} />
                                                         </div>
                                                       </label>
-                                                      <div className={`text-[11px] flex-1 ${sub.visto ? 'text-slate-500 line-through' : 'text-slate-700'}`}>
+                                                      <div className={`text-[11px] flex-1 ${sub.visto ? 'text-white line-through opacity-80' : 'text-slate-700'}`}>
                                                         {editingItemId === sub.id ? (
-                                                          <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} className="bg-transparent text-slate-900 w-full outline-none" />
+                                                          <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} className={`bg-transparent w-full outline-none ${sub.visto ? 'text-white' : 'text-slate-900'}`} />
                                                         ) : (
                                                           <span onDoubleClick={() => handleEdit(sub.id, sub.titulo)} className="cursor-text">{sub.titulo}</span>
                                                         )}
@@ -396,29 +397,29 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                    </div>
 
                                                    <div className="col-span-2 flex justify-center">
-                                                      <div className="flex bg-white border border-slate-200 rounded text-[9px] opacity-70">
-                                                         <input type="number" placeholder="Ac." value={sub.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, parseInt(e.target.value)||0, sub.erros||0)} className="w-8 text-center bg-transparent py-0.5 text-emerald-400/80 outline-none font-mono" />
-                                                         <input type="number" placeholder="Er." value={sub.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, sub.acertos||0, parseInt(e.target.value)||0)} className="w-8 text-center bg-transparent py-0.5 text-rose-400/80 outline-none font-mono" />
+                                                      <div className={`flex border rounded text-[9px] opacity-70 ${sub.visto ? 'bg-white/10 border-white/20' : 'bg-white border-slate-200'}`}>
+                                                         <input type="number" placeholder="Ac." value={sub.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, parseInt(e.target.value)||0, sub.erros||0)} className={`w-8 text-center bg-transparent py-0.5 outline-none font-mono ${sub.visto ? 'text-emerald-300' : 'text-emerald-400/80'}`} />
+                                                         <input type="number" placeholder="Er." value={sub.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, sub.acertos||0, parseInt(e.target.value)||0)} className={`w-8 text-center bg-transparent py-0.5 outline-none font-mono ${sub.visto ? 'text-rose-300' : 'text-rose-400/80'}`} />
                                                       </div>
                                                    </div>
 
-                                                   <div className="col-span-1 text-center font-mono text-[9px] text-slate-400">
-                                                      <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className="hover:text-blue-800">
+                                                   <div className={`col-span-1 text-center font-mono text-[9px] ${sub.visto ? 'text-white/70' : 'text-slate-400'}`}>
+                                                      <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 transition-colors ${sub.visto ? 'hover:text-white' : 'hover:text-blue-800'}`}>
                                                          {sub.data_estudo ? format(new Date(sub.data_estudo), "dd/MM") : "—"}
                                                       </button>
                                                    </div>
 
                                                    <div className="col-span-2 text-center font-mono text-[9px]">
                                                       {nextRSub ? (
-                                                        <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 ${isDelayedS ? 'text-rose-400/70' : isDueTodayS ? 'text-amber-400/70' : 'text-blue-800/70'}`}>
+                                                        <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 ${isDelayedS ? (sub.visto ? 'text-rose-200' : 'text-rose-400/70') : isDueTodayS ? (sub.visto ? 'text-amber-200' : 'text-amber-400/70') : (sub.visto ? 'text-white' : 'text-blue-800/70')}`}>
                                                           {format(new Date(nextRSub), "dd/MM")}
                                                         </button>
-                                                      ) : <span className="text-slate-800">—</span>}
+                                                      ) : <span className={sub.visto ? 'text-white/50' : 'text-slate-800'}>—</span>}
                                                    </div>
 
                                                    <div className="col-span-1 flex justify-end gap-1 opacity-0 group-hover/sub:opacity-100 transition-opacity">
-                                                      <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, currentNote: sub.notas || '', title: sub.titulo })} className="p-1 text-slate-400 hover:text-amber-400"><StickyNote className="w-3 h-3" /></button>
-                                                      <button onClick={() => confirm("Excluir subtópico?") && deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico', topico.id)} className="p-1 text-slate-400 hover:text-rose-400"><Trash2 className="w-3 h-3" /></button>
+                                                      <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, currentNote: sub.notas || '', title: sub.titulo })} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-amber-400'}`}><StickyNote className="w-3 h-3" /></button>
+                                                      <button onClick={() => confirm("Excluir subtópico?") && deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico', topico.id)} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-400'}`}><Trash2 className="w-3 h-3" /></button>
                                                    </div>
                                                 </div>
                                               );

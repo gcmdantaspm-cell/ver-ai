@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { parseEditalText } from "../services/ai";
 import { useEdital } from "../store";
 import { Loader2, PlusCircle, Sparkles, AlertCircle } from "lucide-react";
@@ -8,8 +8,27 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
   const [text, setText] = useState("");
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { addEdital } = useEdital();
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (loading) {
+      setCountdown(60); // 60 seconds countdown
+      interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev !== null && prev > 1) return prev - 1;
+          // When it reaches 0, we can clear interval or just stay at 0
+          clearInterval(interval);
+          return 0;
+        });
+      }, 1000);
+    } else {
+      setCountdown(null);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const handleParse = async () => {
     if (!text || !title) {
@@ -99,7 +118,7 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
                 className="w-full sm:w-auto bg-blue-900 text-white text-xs font-bold px-10 py-4 rounded-2xl uppercase tracking-[0.2em] hover:bg-blue-800 transition-all disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 active:scale-95"
               >
                 {loading ? (
-                   <><Loader2 className="w-4 h-4 animate-spin" /><span>Processando Edital...</span></>
+                   <><Loader2 className="w-4 h-4 animate-spin" /><span>Processando Edital... {countdown !== null && countdown > 0 ? `(${countdown}s)` : ''}</span></>
                 ) : (
                    <><span>Verticalizar Agora</span></>
                 )}
