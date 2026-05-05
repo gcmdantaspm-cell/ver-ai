@@ -34,13 +34,13 @@ function AppContent() {
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2 mb-2">Principal</span>
             <button
               onClick={() => navigateTo("dashboard")}
-              className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "dashboard" ? "bg-blue-900/10 text-blue-800 border border-blue-900/20" : "text-slate-400 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
+              className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "dashboard" ? "bg-blue-900 text-white shadow-md shadow-blue-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
             >
               <LayoutDashboard className="w-4 h-4" /> Painel Geral
             </button>
             <button
               onClick={() => navigateTo("import")}
-              className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "import" ? "bg-blue-900/10 text-blue-800 border border-blue-900/20" : "text-slate-400 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
+              className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "import" ? "bg-blue-900 text-white shadow-md shadow-blue-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
             >
               <Plus className="w-4 h-4" /> Novo Edital
             </button>
@@ -52,7 +52,7 @@ function AppContent() {
                   <button
                     key={e.id}
                     onClick={() => navigateTo(`edital-${e.id}`)}
-                    className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === `edital-${e.id}` ? "bg-blue-900/10 text-blue-800 border border-blue-900/20" : "text-slate-400 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
+                    className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === `edital-${e.id}` ? "bg-blue-900 text-white shadow-md shadow-blue-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
                   >
                     <BookOpen className="w-4 h-4 shrink-0" />
                     <span className="truncate text-left flex-1">{e.titulo}</span>
@@ -85,14 +85,14 @@ function AppContent() {
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2 mb-2 mt-2">Principal</span>
             <button
               onClick={() => navigateTo("dashboard")}
-              className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-1 border ${currentView === "dashboard" ? "bg-blue-900/10 text-blue-800 border-blue-900/20" : "text-slate-400 hover:bg-slate-100 border-transparent"}`}
+              className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-1 border ${currentView === "dashboard" ? "bg-blue-900 text-white shadow-md border-transparent" : "text-slate-500 hover:bg-slate-100 border-transparent"}`}
             >
               <LayoutDashboard className="w-5 h-5" />
               <span>Painel Geral</span>
             </button>
             <button
                onClick={() => navigateTo("import")}
-              className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-6 border ${currentView === "import" ? "bg-blue-900/10 text-blue-800 border-blue-900/20" : "text-slate-400 hover:bg-slate-100 border-transparent"}`}
+              className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-6 border ${currentView === "import" ? "bg-blue-900 text-white shadow-md border-transparent" : "text-slate-500 hover:bg-slate-100 border-transparent"}`}
             >
                <Plus className="w-5 h-5" />
                <span>Novo Edital</span>
@@ -107,7 +107,7 @@ function AppContent() {
                   <button
                     key={edital.id}
                     onClick={() => navigateTo(`edital-${edital.id}`)}
-                    className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-1 border ${currentView === `edital-${edital.id}` ? "bg-blue-900/10 text-blue-800 border-blue-900/20" : "text-slate-400 hover:bg-slate-100 border-transparent"}`}
+                    className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-1 border ${currentView === `edital-${edital.id}` ? "bg-blue-900 text-white shadow-md border-transparent" : "text-slate-500 hover:bg-slate-100 border-transparent"}`}
                   >
                       <BookOpen className="w-5 h-5 shrink-0" />
                       <span className="truncate">{edital.titulo}</span>
