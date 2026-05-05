@@ -2,7 +2,8 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AreaConhecimento, Materia, Topico, Subtopico } from "../types";
 import { v4 as uuidv4 } from "uuid";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || (typeof process !== "undefined" ? process.env.GEMINI_API_KEY : "");
+const ai = new GoogleGenAI({ apiKey });
 
 export async function parseEditalText(text: string): Promise<AreaConhecimento[]> {
   try {
