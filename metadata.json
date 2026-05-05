@@ -1,0 +1,6 @@
+{
+  "name": "VER.AI",
+  "description": "Aplicativo de gestão de estudos para concursos, que utiliza IA para verticalizar automaticamente os editais e agendar revisões baseadas em repetição espaçada.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
