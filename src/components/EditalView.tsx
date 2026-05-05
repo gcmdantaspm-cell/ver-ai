@@ -315,9 +315,9 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
 
                                            <div className="col-span-2 text-center font-mono text-[10px]">
                                               {nextRevT ? (
-                                                <span className={isDelayedT ? 'text-rose-400' : isDueTodayT ? 'text-amber-400' : 'text-blue-800 underline decoration-blue-800/30'}>
+                                                <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={isDelayedT ? 'text-rose-400 hover:opacity-75' : isDueTodayT ? 'text-amber-400 hover:opacity-75' : 'text-blue-800 underline decoration-blue-800/30 hover:opacity-75'}>
                                                   {format(new Date(nextRevT), "dd/MM")}
-                                                </span>
+                                                </button>
                                               ) : <span className="text-slate-700">—</span>}
                                            </div>
 
@@ -370,9 +370,9 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
 
                                                    <div className="col-span-2 text-center font-mono text-[9px]">
                                                       {nextRSub ? (
-                                                        <span className={isDelayedS ? 'text-rose-400/70' : isDueTodayS ? 'text-amber-400/70' : 'text-blue-800/70'}>
+                                                        <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 ${isDelayedS ? 'text-rose-400/70' : isDueTodayS ? 'text-amber-400/70' : 'text-blue-800/70'}`}>
                                                           {format(new Date(nextRSub), "dd/MM")}
-                                                        </span>
+                                                        </button>
                                                       ) : <span className="text-slate-800">—</span>}
                                                    </div>
 
