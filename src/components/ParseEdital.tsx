@@ -27,7 +27,8 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
       });
       onSuccess();
     } catch (err: any) {
-      setError("Falha ao processar o texto do edital. Ocorreu um erro na IA.");
+      console.error(err);
+      setError(`Falha ao processar o texto do edital. Ocorreu um erro na IA: ${err.message || String(err)}`);
     } finally {
       setLoading(false);
     }
