@@ -90,31 +90,31 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
 
   return (
     <>
-      <div className="flex-1 flex flex-col h-full bg-[#F5F7FA]">
-        <header className="h-24 px-8 flex items-end pb-4 shrink-0">
+      <div className="flex-1 flex flex-col h-full bg-[#0B1120]">
+        <header className="h-24 px-8 flex items-end pb-4 shrink-0 border-b border-slate-800/50">
           <div className="flex flex-col flex-1">
-            <h2 className="text-2xl font-display font-bold text-slate-900 leading-tight">{edital.titulo}</h2>
-            <p className="text-sm text-slate-500 font-medium">Verticalização Integrada // Repetição Espaçada Ativa</p>
+            <h2 className="text-2xl font-display font-bold text-white leading-tight">{edital.titulo}</h2>
+            <p className="text-sm text-slate-400 font-medium">Verticalização e Gestão de Performance</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => deleteEdital(edital.id)} className="bg-white text-rose-600 border border-slate-200 text-xs font-bold px-4 py-2 rounded-xl uppercase tracking-wider hover:bg-rose-50 hover:border-rose-100 transition-colors shadow-sm hidden md:block">
+            <button onClick={() => deleteEdital(edital.id)} className="bg-slate-800 text-rose-400 border border-slate-700 text-xs font-bold px-4 py-2 rounded-xl uppercase tracking-wider hover:bg-rose-950/30 hover:border-rose-900 hover:text-rose-300 transition-colors shadow-sm hidden md:block">
               Excluir Edital
             </button>
           </div>
         </header>
       
       <div className="flex-1 px-4 sm:px-8 pb-20 md:pb-8 overflow-hidden flex flex-col max-w-7xl mx-auto w-full">
-         <div className="hidden md:flex bg-slate-100 p-1.5 rounded-2xl mb-6 self-start space-x-1 shadow-inner">
-            <button onClick={() => setActiveTab('topicos')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'topicos' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+         <div className="hidden md:flex bg-[#111827] p-1.5 rounded-2xl mb-6 self-start space-x-1 border border-slate-800 shadow-inner">
+            <button onClick={() => setActiveTab('topicos')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'topicos' ? 'bg-slate-800 text-indigo-400 shadow-sm border border-slate-700' : 'text-slate-500 hover:text-slate-300'}`}>
                <ListTodo className="w-4 h-4"/> Tópicos
             </button>
-            <button onClick={() => setActiveTab('revisoes')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'revisoes' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            <button onClick={() => setActiveTab('revisoes')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'revisoes' ? 'bg-slate-800 text-indigo-400 shadow-sm border border-slate-700' : 'text-slate-500 hover:text-slate-300'}`}>
                <History className="w-4 h-4"/> Revisões
-               {revisoesCounter > 0 && <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-md text-[10px] ml-1">{revisoesCounter}</span>}
+               {revisoesCounter > 0 && <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md text-[10px] ml-1">{revisoesCounter}</span>}
             </button>
-            <button onClick={() => setActiveTab('notas')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'notas' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            <button onClick={() => setActiveTab('notas')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'notas' ? 'bg-slate-800 text-indigo-400 shadow-sm border border-slate-700' : 'text-slate-500 hover:text-slate-300'}`}>
                <FileText className="w-4 h-4"/> Anotações
-               {notasCounter > 0 && <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md text-[10px] ml-1">{notasCounter}</span>}
+               {notasCounter > 0 && <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md text-[10px] ml-1">{notasCounter}</span>}
             </button>
          </div>
 
@@ -122,35 +122,36 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
          {activeTab === 'topicos' && (
            <>
              {/* Stats and Filters Bar */}
-             <div className="bg-white border text-center sm:text-left border-slate-100/50 rounded-t-3xl p-6 flex flex-col sm:flex-row justify-between items-center gap-6 shrink-0 shadow-sm z-20 relative">
+             <div className="bg-[#111827] border text-center sm:text-left border-slate-800 rounded-t-3xl p-6 flex flex-col sm:flex-row justify-between items-center gap-6 shrink-0 shadow-sm z-20 relative">
                 <div className="flex-1 w-full sm:max-w-md">
-                   <div className="flex justify-between items-center mb-3 text-slate-800">
+                   <div className="flex justify-between items-center mb-3 text-slate-300">
                       <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Progresso Geral</span>
-                      <span className="text-lg font-display font-bold text-indigo-600">{progressPercent}%</span>
+                      <span className="text-lg font-display font-bold text-indigo-400">{progressPercent}%</span>
                    </div>
-                   <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-2">
+                   <div className="w-full bg-slate-800/80 h-2.5 rounded-full overflow-hidden mb-2 shadow-inner">
                       <div className="bg-indigo-500 h-full rounded-full transition-all duration-700 ease-in-out" style={{ width: `${progressPercent}%` }}></div>
                    </div>
-                   <div className="text-[11px] text-slate-400 font-medium">{completedItems} de {totalItems} tópicos concluídos</div>
+                   <div className="text-[11px] text-slate-500 font-medium">{completedItems} de {totalItems} tópicos concluídos</div>
                 </div>
 
-                <div className="flex bg-slate-50 border border-slate-100 rounded-xl p-1.5 text-xs font-bold w-full sm:w-auto overflow-x-auto shadow-inner">
-                   <button onClick={() => setFilter('all')} className={`flex-1 sm:flex-none px-5 py-2 rounded-lg transition-all ${filter==='all' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700 whitespace-nowrap'}`}>Tudo</button>
-                   <button onClick={() => setFilter('pending')} className={`flex-1 sm:flex-none px-5 py-2 rounded-lg transition-all ${filter==='pending' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700 whitespace-nowrap'}`}>Pendentes</button>
-                   <button onClick={() => setFilter('completed')} className={`flex-1 sm:flex-none px-5 py-2 rounded-lg transition-all ${filter==='completed' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700 whitespace-nowrap'}`}>Concluídos</button>
-                   <div className="w-px bg-slate-200 mx-2 my-1"></div>
+                <div className="flex bg-[#0B1120] border border-slate-800 rounded-xl p-1.5 text-xs font-bold w-full sm:w-auto overflow-x-auto shadow-inner">
+                   <button onClick={() => setFilter('all')} className={`flex-1 sm:flex-none px-5 py-2 rounded-lg transition-all ${filter==='all' ? 'bg-slate-800 text-indigo-400 shadow-sm border border-slate-700' : 'text-slate-500 hover:text-slate-300 whitespace-nowrap'}`}>Tudo</button>
+                   <button onClick={() => setFilter('pending')} className={`flex-1 sm:flex-none px-5 py-2 rounded-lg transition-all ${filter==='pending' ? 'bg-slate-800 text-indigo-400 shadow-sm border border-slate-700' : 'text-slate-500 hover:text-slate-300 whitespace-nowrap'}`}>Pendentes</button>
+                   <button onClick={() => setFilter('completed')} className={`flex-1 sm:flex-none px-5 py-2 rounded-lg transition-all ${filter==='completed' ? 'bg-slate-800 text-indigo-400 shadow-sm border border-slate-700' : 'text-slate-500 hover:text-slate-300 whitespace-nowrap'}`}>Concluídos</button>
+                   <div className="w-px bg-slate-800 mx-2 my-1"></div>
                    <button onClick={() => addItem(edital.id)} className="flex-1 sm:flex-none px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1 shadow-sm whitespace-nowrap"><Plus className="w-4 h-4"/> Área</button>
                 </div>
              </div>
 
              {/* Content Grid */}
-             <div className="bg-white border-x border-b border-slate-100/50 rounded-b-3xl shadow-sm flex flex-col h-full z-10 flex-1 min-h-0 overflow-hidden">
+             <div className="bg-[#111827] border-x border-b border-slate-800 rounded-b-3xl shadow-sm flex flex-col h-full z-10 flex-1 min-h-0 overflow-hidden">
             <div className="flex flex-col h-full overflow-hidden">
-                <div className="hidden lg:grid grid-cols-12 bg-white border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest py-4 px-6 shrink-0">
-                  <div className="col-span-6 pl-8">Tópico / Subtópico</div>
+                <div className="hidden lg:grid grid-cols-12 bg-[#111827] border-b border-slate-800 text-[10px] font-bold text-slate-500 uppercase tracking-widest py-4 px-6 shrink-0">
+                  <div className="col-span-5 pl-8">Tópico / Subtópico</div>
+                  <div className="col-span-2 text-center" title="Desempenho em Questões (Banca)">Desempenho (Ac. / Er.)</div>
                   <div className="col-span-2 text-center" title="Data em que você estudou o assunto">Visto Em</div>
-                  <div className="col-span-2 text-center text-indigo-600 bg-indigo-50/50 rounded-lg py-1" title="Próxima data calculada pelo algoritmo">Próx. Revisão</div>
-                  <div className="col-span-2 text-right">Ações / Status</div>
+                  <div className="col-span-2 text-center text-indigo-400 bg-indigo-600/10 rounded-lg py-1 border border-indigo-500/20" title="Próxima data calculada pelo algoritmo">Próx. Revisão</div>
+                  <div className="col-span-1 text-right">Ações</div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto pt-2 pb-12">
@@ -189,30 +190,29 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
 
                      return (
                        <div key={materia.id} className="border-b border-slate-100 last:border-b-0">
-                          {/* Accordion Header */}
-                          <div className={`w-full px-6 py-3 bg-white hover:bg-slate-50 border-b border-slate-100/50 sticky top-top-9 z-10 flex items-center justify-between transition-colors group`}>
-                             <button onClick={() => toggleMateria(materia.id)} className="flex items-center gap-3 flex-1 text-xs font-bold text-slate-800 uppercase tracking-widest text-left">
-                                <div className={`flex items-center justify-center w-5 h-5 rounded-md transition-colors ${isExpanded ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'}`}>
+                          {/* A                           <div className={`w-full px-6 py-3 bg-[#111827] hover:bg-[#1E293B] border-b border-slate-800/80 sticky top-top-9 z-10 flex items-center justify-between transition-colors group`}>
+                             <button onClick={() => toggleMateria(materia.id)} className="flex items-center gap-3 flex-1 text-xs font-bold text-slate-300 uppercase tracking-widest text-left">
+                                <div className={`flex items-center justify-center w-5 h-5 rounded-md transition-colors ${isExpanded ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-slate-800 text-slate-500 border border-slate-700'}`}>
                                    {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                                 </div>
                                 {editingItemId === materia.id ? (
-                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, '', 'materia')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, '', 'materia')} onClick={e => e.stopPropagation()} className="font-mono bg-white text-slate-800 px-3 py-1 rounded-lg outline-none border border-indigo-300 w-1/2 shadow-sm" />
+                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, '', 'materia')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, '', 'materia')} onClick={e => e.stopPropagation()} className="font-mono bg-[#0B1120] text-white px-3 py-1 rounded-lg outline-none border border-indigo-500/50 w-1/2 shadow-sm" />
                                 ) : (
                                   <span onDoubleClick={(e) => { e.stopPropagation(); handleEdit(materia.id, materia.nome); }} className="tracking-wide">{materia.nome}</span>
                                 )}
                              </button>
                              <div className="flex items-center justify-end gap-3 w-48 shrink-0">
                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 mr-2">
-                                  <button onClick={() => addItem(edital.id, area.id, materia.id)} className="text-indigo-400 hover:text-indigo-600" title="Add Tópico"><Plus className="w-4 h-4" /></button>
-                                  <button onClick={() => handleEdit(materia.id, materia.nome)} className="text-slate-400 hover:text-slate-600"><Edit2 className="w-4 h-4" /></button>
-                                  <button onClick={() => deleteItem(edital.id, area.id, materia.id, materia.id, 'materia')} className="text-rose-400 hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>
+                                  <button onClick={() => addItem(edital.id, area.id, materia.id)} className="text-indigo-400 hover:text-indigo-300" title="Add Tópico"><Plus className="w-4 h-4" /></button>
+                                  <button onClick={() => handleEdit(materia.id, materia.nome)} className="text-slate-500 hover:text-slate-300"><Edit2 className="w-4 h-4" /></button>
+                                  <button onClick={() => deleteItem(edital.id, area.id, materia.id, materia.id, 'materia')} className="text-rose-500 hover:text-rose-400"><Trash2 className="w-4 h-4" /></button>
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-400 tabular-nums">{matDone}/{matTotal}</span>
-                                <div className="w-16 h-1.5 bg-slate-100 rounded-full hidden sm:block overflow-hidden shrink-0">
+                                <span className="text-[10px] font-bold text-slate-500 tabular-nums">{matDone}/{matTotal}</span>
+                                <div className="w-16 h-1.5 bg-slate-800 rounded-full hidden sm:block overflow-hidden shrink-0 border border-slate-700">
                                    <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${matProgress}%` }}></div>
                                 </div>
                              </div>
-                          </div>
+                          </div>               </div>
 
                           {/* Accordion Content */}
                           {isExpanded && (
@@ -230,8 +230,8 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                  return (
                                    <div key={topico.id}>
                                       {matchFilter && (
-                                        <div className={`flex flex-col lg:grid lg:grid-cols-12 border-b py-3 px-4 lg:px-6 items-start lg:items-center group transition-colors ${topico.visto ? 'opacity-60 bg-slate-50/50 border-slate-100/50' : isDelayedTopico ? 'bg-rose-50/50 border-rose-100/30' : isDueTodayTopico ? 'bg-amber-50/50 border-amber-100/30' : 'hover:bg-slate-50 border-slate-100'}`}>
-                                            <div className="flex items-start lg:items-center gap-3 w-full lg:col-span-6">
+                                        <div className={`flex flex-col lg:grid lg:grid-cols-12 border-b py-3 px-4 lg:px-6 items-start lg:items-center group transition-colors ${topico.visto ? 'opacity-50 bg-[#0B1120] border-slate-800' : isDelayedTopico ? 'bg-rose-500/10 border-rose-500/20' : isDueTodayTopico ? 'bg-amber-500/10 border-amber-500/20' : 'hover:bg-[#1E293B] border-slate-800'}`}>
+                                            <div className="flex items-start lg:items-center gap-3 w-full lg:col-span-5">
                                               <label className="relative flex items-center justify-center cursor-pointer mt-0.5 lg:mt-0 shrink-0">
                                                 <input 
                                                   type="checkbox" 
@@ -239,51 +239,60 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                   className="peer sr-only" 
                                                   onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id)}
                                                 />
-                                                <div className="w-5 h-5 border-2 border-slate-200 rounded-md peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all flex items-center justify-center">
+                                                <div className="w-5 h-5 border-2 border-slate-600 rounded-md peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all flex items-center justify-center">
                                                    <CheckCircle2 className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                                                 </div>
                                               </label>
-                                              <div className={`font-sans font-medium text-sm truncate pr-2 w-full ${topico.visto ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                                              <div className={`font-sans font-medium text-sm truncate pr-2 w-full ${topico.visto ? 'text-slate-500 line-through' : 'text-white'}`}>
                                                 {editingItemId === topico.id ? (
-                                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'topico')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'topico')} className="font-mono bg-white text-slate-800 px-3 leading-tight py-1 rounded-lg outline-none border border-indigo-300 w-full shadow-sm" />
+                                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'topico')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'topico')} className="font-mono bg-[#0B1120] text-white px-3 leading-tight py-1 rounded-lg outline-none border border-indigo-500/50 w-full shadow-sm" />
                                                 ) : (
                                                   <span onDoubleClick={() => handleEdit(topico.id, topico.titulo)}>{topico.titulo}</span>
                                                 )}
                                               </div>
                                             </div>
 
-                                            <div className="mt-3 lg:mt-0 pl-8 lg:pl-0 w-full lg:col-span-6 grid grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-0 items-center">
+                                            <div className="mt-3 lg:mt-0 pl-8 lg:pl-0 w-full lg:col-span-7 grid grid-cols-2 lg:grid-cols-7 gap-3 lg:gap-0 items-center">
+                                              
+                                              <div className="col-span-2 flex items-center justify-start lg:justify-center gap-2">
+                                                 <div className="flex items-center bg-[#0B1120] border border-slate-700/50 rounded-lg overflow-hidden shrink-0 shadow-inner">
+                                                    <input type="number" placeholder="Ac." min="0" value={topico.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, parseInt(e.target.value)||0, topico.erros||0)} className="w-10 bg-transparent text-center text-xs text-emerald-400 py-1.5 outline-none font-mono placeholder:text-slate-600" title="Acertos" />
+                                                    <div className="w-px bg-slate-700/50 h-full"></div>
+                                                    <input type="number" placeholder="Er." min="0" value={topico.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, topico.acertos||0, parseInt(e.target.value)||0)} className="w-10 bg-transparent text-center text-xs text-rose-400 py-1.5 outline-none font-mono placeholder:text-slate-600" title="Erros" />
+                                                 </div>
+                                                 {topico.acertos !== undefined && (topico.acertos > 0 || (topico.erros && topico.erros > 0)) && (
+                                                    <div className={`text-[10px] font-bold ${topico.acertos - (topico.erros||0) > 0 ? 'text-emerald-400' : 'text-rose-400'}`} title="Rendimento Líquido (Cebraspe)">
+                                                      {topico.acertos - (topico.erros||0) > 0 ? '+' : ''}{topico.acertos - (topico.erros||0)}
+                                                    </div>
+                                                 )}
+                                              </div>
+
                                               <div className="col-span-1 lg:col-span-2 text-slate-500 relative flex justify-start lg:justify-center items-center group/date flex-col lg:flex-row gap-1">
-                                                <span className="text-[9px] uppercase font-bold text-slate-400 lg:hidden self-start tracking-wider">Visto Em</span>
-                                                <div className="border border-transparent hover:border-slate-200 rounded-lg px-2 py-1 flex gap-1.5 items-center transition-colors font-mono text-xs">
+                                                <span className="text-[9px] uppercase font-bold text-slate-600 lg:hidden self-start tracking-wider">Visto Em</span>
+                                                <div className="border border-transparent hover:border-slate-700 rounded-lg px-2 py-1 flex gap-1.5 items-center transition-colors font-mono text-xs">
                                                   <span>{topico.data_estudo ? format(new Date(topico.data_estudo), "dd/MM/yyyy") : "—"}</span>
-                                                  <CalendarIcon className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover/date:opacity-100" />
+                                                  <CalendarIcon className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover/date:opacity-100" />
                                                 </div>
                                                 <input type="date" className="absolute opacity-0 inset-0 cursor-pointer w-full h-full" onChange={(e) => setStudyDate(edital.id, area.id, materia.id, topico.id, undefined, e.target.value)} />
                                               </div>
                                               
-                                              <div className={`col-span-1 lg:col-span-2 font-mono text-xs relative flex justify-start lg:justify-center items-center group/rev flex-col lg:flex-row gap-1 ${isDelayedTopico ? 'text-rose-600 font-bold' : isDueTodayTopico ? 'text-amber-600 font-bold' : 'text-indigo-600 font-medium'}`}>
-                                                <span className="text-[9px] uppercase font-bold text-slate-400 lg:hidden self-start tracking-wider">Próx. Revisão</span>
-                                                <div className="border border-transparent hover:border-slate-200 rounded-lg px-2 py-1 flex gap-1.5 items-center transition-colors">
+                                              <div className={`col-span-1 lg:col-span-2 font-mono text-xs relative flex justify-start lg:justify-center items-center group/rev flex-col lg:flex-row gap-1 ${isDelayedTopico ? 'text-rose-400 font-bold' : isDueTodayTopico ? 'text-amber-400 font-bold' : 'text-indigo-400 font-medium'}`}>
+                                                <span className="text-[9px] uppercase font-bold text-slate-600 lg:hidden self-start tracking-wider">Próx. Revisão</span>
+                                                <div className="border border-transparent hover:border-slate-700 rounded-lg px-2 py-1 flex gap-1.5 items-center transition-colors">
                                                   <span>{nextRevTopico ? format(nextRevTopico, "dd/MM/yyyy") : "—"}</span>
                                                   <CalendarIcon className="w-3.5 h-3.5 opacity-0 group-hover/rev:opacity-100" />
                                                 </div>
                                                 <input type="date" className="absolute opacity-0 inset-0 cursor-pointer w-full h-full" onChange={(e) => setNextRevisionDate(edital.id, area.id, materia.id, topico.id, undefined, e.target.value)} />
                                               </div>
 
-                                              <div className="col-span-2 lg:col-span-2 text-right flex justify-between lg:justify-end gap-2 items-center w-full mt-2 lg:mt-0">
+                                              <div className="col-span-2 lg:col-span-1 text-right flex justify-between lg:justify-end gap-2 items-center w-full mt-2 lg:mt-0">
                                                 <div className="flex opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity mr-2 gap-3 align-middle">
-                                                  <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className="text-slate-400 hover:text-indigo-500" title="Histórico"><History className="w-4 h-4 p-0.5" /></button>
-                                                  <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, currentNote: topico.notas || '', title: topico.titulo })} className={`${topico.notas ? 'text-amber-500 hover:text-amber-600' : 'text-slate-400 hover:text-amber-500'}`} title="Anotações"><StickyNote className="w-4 h-4 p-0.5" /></button>
-                                                  <button onClick={() => addItem(edital.id, area.id, materia.id, topico.id)} className="text-indigo-400 hover:text-indigo-600" title="Add Subtópico"><Plus className="w-4 h-4 p-0.5" /></button>
-                                                  <button onClick={() => handleEdit(topico.id, topico.titulo)} className="text-slate-400 hover:text-slate-600"><Edit2 className="w-4 h-4 p-0.5" /></button>
-                                                  <button onClick={() => deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className="text-rose-400 hover:text-rose-600"><Trash2 className="w-4 h-4 p-0.5" /></button>
+                                                  <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className="text-slate-500 hover:text-indigo-400" title="Histórico"><History className="w-4 h-4 p-0.5" /></button>
+                                                  <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, currentNote: topico.notas || '', title: topico.titulo })} className={`${topico.notas ? 'text-amber-400 hover:text-amber-300' : 'text-slate-500 hover:text-amber-400'}`} title="Anotações"><StickyNote className="w-4 h-4 p-0.5" /></button>
+                                                  <button onClick={() => addItem(edital.id, area.id, materia.id, topico.id)} className="text-indigo-500 hover:text-indigo-400" title="Add Subtópico"><Plus className="w-4 h-4 p-0.5" /></button>
+                                                  <button onClick={() => handleEdit(topico.id, topico.titulo)} className="text-slate-500 hover:text-slate-300"><Edit2 className="w-4 h-4 p-0.5" /></button>
+                                                  <button onClick={() => deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className="text-rose-500 hover:text-rose-400"><Trash2 className="w-4 h-4 p-0.5" /></button>
                                                 </div>
-                                                {topico.visto ? (
-                                                  <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg text-[10px] font-bold uppercase tracking-widest shrink-0">Concluído</span>
-                                                ) : (
-                                                  <span className="px-2.5 py-1 bg-white text-slate-400 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-slate-200 shrink-0 shadow-sm">Pendente</span>
-                                                )}
                                               </div>
                                             </div>
                                         </div>
@@ -296,69 +305,77 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                         const isDueTodaySub = nextRevSub && isToday(nextRevSub);
                                         
                                         return (
-                                          <div key={sub.id} className={`flex flex-col lg:grid lg:grid-cols-12 border-b py-2 px-4 lg:px-6 items-start lg:items-center group transition-colors ${sub.visto ? 'opacity-60 bg-slate-50/20 border-slate-100/30' : isDelayedSub ? 'bg-rose-50/30 hover:bg-rose-50/60 border-rose-100/20' : isDueTodaySub ? 'bg-amber-50/30 hover:bg-amber-50/60 border-amber-100/20' : 'bg-slate-50/20 hover:bg-indigo-50/30 border-slate-100/50'}`}>
-                                            <div className="flex items-start lg:items-center gap-3 w-full lg:col-span-6 pl-2 lg:pl-4">
-                                               {/* Visual Connector / Indentation */}
-                                               <div className="hidden lg:block h-6 border-l-2 border-indigo-200/50 ml-4 mr-1 group-hover:border-indigo-400 transition-colors"></div>
-                                               <label className="relative flex items-center justify-center cursor-pointer mt-0.5 lg:mt-0 shrink-0">
+                                          <div key={sub.id} className={`flex flex-col lg:grid lg:grid-cols-12 border-b py-2 px-4 lg:px-6 items-start lg:items-center group transition-colors ${sub.visto ? 'opacity-40 bg-[#0B1120] border-slate-800' : isDelayedSub ? 'bg-rose-500/5 hover:bg-rose-500/10 border-rose-500/10' : isDueTodaySub ? 'bg-amber-500/5 hover:bg-amber-500/10 border-amber-500/10' : 'bg-[#0f172a]/20 hover:bg-[#1E293B] border-slate-800'}`}>
+                                            <div className="flex items-start lg:items-center gap-3 w-full lg:col-span-5 pl-2 lg:pl-4">
+                                              <CornerDownRight className="w-4 h-4 text-slate-600 shrink-0 hidden lg:block" />
+                                              <label className="relative flex items-center justify-center cursor-pointer mt-0.5 lg:mt-0 shrink-0">
                                                 <input 
                                                   type="checkbox" 
-                                                  checked={sub.visto}
-                                                  onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id, sub.id)}
+                                                  checked={sub.visto} 
                                                   className="peer sr-only" 
+                                                  onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id, sub.id)}
                                                 />
-                                                <div className="w-4 h-4 border-2 border-slate-300 rounded peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all flex items-center justify-center">
-                                                   <CheckCircle2 className="w-2.5 h-2.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                                <div className="w-5 h-5 border-2 border-slate-600 rounded-md peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all flex items-center justify-center">
+                                                   <CheckCircle2 className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                                                 </div>
                                               </label>
-                                              <div className={`font-sans text-[13px] truncate pr-2 w-full ${sub.visto ? 'text-slate-400 line-through' : 'text-slate-600'}`}>
+                                              <div className={`font-sans text-[13px] truncate pr-2 w-full ${sub.visto ? 'text-slate-500 line-through' : 'text-slate-400'}`}>
                                                 {editingItemId === sub.id ? (
-                                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, sub.id, 'subtopico')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, sub.id, 'subtopico')} className="font-mono bg-white text-slate-800 px-3 py-1 rounded-lg outline-none border border-indigo-300 w-full shadow-sm" />
+                                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} className="font-mono bg-[#0B1120] text-white px-3 leading-tight py-1 rounded-lg outline-none border border-indigo-500/50 w-full shadow-sm" />
                                                 ) : (
                                                   <span onDoubleClick={() => handleEdit(sub.id, sub.titulo)}>{sub.titulo}</span>
                                                 )}
                                               </div>
                                             </div>
+                                            
+                                            <div className="mt-2 lg:mt-0 pl-12 lg:pl-0 w-full lg:col-span-7 grid grid-cols-2 lg:grid-cols-7 gap-3 lg:gap-0 items-center">
+                                              
+                                              <div className="col-span-2 flex items-center justify-start lg:justify-center gap-2">
+                                                 <div className="flex items-center bg-[#0B1120] border border-slate-700/50 rounded-lg overflow-hidden shrink-0 shadow-inner">
+                                                    <input type="number" placeholder="Ac." min="0" value={sub.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, parseInt(e.target.value)||0, sub.erros||0)} className="w-10 bg-transparent text-center text-xs text-emerald-400 py-1.5 outline-none font-mono placeholder:text-slate-600" title="Acertos" />
+                                                    <div className="w-px bg-slate-700/50 h-full"></div>
+                                                    <input type="number" placeholder="Er." min="0" value={sub.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, sub.acertos||0, parseInt(e.target.value)||0)} className="w-10 bg-transparent text-center text-xs text-rose-400 py-1.5 outline-none font-mono placeholder:text-slate-600" title="Erros" />
+                                                 </div>
+                                                 {sub.acertos !== undefined && (sub.acertos > 0 || (sub.erros && sub.erros > 0)) && (
+                                                    <div className={`text-[10px] font-bold ${sub.acertos - (sub.erros||0) > 0 ? 'text-emerald-400' : 'text-rose-400'}`} title="Rendimento Líquido (Cebraspe)">
+                                                      {sub.acertos - (sub.erros||0) > 0 ? '+' : ''}{sub.acertos - (sub.erros||0)}
+                                                    </div>
+                                                 )}
+                                              </div>
 
-                                            <div className="mt-2 lg:mt-0 pl-10 lg:pl-0 w-full lg:col-span-6 grid grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-0 items-center">
                                               <div className="col-span-1 lg:col-span-2 text-slate-500 relative flex justify-start lg:justify-center items-center group/date flex-col lg:flex-row gap-1">
-                                                <span className="text-[9px] uppercase font-bold text-slate-400 lg:hidden self-start tracking-wider">Visto Em</span>
-                                                <div className="border border-transparent hover:border-slate-200 rounded-lg px-2 py-1 flex gap-1.5 items-center transition-colors font-mono text-[11px]">
+                                                <span className="text-[9px] uppercase font-bold text-slate-600 lg:hidden self-start tracking-wider">Visto Em</span>
+                                                <div className="border border-transparent hover:border-slate-700 rounded-lg px-2 py-0.5 flex gap-1.5 items-center transition-colors font-mono text-[11px]">
                                                   <span>{sub.data_estudo ? format(new Date(sub.data_estudo), "dd/MM/yyyy") : "—"}</span>
-                                                  <CalendarIcon className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover/date:opacity-100" />
+                                                  <CalendarIcon className="w-3.5 h-3.5 text-slate-600 opacity-0 group-hover/date:opacity-100" />
                                                 </div>
                                                 <input type="date" className="absolute opacity-0 inset-0 cursor-pointer w-full h-full" onChange={(e) => setStudyDate(edital.id, area.id, materia.id, topico.id, sub.id, e.target.value)} />
                                               </div>
                                               
-                                              <div className={`col-span-1 lg:col-span-2 font-mono text-[11px] relative flex justify-start lg:justify-center items-center group/rev flex-col lg:flex-row gap-1 ${isDelayedSub ? 'text-rose-500 font-bold' : isDueTodaySub ? 'text-amber-500 font-bold' : 'text-indigo-500 font-medium'}`}>
-                                                <span className="text-[9px] uppercase font-bold text-slate-400 lg:hidden self-start tracking-wider">Próx. Revisão</span>
-                                                <div className="border border-transparent hover:border-slate-200 rounded-lg px-2 py-1 flex gap-1.5 items-center transition-colors">
+                                              <div className={`col-span-1 lg:col-span-2 font-mono text-[11px] relative flex justify-start lg:justify-center items-center group/rev flex-col lg:flex-row gap-1 ${isDelayedSub ? 'text-rose-400 font-bold' : isDueTodaySub ? 'text-amber-400 font-bold' : 'text-indigo-400 font-medium'}`}>
+                                                <span className="text-[9px] uppercase font-bold text-slate-600 lg:hidden self-start tracking-wider">Próx. Revisão</span>
+                                                <div className="border border-transparent hover:border-slate-700 rounded-lg px-2 py-0.5 flex gap-1.5 items-center transition-colors">
                                                   <span>{nextRevSub ? format(nextRevSub, "dd/MM/yyyy") : "—"}</span>
                                                   <CalendarIcon className="w-3.5 h-3.5 opacity-0 group-hover/rev:opacity-100" />
                                                 </div>
                                                 <input type="date" className="absolute opacity-0 inset-0 cursor-pointer w-full h-full" onChange={(e) => setNextRevisionDate(edital.id, area.id, materia.id, topico.id, sub.id, e.target.value)} />
                                               </div>
 
-                                              <div className="col-span-2 lg:col-span-2 text-right flex justify-between lg:justify-end gap-2 items-center w-full mt-2 lg:mt-0">
+                                              <div className="col-span-2 lg:col-span-1 text-right flex justify-between lg:justify-end gap-2 items-center w-full mt-2 lg:mt-0">
                                                 <div className="flex opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity mr-2 gap-3 align-middle">
-                                                  <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className="text-slate-400 hover:text-indigo-500" title="Histórico"><History className="w-4 h-4 p-0.5" /></button>
-                                                  <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, currentNote: sub.notas || '', title: sub.titulo })} className={`${sub.notas ? 'text-amber-500 hover:text-amber-600' : 'text-slate-400 hover:text-amber-500'}`} title="Anotações"><StickyNote className="w-4 h-4 p-0.5" /></button>
-                                                  <button onClick={() => handleEdit(sub.id, sub.titulo)} className="text-slate-400 hover:text-slate-600"><Edit2 className="w-4 h-4 p-0.5" /></button>
-                                                  <button onClick={() => deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico')} className="text-rose-400 hover:text-rose-600"><Trash2 className="w-4 h-4 p-0.5" /></button>
+                                                  <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className="text-slate-500 hover:text-indigo-400" title="Histórico"><History className="w-3.5 h-3.5 p-0.5" /></button>
+                                                  <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, currentNote: sub.notas || '', title: sub.titulo })} className={`${sub.notas ? 'text-amber-400 hover:text-amber-300' : 'text-slate-500 hover:text-amber-400'}`} title="Anotações"><StickyNote className="w-3.5 h-3.5 p-0.5" /></button>
+                                                  <button onClick={() => handleEdit(sub.id, sub.titulo)} className="text-slate-500 hover:text-slate-300"><Edit2 className="w-3.5 h-3.5 p-0.5" /></button>
+                                                  <button onClick={() => deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico', topico.id)} className="text-rose-500 hover:text-rose-400"><Trash2 className="w-3.5 h-3.5 p-0.5" /></button>
                                                 </div>
-                                                {sub.visto ? (
-                                                  <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg text-[9px] font-bold uppercase tracking-widest shrink-0">Concluído</span>
-                                                ) : (
-                                                  <span className="px-2.5 py-1 bg-white text-slate-400 border border-slate-200 rounded-lg text-[9px] font-bold uppercase tracking-widest shrink-0 shadow-sm">Pendente</span>
-                                                )}
                                               </div>
                                             </div>
                                           </div>
-                                        )
+                                        );
                                       })}
                                    </div>
-                                 )
-                              })}
+                                 );
+                               })}
                             </div>
                           )}
                        </div>

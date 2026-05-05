@@ -5,6 +5,8 @@ export interface Subtopico {
   data_estudo: string | null;
   revisoes_agendadas: string[]; // ISO 8601 strings
   notas?: string;
+  acertos?: number;
+  erros?: number;
 }
 
 export interface Topico {
@@ -14,6 +16,8 @@ export interface Topico {
   data_estudo: string | null;
   revisoes_agendadas: string[]; // ISO 8601 strings
   notas?: string;
+  acertos?: number;
+  erros?: number;
   subtopicos: Subtopico[];
 }
 

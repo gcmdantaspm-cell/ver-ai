@@ -34,31 +34,31 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#F5F7FA]">
+    <div className="flex-1 flex flex-col h-full bg-[#0B1120] text-slate-300">
         <header className="h-24 px-8 flex items-end pb-4 shrink-0">
           <div className="flex flex-col flex-1">
-            <h2 className="text-2xl font-display font-bold text-slate-900 leading-tight">Importar Edital</h2>
-            <p className="text-sm text-slate-500 font-medium">Verticalização via Inteligência Artificial</p>
+            <h2 className="text-2xl font-display font-bold text-white leading-tight">Importar Edital</h2>
+            <p className="text-sm text-slate-400 font-medium">Verticalização via Inteligência Artificial</p>
           </div>
         </header>
 
       <div className="flex-1 px-8 pb-8 overflow-y-auto">
         <div className="max-w-4xl mx-auto space-y-6">
           {error && (
-            <div className="bg-rose-50 border border-rose-100 text-rose-600 px-5 py-4 rounded-2xl text-sm font-medium">
+            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 px-5 py-4 rounded-2xl text-sm font-medium">
               {error}
             </div>
           )}
 
-          <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
-            <div className="p-8 space-y-6 border-b border-slate-100/50">
+          <div className="bg-[#111827] border border-slate-800 rounded-3xl shadow-md overflow-hidden">
+            <div className="p-8 space-y-6 border-b border-slate-800">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
                   Título do Concurso
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all text-sm font-medium text-slate-800 placeholder:text-slate-400"
+                  className="w-full px-4 py-3 bg-[#0B1120] border border-slate-800 rounded-xl focus:bg-[#1E293B] focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium text-white placeholder:text-slate-600"
                   placeholder="Ex: Polícia Federal 2024"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
@@ -70,7 +70,7 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
                   Texto Bruto do Edital
                 </label>
                 <textarea
-                  className="w-full h-[400px] px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none font-mono text-[13px] leading-relaxed text-slate-700 placeholder:text-slate-300"
+                  className="w-full h-[400px] px-4 py-3 bg-[#0B1120] border border-slate-800 rounded-xl focus:bg-[#1E293B] focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none font-mono text-[13px] leading-relaxed text-slate-300 placeholder:text-slate-600"
                   placeholder="Cole o conteúdo programático aqui... A IA vai analisar cada linha e montar a estrutura de Área > Matéria > Tópico > Subtópico."
                   value={text}
                   onChange={e => setText(e.target.value)}
@@ -78,11 +78,11 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
               </div>
             </div>
 
-            <div className="bg-slate-50 p-6 flex justify-end">
+            <div className="bg-[#0B1120]/50 p-6 flex justify-end shrink-0">
               <button
                 onClick={handleParse}
                 disabled={loading}
-                className="bg-indigo-600 text-white text-sm font-bold px-8 py-3 rounded-xl uppercase tracking-widest hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center space-x-2 shadow-sm hover:shadow-md"
+                className="bg-indigo-600 text-white text-sm font-bold px-8 py-3 rounded-xl uppercase tracking-widest hover:bg-indigo-500 transition-colors disabled:opacity-50 flex items-center space-x-2 shadow-sm"
               >
                 {loading ? (
                    <><Loader2 className="w-5 h-5 animate-spin" /><span>Analisando e Estruturando...</span></>
