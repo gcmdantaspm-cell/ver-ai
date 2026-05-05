@@ -89,12 +89,20 @@ ${text}`,
         model: "gemini-2.5-flash"
       });
     } catch (err: any) {
-      if (err?.status === 503 || err?.status === 429 || err?.message?.includes("high demand") || err?.message?.includes("429")) {
-        console.log("gemini-2.5-flash failed due to high demand, falling back to gemini-1.5-flash");
-        response = await ai.models.generateContent({
-          ...configOptions,
-          model: "gemini-1.5-flash"
-        });
+      if (err?.status === 503 || err?.status === 429 || err?.message?.match(/high demand|429|503/i)) {
+        console.log("gemini-2.5-flash failed, falling back to gemini-1.5-pro");
+        try {
+          response = await ai.models.generateContent({
+            ...configOptions,
+            model: "gemini-1.5-pro"
+          });
+        } catch(fallbackErr: any) {
+           console.log("gemini-1.5-pro failed, falling back to gemini-1.5-flash");
+           response = await ai.models.generateContent({
+             ...configOptions,
+             model: "gemini-1.5-flash"
+           });
+        }
       } else {
         throw err;
       }

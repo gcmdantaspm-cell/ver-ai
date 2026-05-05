@@ -20,8 +20,12 @@ import {
   FileText, 
   BookOpen, 
   CornerDownRight,
-  Download
+  Download,
+  Loader2,
+  Sparkles
 } from "lucide-react";
+
+import { parseEditalText } from "../services/ai";
 
 export function EditalView({ edital }: { edital: Edital, key?: string | number }) {
   const { 
@@ -30,6 +34,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     updateItemTitle, 
     deleteItem, 
     addItem, 
+    addMaterias,
     setNextRevisionDate, 
     addCustomRevisionDate, 
     removeRevisionDate, 
@@ -48,6 +53,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   const [editValue, setEditValue] = useState("");
   const [notesModal, setNotesModal] = useState<{ isOpen: boolean, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string, currentNote: string, title: string } | null>(null);
   const [historyModal, setHistoryModal] = useState<{ isOpen: boolean, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string } | null>(null);
+  const [aiModal, setAiModal] = useState<{isOpen: boolean, editalId: string, areaId: string} | null>(null);
+  const [aiText, setAiText] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
 
   const handleEdit = (id: string, currentTitle: string) => {
     setEditingItemId(id);
@@ -152,10 +161,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 selection:bg-blue-900/30 font-sans text-slate-800">
       {/* Header */}
-      <header className="h-20 px-8 flex items-center justify-between shrink-0 border-b border-slate-200 bg-slate-50/50 backdrop-blur-xl sticky top-0 z-30">
-        <div className="flex flex-col">
-          <h2 className="text-xl font-display font-semibold text-slate-900 leading-tight flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-blue-800" />
+      <header className="min-h-[4rem] px-4 sm:px-8 py-3 sm:py-0 flex flex-col sm:flex-row items-start sm:items-center justify-between shrink-0 border-b border-slate-200 bg-slate-50/50 backdrop-blur-xl sticky top-0 z-30 gap-3 sm:gap-0">
+        <div className="flex flex-col w-full sm:w-auto">
+          <h2 className="text-lg sm:text-xl font-display font-semibold text-slate-900 leading-tight flex items-center gap-2">
+            <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-blue-800 shrink-0" />
             {editingItemId === edital.id ? (
               <input
                  autoFocus
@@ -163,29 +172,29 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                  onChange={(e) => setEditValue(e.target.value)}
                  onBlur={() => saveEdit('', '', '', 'edital', edital.id)}
                  onKeyDown={(e) => e.key === 'Enter' && saveEdit('', '', '', 'edital', edital.id)}
-                 className="bg-transparent text-slate-900 outline-none border-b border-blue-800"
+                 className="bg-transparent text-slate-900 outline-none border-b border-blue-800 w-full"
               />
             ) : (
-              <span onDoubleClick={() => handleEdit(edital.id, edital.titulo)} className="cursor-text">{edital.titulo}</span>
+              <span onDoubleClick={() => handleEdit(edital.id, edital.titulo)} className="cursor-text break-words line-clamp-2">{edital.titulo}</span>
             )}
           </h2>
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-[10px] text-blue-800 font-bold uppercase tracking-[0.2em] bg-blue-900/10 px-2 py-0.5 rounded border border-blue-900/20">Edital Ativo</span>
-            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">{stats.completed} de {stats.total} concluídos</span>
+          <div className="flex items-center gap-3 mt-2 sm:mt-1">
+            <span className="text-[10px] text-blue-800 font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] bg-blue-900/10 px-2 py-0.5 rounded border border-blue-900/20">Edital Ativo</span>
+            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider sm:tracking-widest">{stats.completed} de {stats.total} concluídos</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-           <button onClick={downloadPDF} className="group flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all shadow-sm">
-             <Download className="w-4 h-4" />
-             PDF
+        <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto justify-end">
+           <button onClick={downloadPDF} className="flex-1 sm:flex-none justify-center group flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all shadow-sm">
+             <Download className="w-4 h-4 shrink-0" />
+             <span className="hidden sm:inline">PDF</span>
            </button>
-           <button onClick={() => addItem(edital.id)} className="group flex items-center gap-2 px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-blue-900/20">
-             <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+           <button onClick={() => addItem(edital.id)} className="flex-1 sm:flex-none justify-center group flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-blue-900/20">
+             <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform shrink-0" />
              Área
            </button>
            <button 
               onClick={() => confirm("Excluir edital completo?") && deleteEdital(edital.id)} 
-              className="p-2.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/5 rounded-xl transition-all border border-slate-200 ml-2"
+              className="p-2 sm:p-2.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/5 rounded-xl transition-all border border-slate-200 ml-1 sm:ml-2 shrink-0"
             >
              <Trash2 className="w-4 h-4" />
            </button>
@@ -193,18 +202,18 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 px-8 pb-32 pt-8 overflow-hidden flex flex-col max-w-7xl mx-auto w-full">
+      <div className="flex-1 px-4 sm:px-8 pb-32 pt-6 sm:pt-8 overflow-hidden flex flex-col max-w-7xl mx-auto w-full">
         {/* Tabs Bar */}
-        <div className="flex items-center gap-1 mb-10 bg-white shadow-sm p-1.5 rounded-2xl border border-slate-200 w-fit">
-          <button onClick={() => setActiveTab('topicos')} className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'topicos' ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
-             <ListTodo className="w-4 h-4"/> Conteúdo
+        <div className="flex items-center gap-1 mb-6 sm:mb-10 bg-white shadow-sm p-1.5 rounded-2xl border border-slate-200 w-full sm:w-fit overflow-x-auto whitespace-nowrap hide-scrollbar shrink-0">
+          <button onClick={() => setActiveTab('topicos')} className={`px-4 sm:px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider sm:tracking-widest transition-all flex items-center gap-2 ${activeTab === 'topicos' ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
+             <ListTodo className="w-4 h-4 shrink-0"/> Conteúdo
           </button>
-          <button onClick={() => setActiveTab('revisoes')} className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'revisoes' ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
-             <History className="w-4 h-4"/> Revisões
+          <button onClick={() => setActiveTab('revisoes')} className={`px-4 sm:px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider sm:tracking-widest transition-all flex items-center gap-2 ${activeTab === 'revisoes' ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
+             <History className="w-4 h-4 shrink-0"/> Revisões
              {editalRevisions.length > 0 && <span className={`${activeTab === 'revisoes' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'} px-1.5 py-0.5 rounded text-[9px] ml-1`}>{editalRevisions.length}</span>}
           </button>
-          <button onClick={() => setActiveTab('notas')} className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'notas' ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
-             <FileText className="w-4 h-4"/> Notas
+          <button onClick={() => setActiveTab('notas')} className={`px-4 sm:px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider sm:tracking-widest transition-all flex items-center gap-2 ${activeTab === 'notas' ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
+             <FileText className="w-4 h-4 shrink-0"/> Notas
              {allNotes.length > 0 && <span className={`${activeTab === 'notas' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'} px-1.5 py-0.5 rounded text-[9px] ml-1`}>{allNotes.length}</span>}
           </button>
         </div>
@@ -212,8 +221,8 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
         {activeTab === 'topicos' && (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {/* Stats Bar */}
-            <div className="flex flex-col sm:flex-row justify-between items-end gap-6 mb-10 shrink-0">
-               <div className="flex-1 w-full max-w-md">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 sm:gap-6 mb-6 sm:mb-10 shrink-0">
+               <div className="flex-1 w-full sm:max-w-md">
                   <div className="flex justify-between items-center mb-2.5">
                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Progresso Geral</span>
                      <span className="text-sm font-mono font-bold text-blue-800">{stats.percent}%</span>
@@ -223,10 +232,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                   </div>
                </div>
 
-               <div className="flex items-center gap-1 p-1 bg-slate-100 border border-slate-200 rounded-xl shrink-0">
-                  <button onClick={() => setFilter('all')} className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filter==='all' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>Tudo</button>
-                  <button onClick={() => setFilter('pending')} className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filter==='pending' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>Pendentes</button>
-                  <button onClick={() => setFilter('completed')} className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filter==='completed' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>Concluídos</button>
+               <div className="flex items-center gap-1 p-1 bg-slate-100 border border-slate-200 rounded-xl shrink-0 w-full sm:w-auto overflow-x-auto hide-scrollbar">
+                  <button onClick={() => setFilter('all')} className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filter==='all' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>Tudo</button>
+                  <button onClick={() => setFilter('pending')} className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filter==='pending' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>Pendentes</button>
+                  <button onClick={() => setFilter('completed')} className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filter==='completed' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>Concluídos</button>
                </div>
             </div>
 
@@ -244,6 +253,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                            <span onDoubleClick={() => handleEdit(area.id, area.area)} className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em] cursor-text">{area.area}</span>
                          )}
                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setAiModal({isOpen: true, editalId: edital.id, areaId: area.id})} className="p-1 text-slate-400 hover:text-amber-500" title="Gerar Matéria com IA"><Sparkles className="w-3.5 h-3.5" /></button>
                             <button onClick={() => addItem(edital.id, area.id)} className="p-1 text-slate-400 hover:text-blue-800" title="Add Matéria"><Plus className="w-3.5 h-3.5" /></button>
                             <button onClick={() => confirm("Excluir área?") && deleteItem(edital.id, area.id, '', '', 'area')} className="p-1 text-slate-400 hover:text-rose-400" title="Delete Área"><Trash2 className="w-3.5 h-3.5" /></button>
                          </div>
@@ -320,8 +330,8 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                  return (
                                      <div key={topico.id}>
                                       {tMatch && (
-                                        <div className={`grid lg:grid-cols-12 border-b border-slate-200 py-4 px-8 items-center group/item transition-colors ${topico.visto ? 'bg-blue-900' : 'hover:bg-slate-50'}`}>
-                                           <div className="col-span-6 flex items-center gap-4">
+                                        <div className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-3 lg:gap-y-0 border-b border-slate-200 py-3 sm:py-4 px-4 sm:px-8 items-start lg:items-center group/item transition-colors ${topico.visto ? 'bg-blue-900' : 'hover:bg-slate-50'}`}>
+                                           <div className="lg:col-span-6 flex items-center gap-3 sm:gap-4 w-full">
                                               <label className="relative flex items-center justify-center cursor-pointer shrink-0">
                                                 <input type="checkbox" checked={topico.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id)} />
                                                 <div className={`w-4 h-4 border rounded transition-all flex items-center justify-center ${topico.visto ? 'bg-white border-white' : 'border-slate-300 peer-checked:bg-blue-900 peer-checked:border-blue-900'}`}>
@@ -332,40 +342,42 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                 {editingItemId === topico.id ? (
                                                   <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'topico')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'topico')} className={`bg-transparent w-full outline-none ${topico.visto ? 'text-white' : 'text-slate-900'}`} />
                                                 ) : (
-                                                  <span onDoubleClick={() => handleEdit(topico.id, topico.titulo)} className="cursor-text">{topico.titulo}</span>
+                                                  <span onDoubleClick={() => handleEdit(topico.id, topico.titulo)} className="cursor-text break-words w-full line-clamp-2">{topico.titulo}</span>
                                                 )}
                                                 {topicoProgress !== null && topicoProgress > 0 && (
-                                                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md self-center ${topico.visto ? 'text-white bg-white/20' : 'text-blue-800 bg-blue-900/10'}`}>{topicoProgress}%</span>
+                                                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md self-center shrink-0 ${topico.visto ? 'text-white bg-white/20' : 'text-blue-800 bg-blue-900/10'}`}>{topicoProgress}%</span>
                                                 )}
                                               </div>
                                            </div>
                                            
-                                           <div className="col-span-2 flex justify-center">
-                                              <div className={`flex shadow-sm border rounded-md overflow-hidden text-[10px] ${topico.visto ? 'bg-white/10 border-white/20' : 'bg-white border-slate-300'}`}>
-                                                 <input type="number" placeholder="Ac." value={topico.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, parseInt(e.target.value)||0, topico.erros||0)} className={`w-9 text-center bg-transparent py-1 outline-none font-mono ${topico.visto ? 'text-emerald-300 placeholder-white/30' : 'text-emerald-400'}`} />
-                                                 <div className={`w-px h-3 self-center ${topico.visto ? 'bg-white/20' : 'bg-slate-200'}`}></div>
-                                                 <input type="number" placeholder="Er." value={topico.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, topico.acertos||0, parseInt(e.target.value)||0)} className={`w-9 text-center bg-transparent py-1 outline-none font-mono ${topico.visto ? 'text-rose-300 placeholder-white/30' : 'text-rose-400'}`} />
-                                              </div>
-                                           </div>
-
-                                           <div className={`col-span-1 text-center font-mono text-[10px] ${topico.visto ? 'text-white/70' : 'text-slate-500'}`}>
-                                              <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={`uppercase transition-colors ${topico.visto ? 'hover:text-white' : 'hover:text-blue-800'}`}>
-                                                 {topico.data_estudo ? format(new Date(topico.data_estudo), "dd/MM") : "—"}
-                                              </button>
-                                           </div>
-
-                                           <div className="col-span-2 text-center font-mono text-[10px]">
-                                              {nextRevT ? (
-                                                <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={isDelayedT ? (topico.visto ? 'text-rose-200 hover:opacity-75' : 'text-rose-400 hover:opacity-75') : isDueTodayT ? (topico.visto ? 'text-amber-200 hover:opacity-75' : 'text-amber-400 hover:opacity-75') : (topico.visto ? 'text-white underline decoration-white/30 hover:opacity-75' : 'text-blue-800 underline decoration-blue-800/30 hover:opacity-75')}>
-                                                  {format(new Date(nextRevT), "dd/MM")}
+                                           <div className="w-full lg:col-span-6 flex items-center justify-between lg:grid lg:grid-cols-6 gap-2 sm:gap-4 pl-7 lg:pl-0">
+                                             <div className="lg:col-span-2 flex justify-center">
+                                                <div className={`flex shadow-sm border rounded-md overflow-hidden text-[10px] ${topico.visto ? 'bg-white/10 border-white/20' : 'bg-white border-slate-300'}`}>
+                                                   <input type="number" placeholder="Ac." value={topico.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, parseInt(e.target.value)||0, topico.erros||0)} className={`w-8 lg:w-9 text-center bg-transparent py-1 outline-none font-mono ${topico.visto ? 'text-emerald-300 placeholder-white/30' : 'text-emerald-400'}`} />
+                                                   <div className={`w-px h-3 self-center ${topico.visto ? 'bg-white/20' : 'bg-slate-200'}`}></div>
+                                                   <input type="number" placeholder="Er." value={topico.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, topico.acertos||0, parseInt(e.target.value)||0)} className={`w-8 lg:w-9 text-center bg-transparent py-1 outline-none font-mono ${topico.visto ? 'text-rose-300 placeholder-white/30' : 'text-rose-400'}`} />
+                                                </div>
+                                             </div>
+  
+                                             <div className={`lg:col-span-1 text-center font-mono text-[10px] ${topico.visto ? 'text-white/70' : 'text-slate-500'}`}>
+                                                <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={`uppercase transition-colors ${topico.visto ? 'hover:text-white' : 'hover:text-blue-800'}`}>
+                                                   {topico.data_estudo ? format(new Date(topico.data_estudo), "dd/MM") : "—"}
                                                 </button>
-                                              ) : <span className={topico.visto ? 'text-white/50' : 'text-slate-700'}>—</span>}
-                                           </div>
-
-                                           <div className="col-span-1 flex justify-end gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                              <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, currentNote: topico.notas || '', title: topico.titulo })} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-amber-400'}`}><StickyNote className="w-3 h-3" /></button>
-                                              <button onClick={() => addItem(edital.id, area.id, materia.id, topico.id)} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-blue-800'}`}><Plus className="w-3 h-3" /></button>
-                                              <button onClick={() => confirm("Excluir tópico?") && deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-500 hover:text-rose-400'}`}><Trash2 className="w-3 h-3" /></button>
+                                             </div>
+  
+                                             <div className="lg:col-span-2 text-center font-mono text-[10px]">
+                                                {nextRevT ? (
+                                                  <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={isDelayedT ? (topico.visto ? 'text-rose-200 hover:opacity-75' : 'text-rose-400 hover:opacity-75') : isDueTodayT ? (topico.visto ? 'text-amber-200 hover:opacity-75' : 'text-amber-400 hover:opacity-75') : (topico.visto ? 'text-white underline decoration-white/30 hover:opacity-75' : 'text-blue-800 underline decoration-blue-800/30 hover:opacity-75')}>
+                                                    {format(new Date(nextRevT), "dd/MM")}
+                                                  </button>
+                                                ) : <span className={topico.visto ? 'text-white/50' : 'text-slate-700'}>—</span>}
+                                             </div>
+  
+                                             <div className="lg:col-span-1 flex justify-end gap-1 opacity-100 lg:opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, currentNote: topico.notas || '', title: topico.titulo })} className={`p-1.5 lg:p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-amber-400'}`}><StickyNote className="w-3 h-3 lg:w-3 lg:h-3" /></button>
+                                                <button onClick={() => addItem(edital.id, area.id, materia.id, topico.id)} className={`p-1.5 lg:p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-blue-800'}`}><Plus className="w-3 h-3 lg:w-3 lg:h-3" /></button>
+                                                <button onClick={() => confirm("Excluir tópico?") && deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className={`p-1.5 lg:p-1 ${topico.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-500 hover:text-rose-400'}`}><Trash2 className="w-3 h-3 lg:w-3 lg:h-3" /></button>
+                                             </div>
                                            </div>
                                         </div>
                                       )}
@@ -378,48 +390,50 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                               const isDueTodayS = nextRSub && isToday(nextRSub);
 
                                               return (
-                                                <div key={sub.id} className={`grid lg:grid-cols-12 border-b border-slate-200 py-3 px-8 items-center bg-slate-50/10 group/sub transition-colors ${sub.visto ? 'bg-blue-900 border-blue-800' : 'hover:bg-slate-50'}`}>
-                                                   <div className="col-span-6 flex items-center gap-4 pl-6">
-                                                      <CornerDownRight className={`w-3.5 h-3.5 ${sub.visto ? 'text-white/40' : 'text-slate-400'}`} />
+                                                <div key={sub.id} className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-3 lg:gap-y-0 border-b border-slate-200 py-3 px-4 sm:px-8 items-start lg:items-center bg-slate-50/10 group/sub transition-colors ${sub.visto ? 'bg-blue-900 border-blue-800' : 'hover:bg-slate-50'}`}>
+                                                   <div className="lg:col-span-6 flex items-center gap-3 sm:gap-4 pl-0 sm:pl-6 w-full">
+                                                      <CornerDownRight className={`w-3.5 h-3.5 shrink-0 ml-2 sm:ml-0 ${sub.visto ? 'text-white/40' : 'text-slate-400'}`} />
                                                       <label className="relative flex items-center justify-center cursor-pointer shrink-0">
                                                         <input type="checkbox" checked={sub.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id, sub.id)} />
                                                         <div className={`w-3.5 h-3.5 border rounded transition-all flex items-center justify-center ${sub.visto ? 'bg-white border-white' : 'border-slate-300 peer-checked:bg-blue-900 peer-checked:border-blue-900'}`}>
                                                            <Check className={`w-2.5 h-2.5 opacity-0 peer-checked:opacity-100 transition-opacity ${sub.visto ? 'text-blue-900' : 'text-white'}`} strokeWidth={3} />
                                                         </div>
                                                       </label>
-                                                      <div className={`text-[11px] flex-1 ${sub.visto ? 'text-white line-through opacity-80' : 'text-slate-700'}`}>
+                                                      <div className={`text-[11px] flex-1 break-words w-full ${sub.visto ? 'text-white line-through opacity-80' : 'text-slate-700'}`}>
                                                         {editingItemId === sub.id ? (
                                                           <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} className={`bg-transparent w-full outline-none ${sub.visto ? 'text-white' : 'text-slate-900'}`} />
                                                         ) : (
-                                                          <span onDoubleClick={() => handleEdit(sub.id, sub.titulo)} className="cursor-text">{sub.titulo}</span>
+                                                          <span onDoubleClick={() => handleEdit(sub.id, sub.titulo)} className="cursor-text line-clamp-2">{sub.titulo}</span>
                                                         )}
                                                       </div>
                                                    </div>
-
-                                                   <div className="col-span-2 flex justify-center">
-                                                      <div className={`flex border rounded text-[9px] opacity-70 ${sub.visto ? 'bg-white/10 border-white/20' : 'bg-white border-slate-200'}`}>
-                                                         <input type="number" placeholder="Ac." value={sub.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, parseInt(e.target.value)||0, sub.erros||0)} className={`w-8 text-center bg-transparent py-0.5 outline-none font-mono ${sub.visto ? 'text-emerald-300' : 'text-emerald-400/80'}`} />
-                                                         <input type="number" placeholder="Er." value={sub.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, sub.acertos||0, parseInt(e.target.value)||0)} className={`w-8 text-center bg-transparent py-0.5 outline-none font-mono ${sub.visto ? 'text-rose-300' : 'text-rose-400/80'}`} />
-                                                      </div>
-                                                   </div>
-
-                                                   <div className={`col-span-1 text-center font-mono text-[9px] ${sub.visto ? 'text-white/70' : 'text-slate-400'}`}>
-                                                      <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 transition-colors ${sub.visto ? 'hover:text-white' : 'hover:text-blue-800'}`}>
-                                                         {sub.data_estudo ? format(new Date(sub.data_estudo), "dd/MM") : "—"}
-                                                      </button>
-                                                   </div>
-
-                                                   <div className="col-span-2 text-center font-mono text-[9px]">
-                                                      {nextRSub ? (
-                                                        <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 ${isDelayedS ? (sub.visto ? 'text-rose-200' : 'text-rose-400/70') : isDueTodayS ? (sub.visto ? 'text-amber-200' : 'text-amber-400/70') : (sub.visto ? 'text-white' : 'text-blue-800/70')}`}>
-                                                          {format(new Date(nextRSub), "dd/MM")}
+                                                   
+                                                   <div className="w-full lg:col-span-6 flex items-center justify-between lg:grid lg:grid-cols-6 gap-2 sm:gap-4 pl-10 sm:pl-6 lg:pl-0">
+                                                     <div className="lg:col-span-2 flex justify-center">
+                                                        <div className={`flex border rounded text-[9px] opacity-70 ${sub.visto ? 'bg-white/10 border-white/20' : 'bg-white border-slate-200'}`}>
+                                                           <input type="number" placeholder="Ac." value={sub.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, parseInt(e.target.value)||0, sub.erros||0)} className={`w-8 text-center bg-transparent py-0.5 outline-none font-mono ${sub.visto ? 'text-emerald-300' : 'text-emerald-400/80'}`} />
+                                                           <input type="number" placeholder="Er." value={sub.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, sub.acertos||0, parseInt(e.target.value)||0)} className={`w-8 text-center bg-transparent py-0.5 outline-none font-mono ${sub.visto ? 'text-rose-300' : 'text-rose-400/80'}`} />
+                                                        </div>
+                                                     </div>
+  
+                                                     <div className={`lg:col-span-1 text-center font-mono text-[9px] ${sub.visto ? 'text-white/70' : 'text-slate-400'}`}>
+                                                        <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 transition-colors ${sub.visto ? 'hover:text-white' : 'hover:text-blue-800'}`}>
+                                                           {sub.data_estudo ? format(new Date(sub.data_estudo), "dd/MM") : "—"}
                                                         </button>
-                                                      ) : <span className={sub.visto ? 'text-white/50' : 'text-slate-800'}>—</span>}
-                                                   </div>
-
-                                                   <div className="col-span-1 flex justify-end gap-1 opacity-0 group-hover/sub:opacity-100 transition-opacity">
-                                                      <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, currentNote: sub.notas || '', title: sub.titulo })} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-amber-400'}`}><StickyNote className="w-3 h-3" /></button>
-                                                      <button onClick={() => confirm("Excluir subtópico?") && deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico', topico.id)} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-400'}`}><Trash2 className="w-3 h-3" /></button>
+                                                     </div>
+  
+                                                     <div className="lg:col-span-2 text-center font-mono text-[9px]">
+                                                        {nextRSub ? (
+                                                          <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 ${isDelayedS ? (sub.visto ? 'text-rose-200' : 'text-rose-400/70') : isDueTodayS ? (sub.visto ? 'text-amber-200' : 'text-amber-400/70') : (sub.visto ? 'text-white' : 'text-blue-800/70')}`}>
+                                                            {format(new Date(nextRSub), "dd/MM")}
+                                                          </button>
+                                                        ) : <span className={sub.visto ? 'text-white/50' : 'text-slate-800'}>—</span>}
+                                                     </div>
+  
+                                                     <div className="lg:col-span-1 flex justify-end gap-1 opacity-100 lg:opacity-0 group-hover/sub:opacity-100 transition-opacity">
+                                                        <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, currentNote: sub.notas || '', title: sub.titulo })} className={`p-1.5 lg:p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-amber-400'}`}><StickyNote className="w-3 h-3 lg:w-3 lg:h-3" /></button>
+                                                        <button onClick={() => confirm("Excluir subtópico?") && deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico', topico.id)} className={`p-1.5 lg:p-1 ${sub.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-400'}`}><Trash2 className="w-3 h-3 lg:w-3 lg:h-3" /></button>
+                                                     </div>
                                                    </div>
                                                 </div>
                                               );
@@ -647,6 +661,90 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                 <button onClick={() => setHistoryModal(null)} className="px-6 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 uppercase tracking-widest transition-colors">Fechar</button>
              </div>
            </div>
+        </div>
+      )}
+
+      {/* AI Generate Modal */}
+      {aiModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-50 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-slate-200/60 flex flex-col max-h-[90vh]">
+            <div className="flex items-center gap-4 py-5 px-6 sm:px-8 border-b border-slate-200 bg-white">
+              <div className="w-10 h-10 bg-amber-500 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-display font-semibold text-slate-800 text-lg">Gerar Matéria com IA</h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">Cole o texto do edital contendo a matéria, tópicos e subtópicos.</p>
+              </div>
+              <button 
+                 onClick={() => {
+                   if(aiLoading) return;
+                   setAiModal(null);
+                   setAiText("");
+                   setAiError("");
+                 }} 
+                 className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-800 rounded-xl transition-all"
+                 disabled={aiLoading}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 sm:p-8 flex-1 overflow-y-auto">
+              <textarea 
+                 value={aiText}
+                 onChange={e => setAiText(e.target.value)}
+                 className="w-full h-48 sm:h-64 p-4 text-sm bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none custom-scrollbar"
+                 placeholder="Ex: LÍNGUA PORTUGUESA: 1 Compreensão e interpretação de textos..."
+                 disabled={aiLoading}
+              ></textarea>
+              {aiError && (
+                <div className="mt-4 text-xs font-medium text-rose-500 bg-rose-50 p-3 rounded-xl border border-rose-100">
+                  {aiError}
+                </div>
+              )}
+            </div>
+            <div className="p-6 border-t border-slate-200 flex justify-end gap-3 bg-white shrink-0">
+               <button 
+                 onClick={() => {
+                   if(aiLoading) return;
+                   setAiModal(null);
+                   setAiText("");
+                   setAiError("");
+                 }} 
+                 disabled={aiLoading}
+                 className="px-6 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 uppercase tracking-widest transition-colors disabled:opacity-50"
+               >
+                 Cancelar
+               </button>
+               <button 
+                  onClick={async () => {
+                    if (!aiText.trim()) return;
+                    setAiLoading(true);
+                    setAiError("");
+                    try {
+                      const parsed = await parseEditalText(aiText);
+                      const materiasToAdd: any[] = [];
+                      parsed.forEach((a: any) => materiasToAdd.push(...a.materias));
+                      if (materiasToAdd.length > 0) {
+                        addMaterias(aiModal.editalId, aiModal.areaId, materiasToAdd);
+                        setAiModal(null);
+                        setAiText("");
+                      } else {
+                        setAiError("Não foi possível extrair matérias deste texto.");
+                      }
+                    } catch (err: any) {
+                      setAiError(err?.message || "Erro ao conectar com a IA.");
+                    } finally {
+                      setAiLoading(false);
+                    }
+                  }}
+                  disabled={!aiText.trim() || aiLoading}
+                  className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50 flex items-center gap-2"
+               >
+                  {aiLoading ? <><Loader2 className="w-3.5 h-3.5 animate-spin"/> Gerando...</> : 'Gerar Matéria'}
+               </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

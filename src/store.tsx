@@ -14,6 +14,7 @@ interface EditalContextType {
   updateItemTitle: (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'edital' | 'area' | 'materia' | 'topico' | 'subtopico') => void;
   deleteItem: (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area' | 'materia' | 'topico' | 'subtopico') => void;
   addItem: (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title?: string) => void;
+  addMaterias: (editalId: string, areaId: string, materias: Materia[]) => void;
   addCustomRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => void;
   removeRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => void;
   setNextRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
@@ -165,6 +166,15 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         const materia = area?.materias.find(m => m.id === materiaId);
         const topico = materia?.topicos.find(t => t.id === topicoId);
         if (topico) topico.subtopicos.push({ id: uuidv4(), titulo: title, visto: false, data_estudo: null, revisoes_agendadas: [] });
+      }
+    });
+  };
+
+  const addMaterias = (editalId: string, areaId: string, materias: Materia[]) => {
+    handleUpdate(editalId, (edital) => {
+      const area = edital.areas.find(a => a.id === areaId);
+      if (area) {
+        area.materias.push(...materias);
       }
     });
   };
@@ -384,7 +394,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   revisions.sort((a, b) => b.diasAtraso - a.diasAtraso);
 
   return (
-    <EditalContext.Provider value={{ editais, addEdital, deleteEdital, toggleVisto, updateItemTitle, deleteItem, addItem, addCustomRevisionDate, removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, updateMetricas, revisions, completeRevision }}>
+    <EditalContext.Provider value={{ editais, addEdital, deleteEdital, toggleVisto, updateItemTitle, deleteItem, addItem, addMaterias, addCustomRevisionDate, removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, updateMetricas, revisions, completeRevision }}>
       {children}
     </EditalContext.Provider>
   );
