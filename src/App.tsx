@@ -3,8 +3,9 @@ import { EditalProvider, useEdital } from "./store";
 import { Dashboard } from "./components/Dashboard";
 import { ParseEdital } from "./components/ParseEdital";
 import { EditalView } from "./components/EditalView";
+import { RevisaoSugestoes } from "./components/RevisaoSugestoes";
 import { FloatingPomodoro } from "./components/Pomodoro";
-import { LayoutDashboard, FileText, Plus, BookOpen, Menu, X, ChevronDown, LogOut, Loader2 } from "lucide-react";
+import { LayoutDashboard, FileText, Plus, BookOpen, Menu, X, ChevronDown, LogOut, Loader2, History } from "lucide-react";
 import { useAuth } from "./AuthContext";
 
 function AppContent() {
@@ -39,6 +40,12 @@ function AppContent() {
               <LayoutDashboard className="w-4 h-4" /> Painel Geral
             </button>
             <button
+              onClick={() => navigateTo("revisao")}
+              className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "revisao" ? "bg-blue-900 text-white shadow-md shadow-blue-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
+            >
+              <History className="w-4 h-4" /> Revisão Inteligente
+            </button>
+            <button
               onClick={() => navigateTo("import")}
               className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "import" ? "bg-blue-900 text-white shadow-md shadow-blue-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
             >
@@ -70,13 +77,15 @@ function AppContent() {
 
       {/* Mobile Top Navbar */}
       <header className="md:hidden h-16 bg-white flex items-center justify-between px-4 z-40 border-b border-slate-200 shrink-0 absolute top-0 left-0 right-0">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigateTo('dashboard')}>
-            <div className="w-4 h-4 bg-blue-900 rounded-lg shadow-sm shadow-blue-900/20"></div>
-            <h1 className="font-display font-bold text-slate-900 tracking-tight text-lg">VER.AI</h1>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-400 hover:text-slate-900">
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigateTo('dashboard')}>
+              <div className="w-4 h-4 bg-blue-900 rounded-lg shadow-sm shadow-blue-900/20"></div>
+              <h1 className="font-display font-bold text-slate-900 tracking-tight text-lg">VER.AI</h1>
+            </div>
           </div>
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-400 hover:text-slate-900">
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
       </header>
 
       {/* Mobile Menu */}
@@ -89,6 +98,13 @@ function AppContent() {
             >
               <LayoutDashboard className="w-5 h-5" />
               <span>Painel Geral</span>
+            </button>
+            <button
+              onClick={() => navigateTo("revisao")}
+              className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-1 border ${currentView === "revisao" ? "bg-blue-900 text-white shadow-md border-transparent" : "text-slate-500 hover:bg-slate-100 border-transparent"}`}
+            >
+              <History className="w-5 h-5" />
+              <span>Revisão Inteligente</span>
             </button>
             <button
                onClick={() => navigateTo("import")}
@@ -128,6 +144,7 @@ function AppContent() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden h-full pt-16 md:pt-0">
          {currentView === "dashboard" && <Dashboard />}
+         {currentView === "revisao" && <RevisaoSugestoes />}
          {currentView === "import" && <ParseEdital onSuccess={() => navigateTo("dashboard")} />}
          {currentView.startsWith("edital-") && (
             (() => {

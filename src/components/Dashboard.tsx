@@ -173,11 +173,11 @@ export function Dashboard() {
                  ) : (
                     <div className="space-y-2">
                        {revisions.map((rev, idx) => (
-                         <div key={`${rev.topicoOuSubId}-${idx}`} className={`group flex items-center justify-between p-5 rounded-2xl border border-transparent hover:bg-white shadow-sm hover:border-slate-200 transition-all ${rev.atrasada ? 'bg-rose-500/5' : 'bg-transparent'}`}>
+                         <div key={`${rev.topicoOuSubId}-${idx}`} className={`group flex items-center justify-between p-5 rounded-2xl border border-transparent hover:bg-slate-50 shadow-sm hover:border-slate-200 transition-all ${rev.atrasada ? 'bg-rose-500/5' : 'bg-transparent'}`}>
                             <div className="flex items-center gap-5 flex-1 min-w-0">
                                <label className="relative flex items-center justify-center cursor-pointer shrink-0">
                                   <input type="checkbox" className="peer sr-only" onChange={() => completeRevision(rev.topicoOuSubId, rev.dataRevisao)} />
-                                  <div className="w-5 h-5 border-2 border-slate-300 rounded-lg peer-checked:bg-white peer-checked:border-white transition-all flex items-center justify-center group-hover:border-blue-900/50">
+                                  <div className="w-5 h-5 border-2 border-slate-300 rounded-lg peer-checked:bg-blue-900 peer-checked:border-blue-900 transition-all flex items-center justify-center group-hover:border-blue-900/50">
                                      <CheckCircle2 className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                                   </div>
                                </label>

@@ -126,7 +126,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
           </div>
         </div>
         <div className="flex items-center gap-4">
-           <button onClick={() => addItem(edital.id)} className="group flex items-center gap-2 px-4 py-2 bg-blue-900 hover:bg-blue-900 text-slate-900 rounded-lg text-xs font-bold transition-all shadow-lg shadow-blue-900/20">
+           <button onClick={() => addItem(edital.id)} className="group flex items-center gap-2 px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-blue-900/20">
              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
              Área
            </button>
@@ -143,16 +143,16 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
       <div className="flex-1 px-8 pb-32 pt-8 overflow-hidden flex flex-col max-w-7xl mx-auto w-full">
         {/* Tabs Bar */}
         <div className="flex items-center gap-1 mb-10 bg-white shadow-sm p-1.5 rounded-2xl border border-slate-200 w-fit">
-          <button onClick={() => setActiveTab('topicos')} className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'topicos' ? 'bg-blue-900 text-slate-900 shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
+          <button onClick={() => setActiveTab('topicos')} className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'topicos' ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
              <ListTodo className="w-4 h-4"/> Conteúdo
           </button>
-          <button onClick={() => setActiveTab('revisoes')} className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'revisoes' ? 'bg-blue-900 text-slate-900 shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
+          <button onClick={() => setActiveTab('revisoes')} className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'revisoes' ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
              <History className="w-4 h-4"/> Revisões
-             {editalRevisions.length > 0 && <span className={`${activeTab === 'revisoes' ? 'bg-slate-300' : 'bg-slate-100'} px-1.5 py-0.5 rounded text-[9px] ml-1`}>{editalRevisions.length}</span>}
+             {editalRevisions.length > 0 && <span className={`${activeTab === 'revisoes' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'} px-1.5 py-0.5 rounded text-[9px] ml-1`}>{editalRevisions.length}</span>}
           </button>
-          <button onClick={() => setActiveTab('notas')} className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'notas' ? 'bg-blue-900 text-slate-900 shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
+          <button onClick={() => setActiveTab('notas')} className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'notas' ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
              <FileText className="w-4 h-4"/> Notas
-             {allNotes.length > 0 && <span className={`${activeTab === 'notas' ? 'bg-slate-300' : 'bg-slate-100'} px-1.5 py-0.5 rounded text-[9px] ml-1`}>{allNotes.length}</span>}
+             {allNotes.length > 0 && <span className={`${activeTab === 'notas' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'} px-1.5 py-0.5 rounded text-[9px] ml-1`}>{allNotes.length}</span>}
           </button>
         </div>
 
@@ -492,7 +492,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
              </div>
              <div className="p-6 border-t border-slate-200 flex justify-end gap-3 bg-white">
                 <button onClick={() => setNotesModal(null)} className="px-6 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase tracking-widest">Cancelar</button>
-                <button onClick={() => { updateNota(edital.id, notesModal.areaId, notesModal.materiaId, notesModal.topicoId, notesModal.subtopicoId, notesModal.currentNote); setNotesModal(null); }} className="px-6 py-2.5 text-xs font-bold text-slate-900 bg-blue-900 hover:bg-blue-900 rounded-xl shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest">Salvar Nota</button>
+                <button onClick={() => { updateNota(edital.id, notesModal.areaId, notesModal.materiaId, notesModal.topicoId, notesModal.subtopicoId, notesModal.currentNote); setNotesModal(null); }} className="px-6 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest">Salvar Nota</button>
              </div>
            </div>
         </div>
