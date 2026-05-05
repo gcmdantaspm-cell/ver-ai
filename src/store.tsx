@@ -125,11 +125,13 @@ export function EditalProvider({ children }: { children: ReactNode }) {
             for (const topico of materia.topicos) {
               if (topico.id === itemId) {
                 topico.revisoes_agendadas = topico.revisoes_agendadas.filter(r => r !== dataRevisao);
+                topico.revisoes_concluidas = (topico.revisoes_concluidas || 0) + 1;
                 changed = true;
               }
               for (const sub of topico.subtopicos) {
                 if (sub.id === itemId) {
                   sub.revisoes_agendadas = sub.revisoes_agendadas.filter(r => r !== dataRevisao);
+                  sub.revisoes_concluidas = (sub.revisoes_concluidas || 0) + 1;
                   changed = true;
                 }
               }

@@ -4,6 +4,7 @@ export interface Subtopico {
   visto: boolean;
   data_estudo: string | null;
   revisoes_agendadas: string[]; // ISO 8601 strings
+  revisoes_concluidas?: number;
   notas?: string;
   acertos?: number;
   erros?: number;
@@ -15,6 +16,7 @@ export interface Topico {
   visto: boolean;
   data_estudo: string | null;
   revisoes_agendadas: string[]; // ISO 8601 strings
+  revisoes_concluidas?: number;
   notas?: string;
   acertos?: number;
   erros?: number;
