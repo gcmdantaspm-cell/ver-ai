@@ -161,20 +161,30 @@ function AppContent() {
 }
 
 function LoginScreen() {
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, authError } = useAuth();
   
   return (
-    <div className="flex items-center justify-center h-screen bg-slate-50 font-sans">
-      <div className="bg-white border border-slate-200 p-10 rounded-3xl max-w-sm w-full text-center shadow-2xl flex flex-col items-center">
+    <div className="flex items-center justify-center h-screen bg-slate-50 font-sans p-4">
+      <div className="bg-white border border-slate-200 p-10 rounded-3xl max-w-sm w-full text-center shadow-2xl flex flex-col items-center relative">
         <div className="w-12 h-12 bg-blue-900 rounded-xl shadow-lg shadow-blue-900/20 mb-6 flex items-center justify-center">
           <BookOpen className="w-6 h-6 text-slate-900" />
         </div>
         <h1 className="text-2xl font-display font-bold text-slate-900 mb-2">VER.AI</h1>
         <p className="text-sm text-slate-400 font-medium mb-8">Planeje e acompanhe seus estudos com IA.</p>
         
+        {authError && (
+          <div className="w-full bg-rose-50 border border-rose-100 text-rose-600 text-xs p-3 rounded-xl mb-6 text-left">
+             <span className="font-bold block mb-1">Erro de Login:</span>
+             <p>{authError}</p>
+             <p className="mt-2 text-[10px] text-rose-500/80">
+               Pode ocorrer se você estiver usando um navegador embutido (ex: Instagram, WhatsApp) ou se a "Prevenção de Rastreamento" estiver ativada no seu navegador móvel. Tente abrir o link diretamente no Safari ou Chrome.
+             </p>
+          </div>
+        )}
+
         <button 
           onClick={loginWithGoogle}
-          className="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold py-3 rounded-xl shadow-md transition-colors flex items-center justify-center gap-3"
+          className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-900 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-3"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="currentColor" fillRule="evenodd" d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z" />

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
+import { User, signInWithPopup, signInWithRedirect, GoogleAuthProvider, signOut, onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { doc, getDocFromServer } from 'firebase/firestore';
 
@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  authError: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     // Validate connection
@@ -29,6 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     testConnection();
 
+    // Check for redirect result in case of mobile redirect login
+    getRedirectResult(auth).catch(error => {
+      console.error("Redirect login error:", error);
+      setAuthError(error.message);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, (usr) => {
       setUser(usr);
       setLoading(false);
@@ -38,8 +46,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginWithGoogle = async () => {
+    setAuthError(null);
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    try {
+      // Use redirect on mobile to avoid popup blocking, otherwise popup
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      setAuthError(error.message);
+    }
   };
 
   const logout = async () => {
@@ -47,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, loading, loginWithGoogle, logout, authError }}>
       {children}
     </AuthContext.Provider>
   );
