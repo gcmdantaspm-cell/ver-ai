@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useEdital } from "../store";
 import { format, isPast, isToday } from "date-fns";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Edital } from "../types";
 import { 
   ChevronDown, 
@@ -16,7 +18,8 @@ import {
   ListTodo, 
   FileText, 
   BookOpen, 
-  CornerDownRight 
+  CornerDownRight,
+  Download
 } from "lucide-react";
 
 export function EditalView({ edital }: { edital: Edital, key?: string | number }) {
@@ -112,6 +115,39 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     }
   }
 
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    doc.setFont("helvetica");
+    doc.text(`Edital: ${edital.titulo}`, 14, 20);
+
+    const tableData: any[] = [];
+    edital.areas.forEach(area => {
+      tableData.push([{ content: `ÁREA: ${area.titulo}`, colSpan: 2, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }]);
+      area.materias.forEach(materia => {
+        tableData.push([{ content: `MATÉRIA: ${materia.titulo}`, colSpan: 2, styles: { fillColor: [245, 245, 245], fontStyle: 'bold', textColor: [50, 50, 50] } }]);
+        materia.topicos.forEach(topico => {
+           let status = topico.visto ? "Concluído" : "Pendente";
+           tableData.push([topico.titulo, status]);
+           topico.subtopicos.forEach(sub => {
+              let subStatus = sub.visto ? "Concluído" : "Pendente";
+              tableData.push([`  - ${sub.titulo}`, subStatus]);
+           });
+        });
+      });
+    });
+
+    autoTable(doc, {
+      startY: 28,
+      head: [['Conteúdo Programático', 'Status']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [30, 58, 138] },
+      styles: { fontSize: 10 }
+    });
+
+    doc.save(`edital_${edital.titulo.replace(/\\s+/g, '_').toLowerCase()}.pdf`);
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 selection:bg-blue-900/30 font-sans text-slate-800">
       {/* Header */}
@@ -137,14 +173,18 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
             <span className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">{stats.completed} de {stats.total} concluídos</span>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+           <button onClick={downloadPDF} className="group flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all shadow-sm">
+             <Download className="w-4 h-4" />
+             PDF
+           </button>
            <button onClick={() => addItem(edital.id)} className="group flex items-center gap-2 px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-blue-900/20">
              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
              Área
            </button>
            <button 
               onClick={() => confirm("Excluir edital completo?") && deleteEdital(edital.id)} 
-              className="p-2.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/5 rounded-xl transition-all border border-slate-200"
+              className="p-2.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/5 rounded-xl transition-all border border-slate-200 ml-2"
             >
              <Trash2 className="w-4 h-4" />
            </button>
