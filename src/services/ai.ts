@@ -8,7 +8,7 @@ const ai = new GoogleGenAI({ apiKey });
 export async function parseEditalText(text: string): Promise<AreaConhecimento[]> {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-pro",
+      model: "gemini-1.5-flash",
       contents: `You are a Senior Software Architect and Study Mentor.
 Extract the following text from a Public Exam Syllabus (Edital) into a structured JSON array.
 Follow the hierarchy: Area de Conhecimento -> Materias -> Topicos -> Subtopicos.
