@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { useEdital } from "../store";
 import { format, isFuture, isPast, isToday, parseISO } from "date-fns";
 import { Edital } from "../types";
-import { ChevronDown, ChevronRight, Plus, Edit2, Trash2, CalendarIcon, StickyNote, X, History, CheckCircle2, ListTodo, FileText, Bell, BookOpen, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Edit2, Trash2, CalendarIcon, StickyNote, X, History, CheckCircle2, ListTodo, FileText, Bell, BookOpen, Search, CornerDownRight } from "lucide-react";
 
 export function EditalView({ edital }: { edital: Edital, key?: string | number }) {
-  const { deleteEdital, toggleVisto, updateItemTitle, deleteItem, addItem, setNextRevisionDate, addCustomRevisionDate, removeRevisionDate, setStudyDate, updateNota, revisions } = useEdital();
+  const { deleteEdital, toggleVisto, updateItemTitle, deleteItem, addItem, setNextRevisionDate, addCustomRevisionDate, removeRevisionDate, setStudyDate, updateNota, updateMetricas, revisions } = useEdital();
   const [expandedMaterias, setExpandedMaterias] = useState<string[]>(() => {
     // Expand the first materia by default
     return edital.areas[0]?.materias[0] ? [edital.areas[0].materias[0].id] : [];
@@ -321,7 +321,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                               </label>
                                               <div className={`font-sans text-[13px] truncate pr-2 w-full ${sub.visto ? 'text-slate-500 line-through' : 'text-slate-400'}`}>
                                                 {editingItemId === sub.id ? (
-                                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} className="font-mono bg-[#0B1120] text-white px-3 leading-tight py-1 rounded-lg outline-none border border-indigo-500/50 w-full shadow-sm" />
+                                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'subtopico')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'subtopico')} className="font-mono bg-[#0B1120] text-white px-3 leading-tight py-1 rounded-lg outline-none border border-indigo-500/50 w-full shadow-sm" />
                                                 ) : (
                                                   <span onDoubleClick={() => handleEdit(sub.id, sub.titulo)}>{sub.titulo}</span>
                                                 )}
