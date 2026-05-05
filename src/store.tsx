@@ -12,6 +12,7 @@ interface EditalContextType {
   deleteItem: (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area' | 'materia' | 'topico' | 'subtopico') => void;
   addItem: (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title?: string) => void;
   addCustomRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => void;
+  removeRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => void;
   setNextRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   setStudyDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   updateNota: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, nota: string) => void;
@@ -147,6 +148,28 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         if (sub && !sub.revisoes_agendadas.includes(dateStr)) sub.revisoes_agendadas.push(dateStr);
       } else {
         if (!topico.revisoes_agendadas.includes(dateStr)) topico.revisoes_agendadas.push(dateStr);
+      }
+      return ns;
+    });
+  };
+
+  const removeRevisionDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => {
+    setEditais(prev => {
+      const ns = JSON.parse(JSON.stringify(prev)) as Edital[];
+      const edital = ns.find(e => e.id === editalId);
+      const area = edital?.areas.find(a => a.id === areaId);
+      const materia = area?.materias.find(m => m.id === materiaId);
+      const topico = materia?.topicos.find(t => t.id === topicoId);
+
+      if (!topico) return ns;
+
+      if (subtopicoId) {
+        const sub = topico.subtopicos.find(s => s.id === subtopicoId);
+        if (sub) {
+          sub.revisoes_agendadas = sub.revisoes_agendadas.filter(d => d !== dateStr);
+        }
+      } else {
+        topico.revisoes_agendadas = topico.revisoes_agendadas.filter(d => d !== dateStr);
       }
       return ns;
     });
@@ -330,7 +353,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   revisions.sort((a, b) => b.diasAtraso - a.diasAtraso);
 
   return (
-    <EditalContext.Provider value={{ editais, addEdital, deleteEdital, toggleVisto, updateItemTitle, deleteItem, addItem, addCustomRevisionDate, setNextRevisionDate, setStudyDate, updateNota, revisions, completeRevision }}>
+    <EditalContext.Provider value={{ editais, addEdital, deleteEdital, toggleVisto, updateItemTitle, deleteItem, addItem, addCustomRevisionDate, removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, revisions, completeRevision }}>
       {children}
     </EditalContext.Provider>
   );
