@@ -19,14 +19,14 @@ function AppContent() {
   };
 
   return (
-    <div className="flex h-screen bg-[#0B1120] font-sans text-slate-300 overflow-hidden relative">
+    <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden relative">
       
       {/* Sidebar on Desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#111827] border-r border-slate-800 z-40 shrink-0">
-         <div className="h-16 flex items-center px-6 border-b border-slate-800 shrink-0">
+      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 z-40 shrink-0">
+         <div className="h-16 flex items-center px-6 border-b border-slate-200 shrink-0">
              <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigateTo('dashboard')}>
-                <div className="w-5 h-5 bg-indigo-500 rounded-lg shadow-sm shadow-indigo-500/20"></div>
-                <h1 className="font-display font-bold text-white tracking-tight text-xl">VER.AI</h1>
+                <div className="w-5 h-5 bg-blue-900 rounded-lg shadow-sm shadow-blue-900/20"></div>
+                <h1 className="font-display font-bold text-slate-900 tracking-tight text-xl">VER.AI</h1>
              </div>
          </div>
 
@@ -34,13 +34,13 @@ function AppContent() {
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2 mb-2">Principal</span>
             <button
               onClick={() => navigateTo("dashboard")}
-              className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "dashboard" ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20" : "text-slate-400 hover:bg-[#1E293B] hover:text-white border border-transparent"}`}
+              className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "dashboard" ? "bg-blue-900/10 text-blue-800 border border-blue-900/20" : "text-slate-400 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
             >
               <LayoutDashboard className="w-4 h-4" /> Painel Geral
             </button>
             <button
               onClick={() => navigateTo("import")}
-              className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "import" ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20" : "text-slate-400 hover:bg-[#1E293B] hover:text-white border border-transparent"}`}
+              className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "import" ? "bg-blue-900/10 text-blue-800 border border-blue-900/20" : "text-slate-400 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
             >
               <Plus className="w-4 h-4" /> Novo Edital
             </button>
@@ -52,7 +52,7 @@ function AppContent() {
                   <button
                     key={e.id}
                     onClick={() => navigateTo(`edital-${e.id}`)}
-                    className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === `edital-${e.id}` ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20" : "text-slate-400 hover:bg-[#1E293B] hover:text-white border border-transparent"}`}
+                    className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === `edital-${e.id}` ? "bg-blue-900/10 text-blue-800 border border-blue-900/20" : "text-slate-400 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
                   >
                     <BookOpen className="w-4 h-4 shrink-0" />
                     <span className="truncate text-left flex-1">{e.titulo}</span>
@@ -61,38 +61,38 @@ function AppContent() {
               </>
             )}
          </nav>
-         <div className="p-4 border-t border-slate-800">
-           <button onClick={logout} className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-[#1E293B] transition-colors">
+         <div className="p-4 border-t border-slate-200">
+           <button onClick={logout} className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors">
               <LogOut className="w-4 h-4" /> Sair
            </button>
          </div>
       </aside>
 
       {/* Mobile Top Navbar */}
-      <header className="md:hidden h-16 bg-[#111827] flex items-center justify-between px-4 z-40 border-b border-slate-800 shrink-0 absolute top-0 left-0 right-0">
+      <header className="md:hidden h-16 bg-white flex items-center justify-between px-4 z-40 border-b border-slate-200 shrink-0 absolute top-0 left-0 right-0">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigateTo('dashboard')}>
-            <div className="w-4 h-4 bg-indigo-500 rounded-lg shadow-sm shadow-indigo-500/20"></div>
-            <h1 className="font-display font-bold text-white tracking-tight text-lg">VER.AI</h1>
+            <div className="w-4 h-4 bg-blue-900 rounded-lg shadow-sm shadow-blue-900/20"></div>
+            <h1 className="font-display font-bold text-slate-900 tracking-tight text-lg">VER.AI</h1>
           </div>
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-400 hover:text-white">
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-400 hover:text-slate-900">
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
       </header>
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-16 left-0 right-0 bottom-0 bg-[#111827] z-30 flex flex-col p-4 shadow-xl animate-in fade-in slide-in-from-top-2 overflow-y-auto">
+        <div className="md:hidden absolute top-16 left-0 right-0 bottom-0 bg-white z-30 flex flex-col p-4 shadow-xl animate-in fade-in slide-in-from-top-2 overflow-y-auto">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2 mb-2 mt-2">Principal</span>
             <button
               onClick={() => navigateTo("dashboard")}
-              className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-1 border ${currentView === "dashboard" ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" : "text-slate-400 hover:bg-[#1E293B] border-transparent"}`}
+              className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-1 border ${currentView === "dashboard" ? "bg-blue-900/10 text-blue-800 border-blue-900/20" : "text-slate-400 hover:bg-slate-100 border-transparent"}`}
             >
               <LayoutDashboard className="w-5 h-5" />
               <span>Painel Geral</span>
             </button>
             <button
                onClick={() => navigateTo("import")}
-              className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-6 border ${currentView === "import" ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" : "text-slate-400 hover:bg-[#1E293B] border-transparent"}`}
+              className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-6 border ${currentView === "import" ? "bg-blue-900/10 text-blue-800 border-blue-900/20" : "text-slate-400 hover:bg-slate-100 border-transparent"}`}
             >
                <Plus className="w-5 h-5" />
                <span>Novo Edital</span>
@@ -107,7 +107,7 @@ function AppContent() {
                   <button
                     key={edital.id}
                     onClick={() => navigateTo(`edital-${edital.id}`)}
-                    className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-1 border ${currentView === `edital-${edital.id}` ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" : "text-slate-400 hover:bg-[#1E293B] border-transparent"}`}
+                    className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-1 border ${currentView === `edital-${edital.id}` ? "bg-blue-900/10 text-blue-800 border-blue-900/20" : "text-slate-400 hover:bg-slate-100 border-transparent"}`}
                   >
                       <BookOpen className="w-5 h-5 shrink-0" />
                       <span className="truncate">{edital.titulo}</span>
@@ -117,7 +117,7 @@ function AppContent() {
             )}
             
             <div className="mt-auto pt-6">
-              <button onClick={logout} className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:bg-[#1E293B] transition-colors border border-transparent">
+              <button onClick={logout} className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-100 transition-colors border border-transparent">
                 <LogOut className="w-5 h-5" />
                 <span>Sair da conta</span>
               </button>
@@ -147,12 +147,12 @@ function LoginScreen() {
   const { loginWithGoogle } = useAuth();
   
   return (
-    <div className="flex items-center justify-center h-screen bg-[#0B1120] font-sans">
-      <div className="bg-[#111827] border border-slate-800 p-10 rounded-3xl max-w-sm w-full text-center shadow-2xl flex flex-col items-center">
-        <div className="w-12 h-12 bg-indigo-500 rounded-xl shadow-lg shadow-indigo-500/20 mb-6 flex items-center justify-center">
-          <BookOpen className="w-6 h-6 text-white" />
+    <div className="flex items-center justify-center h-screen bg-slate-50 font-sans">
+      <div className="bg-white border border-slate-200 p-10 rounded-3xl max-w-sm w-full text-center shadow-2xl flex flex-col items-center">
+        <div className="w-12 h-12 bg-blue-900 rounded-xl shadow-lg shadow-blue-900/20 mb-6 flex items-center justify-center">
+          <BookOpen className="w-6 h-6 text-slate-900" />
         </div>
-        <h1 className="text-2xl font-display font-bold text-white mb-2">VER.AI</h1>
+        <h1 className="text-2xl font-display font-bold text-slate-900 mb-2">VER.AI</h1>
         <p className="text-sm text-slate-400 font-medium mb-8">Planeje e acompanhe seus estudos com IA.</p>
         
         <button 
@@ -174,8 +174,8 @@ export default function App() {
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#0B1120]">
-        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <Loader2 className="w-8 h-8 text-blue-900 animate-spin" />
       </div>
     );
   }

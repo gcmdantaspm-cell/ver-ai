@@ -35,11 +35,11 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#030712] text-slate-300 selection:bg-indigo-500/30">
-        <header className="h-20 px-8 flex items-center justify-between shrink-0 border-b border-white/5 bg-[#030712]/50 backdrop-blur-xl sticky top-0 z-30">
+    <div className="flex-1 flex flex-col h-full bg-slate-50 text-slate-800 selection:bg-blue-900/30">
+        <header className="h-20 px-8 flex items-center justify-between shrink-0 border-b border-slate-200 bg-slate-50/50 backdrop-blur-xl sticky top-0 z-30">
           <div className="flex flex-col">
-            <h2 className="text-xl font-display font-bold text-white tracking-tight">Importação Inteligente</h2>
-            <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-[0.2em] mt-1">IA-Powered verticalization</p>
+            <h2 className="text-xl font-display font-bold text-slate-900 tracking-tight">Importação Inteligente</h2>
+            <p className="text-[10px] text-blue-800 font-bold uppercase tracking-[0.2em] mt-1">IA-Powered verticalization</p>
           </div>
         </header>
 
@@ -52,7 +52,7 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
             </div>
           )}
 
-          <div className="bg-white/[0.01] border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden">
+          <div className="bg-white border border-slate-200 rounded-[2.5rem] shadow-2xl overflow-hidden">
             <div className="p-10 space-y-10">
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 ml-1">
@@ -60,7 +60,7 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-6 py-4 bg-white/[0.02] border border-white/10 rounded-2xl focus:bg-white/[0.04] focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/40 transition-all text-sm font-bold text-white placeholder:text-slate-700"
+                  className="w-full px-6 py-4 bg-white shadow-sm border border-slate-300 rounded-2xl focus:bg-slate-100 focus:outline-none focus:ring-4 focus:ring-blue-900/10 focus:border-blue-900/40 transition-all text-sm font-bold text-slate-900 placeholder:text-slate-700"
                   placeholder="Ex: Concurso Magistratura 2024"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
@@ -72,10 +72,10 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">
                     Conteúdo Programático Bruto
                   </label>
-                  <span className="text-[9px] font-bold text-indigo-400/50 uppercase tracking-widest bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10">Processamento Natural</span>
+                  <span className="text-[9px] font-bold text-blue-800/50 uppercase tracking-widest bg-blue-900/5 px-2 py-0.5 rounded border border-blue-900/10">Processamento Natural</span>
                 </div>
                 <textarea
-                  className="w-full h-[450px] px-6 py-5 bg-white/[0.02] border border-white/10 rounded-2xl focus:bg-white/[0.04] focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/40 transition-all resize-none font-mono text-[13px] leading-relaxed text-slate-300 placeholder:text-slate-700 custom-scrollbar"
+                  className="w-full h-[450px] px-6 py-5 bg-white shadow-sm border border-slate-300 rounded-2xl focus:bg-slate-100 focus:outline-none focus:ring-4 focus:ring-blue-900/10 focus:border-blue-900/40 transition-all resize-none font-mono text-[13px] leading-relaxed text-slate-800 placeholder:text-slate-700 custom-scrollbar"
                   placeholder="Cole o conteúdo programático aqui... A IA vai analisar cada linha e montar a estrutura de Área > Matéria > Tópico > Subtópico."
                   value={text}
                   onChange={e => setText(e.target.value)}
@@ -83,15 +83,15 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
               </div>
             </div>
 
-            <div className="bg-white/[0.02] p-8 px-10 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-white/5">
+            <div className="bg-white shadow-sm p-8 px-10 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-slate-200">
               <div className="flex items-center gap-4 text-slate-500">
-                <Sparkles className="w-5 h-5 text-indigo-400" />
+                <Sparkles className="w-5 h-5 text-blue-800" />
                 <p className="text-[10px] font-bold uppercase tracking-widest leading-tight">Nossa IA converterá o texto em uma<br />grade de estudos interativa.</p>
               </div>
               <button
                 onClick={handleParse}
                 disabled={loading}
-                className="w-full sm:w-auto bg-indigo-600 text-white text-xs font-bold px-10 py-4 rounded-2xl uppercase tracking-[0.2em] hover:bg-indigo-500 transition-all disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg shadow-indigo-600/20 active:scale-95"
+                className="w-full sm:w-auto bg-blue-900 text-white text-xs font-bold px-10 py-4 rounded-2xl uppercase tracking-[0.2em] hover:bg-blue-800 transition-all disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 active:scale-95"
               >
                 {loading ? (
                    <><Loader2 className="w-4 h-4 animate-spin" /><span>Processando Edital...</span></>

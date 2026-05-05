@@ -9,7 +9,7 @@
 
 @layer base {
   body {
-    @apply bg-[#030712] text-slate-400 antialiased;
+    @apply bg-slate-50 text-slate-800 antialiased;
   }
 }
 
@@ -22,6 +22,6 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-white/5 rounded-full;
+  @apply bg-slate-200 rounded-full;
 }
 
