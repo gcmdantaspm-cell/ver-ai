@@ -2,6 +2,9 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { Edital, RevisaoAgendada } from "./types";
 import { addDays, isPast, isToday, differenceInDays } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
+import { collection, doc, onSnapshot, query, setDoc, where, deleteDoc } from "firebase/firestore";
+import { db, handleFirestoreError, OperationType } from "./firebase";
+import { useAuth } from "./AuthContext";
 
 interface EditalContextType {
   editais: Edital[];
@@ -23,33 +26,68 @@ interface EditalContextType {
 
 const EditalContext = createContext<EditalContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = "editais_db";
-
 export function EditalProvider({ children }: { children: ReactNode }) {
-  const [editais, setEditais] = useState<Edital[]>(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { user } = useAuth();
+  const [editais, setEditais] = useState<Edital[]>([]);
 
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(editais));
-  }, [editais]);
+    if (!user) {
+      setEditais([]);
+      return;
+    }
+    const q = query(collection(db, "editais"), where("userId", "==", user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(changeDoc => {
+         const obj = changeDoc.data();
+         obj.id = changeDoc.id;
+         return obj as Edital;
+      });
+      setEditais(data);
+    }, (err) => {
+       handleFirestoreError(err, OperationType.GET, "editais");
+    });
+    return () => unsubscribe();
+  }, [user]);
 
-  const addEdital = (edital: Edital) => setEditais((prev) => [...prev, edital]);
-  const deleteEdital = (id: string) => setEditais((prev) => prev.filter((e) => e.id !== id));
+  const handleUpdate = (editalId: string, updater: (edital: Edital) => void) => {
+    if (!user) return;
+    setEditais(prev => {
+      const newArray = JSON.parse(JSON.stringify(prev)) as Edital[];
+      const edital = newArray.find(e => e.id === editalId);
+      if (edital) {
+        updater(edital);
+        setDoc(doc(db, "editais", edital.id), { ...edital, userId: user.uid }).catch(err => {
+           handleFirestoreError(err, OperationType.UPDATE, `editais/${edital.id}`);
+        });
+      }
+      return newArray;
+    });
+  };
 
-  // Toggle "Visto" and handle revision scheduling
+  const addEdital = (edital: Edital) => {
+    if (!user) return;
+    setEditais((prev) => [...prev, edital]);
+    setDoc(doc(db, "editais", edital.id), { ...edital, userId: user.uid }).catch(err => {
+       handleFirestoreError(err, OperationType.CREATE, `editais/${edital.id}`);
+    });
+  };
+  
+  const deleteEdital = (id: string) => {
+    if (!user) return;
+    setEditais((prev) => prev.filter((e) => e.id !== id));
+    deleteDoc(doc(db, "editais", id)).catch(err => {
+       handleFirestoreError(err, OperationType.DELETE, `editais/${id}`);
+    });
+  };
+
   const toggleVisto = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string) => {
-    setEditais((prev) => {
+    handleUpdate(editalId, (edital) => {
       const now = new Date().toISOString();
-      const newEditais = JSON.parse(JSON.stringify(prev)) as Edital[];
-      
-      const edital = newEditais.find(e => e.id === editalId);
-      const area = edital?.areas.find(a => a.id === areaId);
+      const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
       const topico = materia?.topicos.find(t => t.id === topicoId);
       
-      if (!topico) return prev;
+      if (!topico) return;
 
       if (subtopicoId) {
         const sub = topico.subtopicos.find(s => s.id === subtopicoId);
@@ -57,7 +95,6 @@ export function EditalProvider({ children }: { children: ReactNode }) {
           sub.visto = !sub.visto;
           if (sub.visto) {
              sub.data_estudo = now;
-             // Auto-schedule (1, 7, 15, 30 days)
              sub.revisoes_agendadas = [1, 7, 15, 30].map(days => addDays(new Date(), days).toISOString());
           } else {
              sub.data_estudo = null;
@@ -74,75 +111,68 @@ export function EditalProvider({ children }: { children: ReactNode }) {
           topico.revisoes_agendadas = [];
         }
       }
-
-      return newEditais;
     });
   };
 
   const completeRevision = (itemId: string, dataRevisao: string) => {
+    if (!user) return;
     setEditais(prev => {
       const newArray = JSON.parse(JSON.stringify(prev)) as Edital[];
       for (const edital of newArray) {
+        let changed = false;
         for (const area of edital.areas) {
           for (const materia of area.materias) {
             for (const topico of materia.topicos) {
               if (topico.id === itemId) {
                 topico.revisoes_agendadas = topico.revisoes_agendadas.filter(r => r !== dataRevisao);
-                return newArray;
+                changed = true;
               }
               for (const sub of topico.subtopicos) {
                 if (sub.id === itemId) {
                   sub.revisoes_agendadas = sub.revisoes_agendadas.filter(r => r !== dataRevisao);
-                  return newArray;
+                  changed = true;
                 }
               }
             }
           }
         }
+        if (changed) {
+           setDoc(doc(db, "editais", edital.id), { ...edital, userId: user.uid }).catch(err => {
+             handleFirestoreError(err, OperationType.UPDATE, `editais/${edital.id}`);
+           });
+           return newArray;
+        }
       }
       return newArray;
     });
-  }
+  };
 
-  // Add items
   const addItem = (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title: string = "Novo Item") => {
-    setEditais(prev => {
-      const ns = JSON.parse(JSON.stringify(prev)) as Edital[];
-      const edital = ns.find(e => e.id === editalId);
-      if(!edital) return prev;
-
+    handleUpdate(editalId, (edital) => {
       if (!areaId) {
-        // Add Area
         edital.areas.push({ id: uuidv4(), area: title, materias: [] });
       } else if (!materiaId) {
-        // Add Materia
         const area = edital.areas.find(a => a.id === areaId);
         if (area) area.materias.push({ id: uuidv4(), nome: title, topicos: [] });
       } else if (!topicoId) {
-        // Add Topico
         const area = edital.areas.find(a => a.id === areaId);
         const materia = area?.materias.find(m => m.id === materiaId);
         if (materia) materia.topicos.push({ id: uuidv4(), titulo: title, visto: false, data_estudo: null, revisoes_agendadas: [], subtopicos: [] });
       } else {
-        // Add Subtopico
         const area = edital.areas.find(a => a.id === areaId);
         const materia = area?.materias.find(m => m.id === materiaId);
         const topico = materia?.topicos.find(t => t.id === topicoId);
         if (topico) topico.subtopicos.push({ id: uuidv4(), titulo: title, visto: false, data_estudo: null, revisoes_agendadas: [] });
       }
-      return ns;
     });
   };
 
   const addCustomRevisionDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => {
-    setEditais(prev => {
-      const ns = JSON.parse(JSON.stringify(prev)) as Edital[];
-      const edital = ns.find(e => e.id === editalId);
-      const area = edital?.areas.find(a => a.id === areaId);
+    handleUpdate(editalId, (edital) => {
+      const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
       const topico = materia?.topicos.find(t => t.id === topicoId);
-
-      if (!topico) return ns;
+      if (!topico) return;
 
       if (subtopicoId) {
         const sub = topico.subtopicos.find(s => s.id === subtopicoId);
@@ -150,19 +180,15 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       } else {
         if (!topico.revisoes_agendadas.includes(dateStr)) topico.revisoes_agendadas.push(dateStr);
       }
-      return ns;
     });
   };
 
   const removeRevisionDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => {
-    setEditais(prev => {
-      const ns = JSON.parse(JSON.stringify(prev)) as Edital[];
-      const edital = ns.find(e => e.id === editalId);
-      const area = edital?.areas.find(a => a.id === areaId);
+    handleUpdate(editalId, (edital) => {
+      const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
       const topico = materia?.topicos.find(t => t.id === topicoId);
-
-      if (!topico) return ns;
+      if (!topico) return;
 
       if (subtopicoId) {
         const sub = topico.subtopicos.find(s => s.id === subtopicoId);
@@ -172,41 +198,32 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       } else {
         topico.revisoes_agendadas = topico.revisoes_agendadas.filter(d => d !== dateStr);
       }
-      return ns;
     });
   };
 
   const setNextRevisionDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => {
-    setEditais(prev => {
-      const ns = JSON.parse(JSON.stringify(prev)) as Edital[];
-      const edital = ns.find(e => e.id === editalId);
-      const area = edital?.areas.find(a => a.id === areaId);
+    handleUpdate(editalId, (edital) => {
+      const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
       const topico = materia?.topicos.find(t => t.id === topicoId);
-
-      if (!topico) return ns;
+      if (!topico) return;
 
       const target = subtopicoId ? topico.subtopicos.find(s => s.id === subtopicoId) : topico;
       if (target) {
-        // Keep past revisions, replace future ones
         target.revisoes_agendadas = target.revisoes_agendadas.filter((d: string) => isPast(new Date(d)) && !isToday(new Date(d)));
         if (dateStr) {
           target.revisoes_agendadas.push(dateStr);
         }
       }
-      return ns;
     });
   };
 
   const setStudyDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => {
-    setEditais(prev => {
-      const ns = JSON.parse(JSON.stringify(prev)) as Edital[];
-      const edital = ns.find(e => e.id === editalId);
-      const area = edital?.areas.find(a => a.id === areaId);
+    handleUpdate(editalId, (edital) => {
+      const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
       const topico = materia?.topicos.find(t => t.id === topicoId);
-
-      if (!topico) return ns;
+      if (!topico) return;
 
       if (subtopicoId) {
         const sub = topico.subtopicos.find(s => s.id === subtopicoId);
@@ -220,17 +237,11 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         topico.visto = !!dateStr;
         if (!dateStr) topico.revisoes_agendadas = [];
       }
-      return ns;
     });
   };
 
-  // Update logic (CRUD)
   const updateItemTitle = (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'area'|'materia'|'topico'|'subtopico') => {
-    setEditais(prev => {
-      const ns = JSON.parse(JSON.stringify(prev)) as Edital[];
-      const edital = ns.find(e => e.id === editalId);
-      if(!edital) return prev;
-      
+    handleUpdate(editalId, (edital) => {
       if(type === 'area') {
         const item = edital.areas.find(a => a.id === itemId);
         if(item) item.area = newTitle;
@@ -248,16 +259,11 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         const sub = t?.subtopicos.find(s => s.id === itemId);
         if(sub) sub.titulo = newTitle;
       }
-      return ns;
     });
-  }
+  };
 
   const deleteItem = (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area'|'materia'|'topico'|'subtopico') => {
-    setEditais(prev => {
-      const ns = JSON.parse(JSON.stringify(prev)) as Edital[];
-      const edital = ns.find(e => e.id === editalId);
-      if(!edital) return prev;
-      
+    handleUpdate(editalId, (edital) => {
       if(type === 'area') {
         edital.areas = edital.areas.filter(a => a.id !== itemId);
       } else if (type === 'materia') {
@@ -273,42 +279,31 @@ export function EditalProvider({ children }: { children: ReactNode }) {
           if(t) t.subtopicos = t.subtopicos.filter(s => s.id !== itemId);
         }
       }
-      return ns;
     });
-  }
-
+  };
 
   const updateNota = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, nota: string) => {
-    setEditais(prev => {
-      const ns = JSON.parse(JSON.stringify(prev)) as Edital[];
-      const edital = ns.find(e => e.id === editalId);
-      const area = edital?.areas.find(a => a.id === areaId);
+    handleUpdate(editalId, (edital) => {
+      const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
       const topico = materia?.topicos.find(t => t.id === topicoId);
-
-      if (!topico) return ns;
+      if (!topico) return;
 
       if (subtopicoId) {
         const sub = topico.subtopicos.find(s => s.id === subtopicoId);
-        if (sub) {
-           sub.notas = nota;
-        }
+        if (sub) sub.notas = nota;
       } else {
         topico.notas = nota;
       }
-      return ns;
     });
   };
 
   const updateMetricas = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, acertos: number, erros: number) => {
-    setEditais(prev => {
-      const ns = JSON.parse(JSON.stringify(prev)) as Edital[];
-      const edital = ns.find(e => e.id === editalId);
-      const area = edital?.areas.find(a => a.id === areaId);
+    handleUpdate(editalId, (edital) => {
+      const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
       const topico = materia?.topicos.find(t => t.id === topicoId);
-
-      if (!topico) return ns;
+      if (!topico) return;
 
       if (subtopicoId) {
         const sub = topico.subtopicos.find(s => s.id === subtopicoId);
@@ -320,61 +315,68 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         topico.acertos = acertos;
         topico.erros = erros;
       }
-      return ns;
     });
   };
 
-  // Compute Flattened Revisions Queue
   const revisions: RevisaoAgendada[] = [];
   editais.forEach(edital => {
+    if (!edital || !edital.areas) return;
     edital.areas.forEach(area => {
+      if (!area || !area.materias) return;
       area.materias.forEach(materia => {
+        if (!materia || !materia.topicos) return;
         materia.topicos.forEach(topico => {
-          topico.revisoes_agendadas.forEach(revDateStr => {
-            const revDate = new Date(revDateStr);
-            if (isPast(revDate) || isToday(revDate)) {
-               revisions.push({
-                 editalId: edital.id,
-                 editalTitulo: edital.titulo,
-                 areaId: area.id,
-                 areaNome: area.area,
-                 materiaId: materia.id,
-                 materiaNome: materia.nome,
-                 topicoOuSubId: topico.id,
-                 tituloItem: topico.titulo,
-                 dataRevisao: revDateStr,
-                 atrasada: isPast(revDate) && !isToday(revDate),
-                 diasAtraso: differenceInDays(new Date(), revDate)
-               });
-            }
-          });
+          if (!topico) return;
+          if (topico.revisoes_agendadas) {
+             topico.revisoes_agendadas.forEach(revDateStr => {
+               const revDate = new Date(revDateStr);
+               if (isPast(revDate) || isToday(revDate)) {
+                  revisions.push({
+                    editalId: edital.id,
+                    editalTitulo: edital.titulo,
+                    areaId: area.id,
+                    areaNome: area.area,
+                    materiaId: materia.id,
+                    materiaNome: materia.nome,
+                    topicoOuSubId: topico.id,
+                    tituloItem: topico.titulo,
+                    dataRevisao: revDateStr,
+                    atrasada: isPast(revDate) && !isToday(revDate),
+                    diasAtraso: differenceInDays(new Date(), revDate)
+                  });
+               }
+             });
+          }
           
-          topico.subtopicos.forEach(sub => {
-            sub.revisoes_agendadas.forEach(revDateStr => {
-            const revDate = new Date(revDateStr);
-            if (isPast(revDate) || isToday(revDate)) {
-               revisions.push({
-                 editalId: edital.id,
-                 editalTitulo: edital.titulo,
-                 areaId: area.id,
-                 areaNome: area.area,
-                 materiaId: materia.id,
-                 materiaNome: materia.nome,
-                 topicoOuSubId: sub.id,
-                 tituloItem: sub.titulo,
-                 dataRevisao: revDateStr,
-                 atrasada: isPast(revDate) && !isToday(revDate),
-                 diasAtraso: differenceInDays(new Date(), revDate)
-               });
-            }
-          });
-          });
+          if (topico.subtopicos) {
+             topico.subtopicos.forEach(sub => {
+               if (sub.revisoes_agendadas) {
+                  sub.revisoes_agendadas.forEach(revDateStr => {
+                    const revDate = new Date(revDateStr);
+                    if (isPast(revDate) || isToday(revDate)) {
+                       revisions.push({
+                         editalId: edital.id,
+                         editalTitulo: edital.titulo,
+                         areaId: area.id,
+                         areaNome: area.area,
+                         materiaId: materia.id,
+                         materiaNome: materia.nome,
+                         topicoOuSubId: sub.id,
+                         tituloItem: sub.titulo,
+                         dataRevisao: revDateStr,
+                         atrasada: isPast(revDate) && !isToday(revDate),
+                         diasAtraso: differenceInDays(new Date(), revDate)
+                       });
+                    }
+                  });
+               }
+             });
+          }
         });
       });
     });
   });
 
-  // Smart sort: Most delayed first
   revisions.sort((a, b) => b.diasAtraso - a.diasAtraso);
 
   return (

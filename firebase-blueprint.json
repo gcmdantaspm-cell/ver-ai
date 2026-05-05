@@ -1,0 +1,29 @@
+{
+  "entities": {
+    "Edital": {
+      "title": "Edital",
+      "description": "Represents a syllabus/edital imported into the application.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this edital."
+        },
+        "titulo": {
+          "type": "string"
+        },
+        "areas": {
+          "type": "array",
+          "description": "Areas array. Given its size, this will be stored as an array to minimize reads, or as JSON. Storing the whole edital as a JSON tree is acceptable since it's generally < 1MB and requested wholesale."
+        }
+      },
+      "required": ["userId", "titulo", "areas"]
+    }
+  },
+  "firestore": {
+    "/editais/{editalId}": {
+      "schema": { "$ref": "#/entities/Edital" },
+      "description": "Stores edital documents containing the structured view."
+    }
+  }
+}

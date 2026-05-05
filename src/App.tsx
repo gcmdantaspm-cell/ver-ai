@@ -4,12 +4,14 @@ import { Dashboard } from "./components/Dashboard";
 import { ParseEdital } from "./components/ParseEdital";
 import { EditalView } from "./components/EditalView";
 import { FloatingPomodoro } from "./components/Pomodoro";
-import { LayoutDashboard, FileText, Plus, BookOpen, Menu, X, ChevronDown } from "lucide-react";
+import { LayoutDashboard, FileText, Plus, BookOpen, Menu, X, ChevronDown, LogOut, Loader2 } from "lucide-react";
+import { useAuth } from "./AuthContext";
 
 function AppContent() {
   const { editais } = useEdital();
   const [currentView, setCurrentView] = useState<string>("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   const navigateTo = (view: string) => {
     setCurrentView(view);
@@ -59,6 +61,11 @@ function AppContent() {
               </>
             )}
          </nav>
+         <div className="p-4 border-t border-slate-800">
+           <button onClick={logout} className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-[#1E293B] transition-colors">
+              <LogOut className="w-4 h-4" /> Sair
+           </button>
+         </div>
       </aside>
 
       {/* Mobile Top Navbar */}
@@ -108,6 +115,13 @@ function AppContent() {
                 ))}
               </>
             )}
+            
+            <div className="mt-auto pt-6">
+              <button onClick={logout} className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:bg-[#1E293B] transition-colors border border-transparent">
+                <LogOut className="w-5 h-5" />
+                <span>Sair da conta</span>
+              </button>
+            </div>
         </div>
       )}
 
@@ -129,7 +143,47 @@ function AppContent() {
   );
 }
 
+function LoginScreen() {
+  const { loginWithGoogle } = useAuth();
+  
+  return (
+    <div className="flex items-center justify-center h-screen bg-[#0B1120] font-sans">
+      <div className="bg-[#111827] border border-slate-800 p-10 rounded-3xl max-w-sm w-full text-center shadow-2xl flex flex-col items-center">
+        <div className="w-12 h-12 bg-indigo-500 rounded-xl shadow-lg shadow-indigo-500/20 mb-6 flex items-center justify-center">
+          <BookOpen className="w-6 h-6 text-white" />
+        </div>
+        <h1 className="text-2xl font-display font-bold text-white mb-2">VER.AI</h1>
+        <p className="text-sm text-slate-400 font-medium mb-8">Planeje e acompanhe seus estudos com IA.</p>
+        
+        <button 
+          onClick={loginWithGoogle}
+          className="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold py-3 rounded-xl shadow-md transition-colors flex items-center justify-center gap-3"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <path fill="currentColor" fillRule="evenodd" d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z" />
+          </svg>
+          Entrar com Google
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#0B1120]">
+        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <LoginScreen />;
+  }
+  
   return (
     <EditalProvider>
       <AppContent />
