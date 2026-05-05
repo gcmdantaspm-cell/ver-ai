@@ -1,17 +1,19 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useEdital } from "../store";
 import { format, isFuture, isPast, isToday, parseISO } from "date-fns";
 import { Edital } from "../types";
-import { ChevronDown, ChevronRight, Plus, Edit2, Trash2, CalendarIcon, StickyNote, X, History, CheckCircle2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Edit2, Trash2, CalendarIcon, StickyNote, X, History, CheckCircle2, ListTodo, FileText, Bell, BookOpen, Search } from "lucide-react";
 
-export function EditalView({ edital }: { edital: Edital }) {
-  const { deleteEdital, toggleVisto, updateItemTitle, deleteItem, addItem, setNextRevisionDate, addCustomRevisionDate, removeRevisionDate, setStudyDate, updateNota } = useEdital();
+export function EditalView({ edital }: { edital: Edital, key?: string | number }) {
+  const { deleteEdital, toggleVisto, updateItemTitle, deleteItem, addItem, setNextRevisionDate, addCustomRevisionDate, removeRevisionDate, setStudyDate, updateNota, revisions } = useEdital();
   const [expandedMaterias, setExpandedMaterias] = useState<string[]>(() => {
     // Expand the first materia by default
     return edital.areas[0]?.materias[0] ? [edital.areas[0].materias[0].id] : [];
   });
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [activeTab, setActiveTab] = useState<'topicos' | 'revisoes' | 'notas'>('topicos');
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+
   const [editValue, setEditValue] = useState("");
   const [notesModal, setNotesModal] = useState<{ isOpen: boolean, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string, currentNote: string, title: string } | null>(null);
   const [historyModal, setHistoryModal] = useState<{ isOpen: boolean, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string } | null>(null);
@@ -69,6 +71,23 @@ export function EditalView({ edital }: { edital: Edital }) {
     }
   }
 
+  // Gather Notes
+  const allNotes: {area: string, materia: string, topico: string, subtopico?: string, notas: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string}[] = [];
+  edital.areas.forEach(a => {
+    a.materias.forEach(m => {
+      m.topicos.forEach(t => {
+        if (t.notas) allNotes.push({ area: a.area, materia: m.nome, topico: t.titulo, notas: t.notas, areaId: a.id, materiaId: m.id, topicoId: t.id });
+        t.subtopicos.forEach(s => {
+          if (s.notas) allNotes.push({ area: a.area, materia: m.nome, topico: t.titulo, subtopico: s.titulo, notas: s.notas, areaId: a.id, materiaId: m.id, topicoId: t.id, subtopicoId: s.id });
+        })
+      })
+    })
+  });
+
+  const editalRevisions = revisions.filter(r => r.editalId === edital.id);
+  const notasCounter = allNotes.length;
+  const revisoesCounter = editalRevisions.length;
+
   return (
     <>
       <div className="flex-1 flex flex-col h-full bg-[#F5F7FA]">
@@ -84,31 +103,48 @@ export function EditalView({ edital }: { edital: Edital }) {
           </div>
         </header>
       
-      <div className="flex-1 px-8 pb-8 overflow-hidden flex flex-col max-w-7xl mx-auto w-full">
-         {/* Stats and Filters Bar */}
-         <div className="bg-white border text-center sm:text-left border-slate-100/50 rounded-t-3xl p-6 flex flex-col sm:flex-row justify-between items-center gap-6 shrink-0 shadow-sm z-20 relative">
-            <div className="flex-1 w-full sm:max-w-md">
-               <div className="flex justify-between items-center mb-3 text-slate-800">
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Progresso Geral</span>
-                  <span className="text-lg font-display font-bold text-indigo-600">{progressPercent}%</span>
-               </div>
-               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-2">
-                  <div className="bg-indigo-500 h-full rounded-full transition-all duration-700 ease-in-out" style={{ width: `${progressPercent}%` }}></div>
-               </div>
-               <div className="text-[11px] text-slate-400 font-medium">{completedItems} de {totalItems} tópicos concluídos</div>
-            </div>
-
-            <div className="flex bg-slate-50 border border-slate-100 rounded-xl p-1.5 text-xs font-bold w-full sm:w-auto overflow-x-auto shadow-inner">
-               <button onClick={() => setFilter('all')} className={`flex-1 sm:flex-none px-5 py-2 rounded-lg transition-all ${filter==='all' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}>Tudo</button>
-               <button onClick={() => setFilter('pending')} className={`flex-1 sm:flex-none px-5 py-2 rounded-lg transition-all ${filter==='pending' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}>Pendentes</button>
-               <button onClick={() => setFilter('completed')} className={`flex-1 sm:flex-none px-5 py-2 rounded-lg transition-all ${filter==='completed' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}>Concluídos</button>
-               <div className="w-px bg-slate-200 mx-2 my-1"></div>
-               <button onClick={() => addItem(edital.id)} className="flex-1 sm:flex-none px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1 shadow-sm"><Plus className="w-4 h-4"/> Área</button>
-            </div>
+      <div className="flex-1 px-4 sm:px-8 pb-20 md:pb-8 overflow-hidden flex flex-col max-w-7xl mx-auto w-full">
+         <div className="hidden md:flex bg-slate-100 p-1.5 rounded-2xl mb-6 self-start space-x-1 shadow-inner">
+            <button onClick={() => setActiveTab('topicos')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'topicos' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+               <ListTodo className="w-4 h-4"/> Tópicos
+            </button>
+            <button onClick={() => setActiveTab('revisoes')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'revisoes' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+               <History className="w-4 h-4"/> Revisões
+               {revisoesCounter > 0 && <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-md text-[10px] ml-1">{revisoesCounter}</span>}
+            </button>
+            <button onClick={() => setActiveTab('notas')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'notas' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+               <FileText className="w-4 h-4"/> Anotações
+               {notasCounter > 0 && <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md text-[10px] ml-1">{notasCounter}</span>}
+            </button>
          </div>
 
-         {/* Content Grid */}
-         <div className="bg-white border-x border-b border-slate-100/50 rounded-b-3xl shadow-sm flex flex-col h-full z-10 flex-1 min-h-0 overflow-hidden">
+         {/* Specific Active Tab Container */}
+         {activeTab === 'topicos' && (
+           <>
+             {/* Stats and Filters Bar */}
+             <div className="bg-white border text-center sm:text-left border-slate-100/50 rounded-t-3xl p-6 flex flex-col sm:flex-row justify-between items-center gap-6 shrink-0 shadow-sm z-20 relative">
+                <div className="flex-1 w-full sm:max-w-md">
+                   <div className="flex justify-between items-center mb-3 text-slate-800">
+                      <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Progresso Geral</span>
+                      <span className="text-lg font-display font-bold text-indigo-600">{progressPercent}%</span>
+                   </div>
+                   <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-2">
+                      <div className="bg-indigo-500 h-full rounded-full transition-all duration-700 ease-in-out" style={{ width: `${progressPercent}%` }}></div>
+                   </div>
+                   <div className="text-[11px] text-slate-400 font-medium">{completedItems} de {totalItems} tópicos concluídos</div>
+                </div>
+
+                <div className="flex bg-slate-50 border border-slate-100 rounded-xl p-1.5 text-xs font-bold w-full sm:w-auto overflow-x-auto shadow-inner">
+                   <button onClick={() => setFilter('all')} className={`flex-1 sm:flex-none px-5 py-2 rounded-lg transition-all ${filter==='all' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700 whitespace-nowrap'}`}>Tudo</button>
+                   <button onClick={() => setFilter('pending')} className={`flex-1 sm:flex-none px-5 py-2 rounded-lg transition-all ${filter==='pending' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700 whitespace-nowrap'}`}>Pendentes</button>
+                   <button onClick={() => setFilter('completed')} className={`flex-1 sm:flex-none px-5 py-2 rounded-lg transition-all ${filter==='completed' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700 whitespace-nowrap'}`}>Concluídos</button>
+                   <div className="w-px bg-slate-200 mx-2 my-1"></div>
+                   <button onClick={() => addItem(edital.id)} className="flex-1 sm:flex-none px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1 shadow-sm whitespace-nowrap"><Plus className="w-4 h-4"/> Área</button>
+                </div>
+             </div>
+
+             {/* Content Grid */}
+             <div className="bg-white border-x border-b border-slate-100/50 rounded-b-3xl shadow-sm flex flex-col h-full z-10 flex-1 min-h-0 overflow-hidden">
             <div className="flex flex-col h-full overflow-hidden">
                 <div className="hidden lg:grid grid-cols-12 bg-white border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest py-4 px-6 shrink-0">
                   <div className="col-span-6 pl-8">Tópico / Subtópico</div>
@@ -338,7 +374,112 @@ export function EditalView({ edital }: { edital: Edital }) {
             </div>
              </div>
             </div>
-         </div>
+           </>
+         )}
+
+         {activeTab === 'revisoes' && (
+           <div className="bg-white border border-slate-100/50 rounded-3xl shadow-sm flex flex-col h-full z-10 flex-1 min-h-0 overflow-hidden mt-6 mb-6">
+              <div className="p-6 border-b border-slate-100 bg-slate-50 rounded-t-3xl text-center md:text-left">
+                  <h3 className="text-lg font-display font-bold text-slate-800">Revisões Programadas</h3>
+                  <p className="text-sm text-slate-500 font-medium">Assuntos que precisam ser revisitados neste edital.</p>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50/50">
+                 {editalRevisions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400 p-8 text-center">
+                       <CheckCircle2 className="w-12 h-12 mb-4 text-slate-200" />
+                       <p>Nenhuma revisão pendente para este edital.</p>
+                    </div>
+                 ) : (
+                    editalRevisions.map((rev, i) => (
+                       <div key={i} className={`p-4 md:p-5 rounded-2xl border ${rev.atrasada ? 'bg-rose-50/50 border-rose-100' : isToday(new Date(rev.dataRevisao)) ? 'bg-amber-50/50 border-amber-100' : 'bg-white border-slate-100 shadow-sm'}`}>
+                          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                             <div>
+                                <div className="flex items-center gap-2 mb-1.5">
+                                   <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md ${rev.atrasada ? 'bg-rose-100 text-rose-600' : isToday(new Date(rev.dataRevisao)) ? 'bg-amber-100 text-amber-600' : 'bg-indigo-50 text-indigo-500'}`}>
+                                      {rev.materiaNome}
+                                   </span>
+                                </div>
+                                <h4 className="font-bold text-slate-800">{rev.tituloItem}</h4>
+                                <p className="text-xs text-slate-500 font-medium mt-1">{rev.areaNome}</p>
+                             </div>
+                             <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center">
+                                <div className={`text-sm font-bold ${rev.atrasada ? 'text-rose-600' : isToday(new Date(rev.dataRevisao)) ? 'text-amber-600' : 'text-slate-600'}`}>
+                                   {format(new Date(rev.dataRevisao), "dd 'de' MMM, yyyy")}
+                                </div>
+                                <div className="text-xs text-slate-400 mt-1 uppercase tracking-widest font-bold">
+                                   {rev.atrasada ? `${rev.diasAtraso} ${rev.diasAtraso === 1 ? 'dia' : 'dias'} de atraso` : isToday(new Date(rev.dataRevisao)) ? 'Agendado para hoje' : 'Próxima Revisão'}
+                                </div>
+                             </div>
+                          </div>
+                          <div className="mt-4 pt-4 border-t border-slate-100/50 flex justify-end">
+                             <button onClick={() => setHistoryModal({ isOpen: true, areaId: rev.areaId, materiaId: rev.materiaId, topicoId: rev.topicoOuSubId })} className="text-indigo-600 bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+                                <History className="w-3.5 h-3.5"/> Abrir Histórico
+                             </button>
+                          </div>
+                       </div>
+                    ))
+                 )}
+              </div>
+           </div>
+         )}
+
+         {activeTab === 'notas' && (
+           <div className="bg-white border border-slate-100/50 rounded-3xl shadow-sm flex flex-col h-full z-10 flex-1 min-h-0 overflow-hidden mt-6 mb-6">
+              <div className="p-6 border-b border-slate-100 bg-slate-50 rounded-t-3xl text-center md:text-left flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-display font-bold text-slate-800">Suas Anotações</h3>
+                    <p className="text-sm text-slate-500 font-medium">Todos os resumos e apontamentos deste edital</p>
+                  </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50/50">
+                 {allNotes.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400 p-8 text-center">
+                       <FileText className="w-12 h-12 mb-4 text-slate-200" />
+                       <p>Nenhuma anotação adicionada ainda.</p>
+                       <p className="text-xs mt-2">Clique no ícone de "Anotações" nos tópicos para criar.</p>
+                    </div>
+                 ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                       {allNotes.map((note, i) => (
+                          <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col h-full">
+                             <div className="flex items-start justify-between gap-2 mb-3 border-b border-slate-100 pb-3">
+                                <div>
+                                   <div className="text-[10px] uppercase font-bold text-indigo-500 tracking-wider mb-1">{note.materia}</div>
+                                   <h4 className="font-bold text-slate-800 text-sm leading-tight">{note.subtopico || note.topico}</h4>
+                                </div>
+                                <button className="text-slate-400 hover:text-amber-500 shrink-0 p-1 bg-slate-50 rounded-md hover:bg-amber-50 transition-colors" onClick={() => setNotesModal({ isOpen: true, areaId: note.areaId, materiaId: note.materiaId, topicoId: note.topicoId, subtopicoId: note.subtopicoId, currentNote: note.notas, title: note.subtopico || note.topico })}>
+                                   <Edit2 className="w-4 h-4"/>
+                                </button>
+                             </div>
+                             <p className="text-sm text-slate-600 whitespace-pre-wrap flex-1 break-words">
+                                {note.notas}
+                             </p>
+                          </div>
+                       ))}
+                    </div>
+                 )}
+              </div>
+           </div>
+         )}
+      </div>
+
+      {/* Mobile Bottom Tab Bar */}
+      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md shadow-2xl shadow-slate-200/50 rounded-full border border-slate-200/60 flex items-center p-1.5 z-40">
+         <button onClick={() => setActiveTab('topicos')} className={`flex flex-col items-center justify-center w-20 h-14 rounded-full transition-all ${activeTab === 'topicos' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>
+            <ListTodo className={`w-5 h-5 ${activeTab === 'topicos' ? 'mb-0.5' : 'mb-1'}`}/>
+            {activeTab === 'topicos' && <span className="text-[9px] font-bold tracking-widest uppercase">Tópicos</span>}
+         </button>
+         <button onClick={() => setActiveTab('revisoes')} className={`relative flex flex-col items-center justify-center w-20 h-14 rounded-full transition-all ${activeTab === 'revisoes' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>
+            <History className={`w-5 h-5 ${activeTab === 'revisoes' ? 'mb-0.5' : 'mb-1'}`}/>
+            {revisoesCounter > 0 && <span className="absolute top-1 right-5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>}
+            {activeTab === 'revisoes' && <span className="text-[9px] font-bold tracking-widest uppercase">Revisões</span>}
+         </button>
+         <button onClick={() => setActiveTab('notas')} className={`relative flex flex-col items-center justify-center w-20 h-14 rounded-full transition-all ${activeTab === 'notas' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>
+            <FileText className={`w-5 h-5 ${activeTab === 'notas' ? 'mb-0.5' : 'mb-1'}`}/>
+            {notasCounter > 0 && <span className="absolute top-1 right-5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white"></span>}
+            {activeTab === 'notas' && <span className="text-[9px] font-bold tracking-widest uppercase">Notas</span>}
+         </button>
+      </div>
       </div>
 
       {notesModal && notesModal.isOpen && (

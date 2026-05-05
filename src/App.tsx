@@ -116,10 +116,11 @@ function AppContent() {
          {currentView === "dashboard" && <Dashboard />}
          {currentView === "import" && <ParseEdital onSuccess={() => navigateTo("dashboard")} />}
          {currentView.startsWith("edital-") && (
-            <EditalView 
-               key={currentView} // Force remount if selecting different edital
-               edital={editais.find(e => e.id === currentView.replace("edital-", ""))!} 
-            />
+            (() => {
+               const foundEdital = editais.find(e => e.id === currentView.replace("edital-", ""));
+               if (!foundEdital) return null;
+               return <EditalView key={currentView} edital={foundEdital} />;
+            })()
          )}
       </main>
       
