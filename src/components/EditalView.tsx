@@ -50,9 +50,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     setEditValue(currentTitle);
   };
 
-  const saveEdit = (areaId: string, materiaId: string, topicoId: string, type: 'area' | 'materia' | 'topico' | 'subtopico', subtopicoId?: string) => {
+  const saveEdit = (areaId: string, materiaId: string, topicoId: string, type: 'edital' | 'area' | 'materia' | 'topico' | 'subtopico', customId?: string) => {
     if (editingItemId && editValue.trim()) {
-      updateItemTitle(edital.id, areaId, materiaId, topicoId || editingItemId, editValue, type, subtopicoId);
+      const targetId = customId || (type === 'subtopico' ? customId : topicoId || editingItemId);
+      updateItemTitle(edital.id, areaId, materiaId, targetId as string, editValue, type);
     }
     setEditingItemId(null);
   };
@@ -118,7 +119,18 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
         <div className="flex flex-col">
           <h2 className="text-xl font-display font-semibold text-slate-900 leading-tight flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-blue-800" />
-            {edital.titulo}
+            {editingItemId === edital.id ? (
+              <input
+                 autoFocus
+                 value={editValue}
+                 onChange={(e) => setEditValue(e.target.value)}
+                 onBlur={() => saveEdit('', '', '', 'edital', edital.id)}
+                 onKeyDown={(e) => e.key === 'Enter' && saveEdit('', '', '', 'edital', edital.id)}
+                 className="bg-transparent text-slate-900 outline-none border-b border-blue-800"
+              />
+            ) : (
+              <span onDoubleClick={() => handleEdit(edital.id, edital.titulo)} className="cursor-text">{edital.titulo}</span>
+            )}
           </h2>
           <div className="flex items-center gap-3 mt-1">
             <span className="text-[10px] text-blue-800 font-bold uppercase tracking-[0.2em] bg-blue-900/10 px-2 py-0.5 rounded border border-blue-900/20">Edital Ativo</span>
@@ -296,7 +308,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                            </div>
 
                                            <div className="col-span-1 text-center font-mono text-[10px] text-slate-500">
-                                              <button onClick={() => setStudyDate(edital.id, area.id, materia.id, topico.id)} className="hover:text-blue-800 transition-colors uppercase">
+                                              <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className="hover:text-blue-800 transition-colors uppercase">
                                                  {topico.data_estudo ? format(new Date(topico.data_estudo), "dd/MM") : "—"}
                                               </button>
                                            </div>
@@ -351,7 +363,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                    </div>
 
                                                    <div className="col-span-1 text-center font-mono text-[9px] text-slate-400">
-                                                      <button onClick={() => setStudyDate(edital.id, area.id, materia.id, topico.id, sub.id)} className="hover:text-blue-800">
+                                                      <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className="hover:text-blue-800">
                                                          {sub.data_estudo ? format(new Date(sub.data_estudo), "dd/MM") : "—"}
                                                       </button>
                                                    </div>
@@ -512,19 +524,23 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
              <div className="p-6 flex flex-col gap-10 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 <div>
                    <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Primeiro Registro</h4>
-                   {historyItemInfo.data_estudo ? (
-                     <div className="flex items-center gap-4 bg-white shadow-sm p-4 rounded-2xl border border-slate-200 shadow-sm">
-                        <div className="w-10 h-10 rounded-xl bg-blue-900/10 text-blue-800 flex items-center justify-center shrink-0 border border-blue-900/20">
-                           <CalendarIcon className="w-5 h-5" />
-                        </div>
-                        <div>
-                           <div className="text-sm font-mono font-bold text-slate-900">{format(new Date(historyItemInfo.data_estudo), "dd MMM, yyyy")}</div>
-                           <div className="text-[10px] text-slate-500 mt-1 font-bold uppercase tracking-widest">Estudo Concluído</div>
-                        </div>
-                     </div>
-                   ) : (
-                     <div className="text-xs text-slate-400 italic bg-white p-5 rounded-2xl border border-slate-200 text-center">Tópico ou subtópico ainda não estudado.</div>
-                   )}
+                   <div className="flex items-center gap-4 bg-white shadow-sm p-4 rounded-2xl border border-slate-200">
+                      <div className="w-10 h-10 rounded-xl bg-blue-900/10 text-blue-800 flex items-center justify-center shrink-0 border border-blue-900/20">
+                         <CalendarIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                         <input 
+                            type="date"
+                            className="bg-transparent text-sm font-mono font-bold text-slate-900 outline-none w-full cursor-pointer hover:bg-slate-50 p-1 rounded transition-colors"
+                            value={historyItemInfo.data_estudo ? historyItemInfo.data_estudo.split('T')[0] : ''}
+                            onChange={(e) => {
+                               const dateStr = e.target.value ? new Date(e.target.value + 'T12:00:00').toISOString() : null;
+                               setStudyDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, dateStr);
+                            }}
+                         />
+                         <div className="text-[10px] text-slate-500 mt-1 font-bold uppercase tracking-widest">{historyItemInfo.data_estudo ? 'Estudo Concluído' : 'Adicionar Data de Estudo'}</div>
+                      </div>
+                   </div>
                 </div>
 
                 <div>
@@ -556,8 +572,19 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                          <History className="w-5 h-5" />
                                       </div>
                                       <div>
-                                         <div className={`text-sm font-mono font-bold ${isP ? 'text-rose-400' : isT ? 'text-amber-400' : 'text-slate-800'}`}>{format(date, "dd MMM, yyyy")}</div>
-                                         <div className="text-[9px] text-slate-400 mt-1 font-bold uppercase tracking-widest">{isP ? 'Atrasada' : isT ? 'Hoje' : 'Agendada'}</div>
+                                         <input 
+                                             type="date"
+                                             className={`bg-transparent text-sm font-mono font-bold outline-none cursor-pointer p-1 rounded hover:opacity-80 transition-opacity ${isP ? 'text-rose-400 hover:bg-rose-50' : isT ? 'text-amber-400 hover:bg-amber-50' : 'text-slate-800 hover:bg-slate-100'}`}
+                                             value={dateItem.raw.split('T')[0]}
+                                             onChange={(e) => {
+                                                if(e.target.value) {
+                                                   const newDateStr = new Date(e.target.value + 'T12:00:00').toISOString();
+                                                   removeRevisionDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, dateItem.raw);
+                                                   addCustomRevisionDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, newDateStr);
+                                                }
+                                             }}
+                                          />
+                                         <div className="text-[9px] text-slate-400 mt-1 font-bold uppercase tracking-widest px-1">{isP ? 'Atrasada' : isT ? 'Hoje' : 'Agendada'}</div>
                                       </div>
                                    </div>
                                    <button 

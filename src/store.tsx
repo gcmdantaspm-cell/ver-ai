@@ -11,7 +11,7 @@ interface EditalContextType {
   addEdital: (edital: Edital) => void;
   deleteEdital: (id: string) => void;
   toggleVisto: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string) => void;
-  updateItemTitle: (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'area' | 'materia' | 'topico' | 'subtopico') => void;
+  updateItemTitle: (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'edital' | 'area' | 'materia' | 'topico' | 'subtopico') => void;
   deleteItem: (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area' | 'materia' | 'topico' | 'subtopico') => void;
   addItem: (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title?: string) => void;
   addCustomRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => void;
@@ -56,7 +56,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       const edital = newArray.find(e => e.id === editalId);
       if (edital) {
         updater(edital);
-        setDoc(doc(db, "editais", edital.id), { ...edital, userId: user.uid }).catch(err => {
+        setDoc(doc(db, "editais", edital.id), JSON.parse(JSON.stringify({ ...edital, userId: user.uid }))).catch(err => {
            handleFirestoreError(err, OperationType.UPDATE, `editais/${edital.id}`);
         });
       }
@@ -67,7 +67,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   const addEdital = (edital: Edital) => {
     if (!user) return;
     setEditais((prev) => [...prev, edital]);
-    setDoc(doc(db, "editais", edital.id), { ...edital, userId: user.uid }).catch(err => {
+    setDoc(doc(db, "editais", edital.id), JSON.parse(JSON.stringify({ ...edital, userId: user.uid }))).catch(err => {
        handleFirestoreError(err, OperationType.CREATE, `editais/${edital.id}`);
     });
   };
@@ -137,7 +137,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
           }
         }
         if (changed) {
-           setDoc(doc(db, "editais", edital.id), { ...edital, userId: user.uid }).catch(err => {
+           setDoc(doc(db, "editais", edital.id), JSON.parse(JSON.stringify({ ...edital, userId: user.uid }))).catch(err => {
              handleFirestoreError(err, OperationType.UPDATE, `editais/${edital.id}`);
            });
            return newArray;
@@ -240,9 +240,11 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const updateItemTitle = (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'area'|'materia'|'topico'|'subtopico') => {
+  const updateItemTitle = (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'edital'|'area'|'materia'|'topico'|'subtopico') => {
     handleUpdate(editalId, (edital) => {
-      if(type === 'area') {
+      if (type === 'edital') {
+        edital.titulo = newTitle;
+      } else if(type === 'area') {
         const item = edital.areas.find(a => a.id === itemId);
         if(item) item.area = newTitle;
       } else if (type === 'materia') {
