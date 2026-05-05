@@ -49,13 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthError(null);
     const provider = new GoogleAuthProvider();
     try {
-      // Use redirect on mobile to avoid popup blocking, otherwise popup
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        await signInWithRedirect(auth, provider);
-      } else {
-        await signInWithPopup(auth, provider);
-      }
+      await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Login error:", error);
       setAuthError(error.message);

@@ -28,7 +28,12 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
       onSuccess();
     } catch (err: any) {
       console.error(err);
-      setError(`Falha ao processar o texto do edital. Ocorreu um erro na IA: ${err.message || String(err)}`);
+      const errorMessage = err.message || String(err);
+      if (errorMessage.includes("high demand") || errorMessage.includes("UNAVAILABLE") || err?.status === "UNAVAILABLE" || err?.status === 503) {
+         setError("A Inteligência Artificial está enfrentando alta demanda no momento (sobrecarga nos servidores do Google). Por favor, aguarde alguns instantes e tente novamente.");
+      } else {
+         setError(`Falha ao processar o texto do edital. Ocorreu um erro na IA: ${errorMessage}`);
+      }
     } finally {
       setLoading(false);
     }

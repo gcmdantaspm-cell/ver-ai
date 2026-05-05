@@ -7,8 +7,7 @@ const ai = new GoogleGenAI({ apiKey });
 
 export async function parseEditalText(text: string): Promise<AreaConhecimento[]> {
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+    const configOptions = {
       contents: `You are a Senior Software Architect and Study Mentor.
 Extract the following text from a Public Exam Syllabus (Edital) into a structured JSON array.
 Follow the hierarchy: Area de Conhecimento -> Materias -> Topicos -> Subtopicos.
@@ -81,7 +80,25 @@ ${text}`,
           }
         }
       }
-    });
+    };
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        ...configOptions,
+        model: "gemini-2.5-flash"
+      });
+    } catch (err: any) {
+      if (err?.status === 503 || err?.status === 429 || err?.message?.includes("high demand") || err?.message?.includes("429")) {
+        console.log("gemini-2.5-flash failed due to high demand, falling back to gemini-1.5-flash");
+        response = await ai.models.generateContent({
+          ...configOptions,
+          model: "gemini-1.5-flash"
+        });
+      } else {
+        throw err;
+      }
+    }
 
     const parsed = JSON.parse(response.text || "[]");
     
