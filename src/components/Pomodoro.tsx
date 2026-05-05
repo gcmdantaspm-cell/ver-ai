@@ -14,7 +14,8 @@ export function FloatingPomodoro() {
     } else if (timeLeft === 0) {
       if (isActive) {
         setIsActive(false);
-        alert(mode === 'study' ? 'Sessão de estudos concluída! Hora da pausa.' : 'Pausa finalizada! Volte aos estudos.');
+        // Using a more subtle notification or just stopping for now as alert can be blocked/annoying in iframes
+        console.log(mode === 'study' ? 'Sessão de estudos concluída!' : 'Pausa finalizada!');
       }
     }
     return () => {
@@ -48,59 +49,62 @@ export function FloatingPomodoro() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-      {isOpen && (
-        <div className="bg-[#111827] text-slate-300 border border-slate-800 rounded-3xl p-5 shadow-2xl shadow-indigo-900/20 mb-4 w-64 animate-in slide-in-from-bottom flex flex-col items-center">
-          <div className="w-full flex justify-between items-center mb-5">
-             <div className="flex bg-[#0B1120] font-medium rounded-xl p-1 border border-slate-800">
-               <button 
-                  onClick={setStudyMode} 
-                  className={`px-3 py-1.5 text-[10px] uppercase tracking-widest rounded-lg transition-colors ${mode === 'study' ? 'bg-[#1E293B] text-indigo-400 shadow-sm font-bold border border-slate-700/50' : 'text-slate-500 hover:text-slate-300'}`}
-               >
-                 Foco
+    <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end pointer-events-none">
+      <div className="pointer-events-auto">
+        {isOpen && (
+          <div className="bg-[#0b1120] text-slate-300 border border-white/10 rounded-[2rem] p-6 shadow-2xl mb-4 w-72 animate-in slide-in-from-bottom-4 duration-300 flex flex-col items-center">
+            <div className="w-full flex justify-between items-center mb-6">
+               <div className="flex bg-white/[0.02] p-1 rounded-xl border border-white/5">
+                 <button 
+                    onClick={setStudyMode} 
+                    className={`px-4 py-1.5 text-[9px] uppercase font-bold tracking-widest rounded-lg transition-all ${mode === 'study' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-300'}`}
+                 >
+                   Foco
+                 </button>
+                 <button 
+                    onClick={setBreakMode} 
+                    className={`px-4 py-1.5 text-[9px] uppercase font-bold tracking-widest rounded-lg transition-all ${mode === 'break' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-300'}`}
+                 >
+                   Pausa
+                 </button>
+               </div>
+               <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-white p-2 hover:bg-white/5 rounded-full transition-all">
+                  <X className="w-4 h-4" />
                </button>
-               <button 
-                  onClick={setBreakMode} 
-                  className={`px-3 py-1.5 text-[10px] uppercase tracking-widest rounded-lg transition-colors ${mode === 'break' ? 'bg-[#1E293B] text-indigo-400 shadow-sm font-bold border border-slate-700/50' : 'text-slate-500 hover:text-slate-300'}`}
-               >
-                 Pausa
-               </button>
-             </div>
-             <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-slate-300 bg-[#0B1120] hover:bg-[#1E293B] p-1.5 rounded-full transition-colors border border-slate-800 hover:border-slate-700">
-                <X className="w-4 h-4" />
-             </button>
-          </div>
-          
-          <div className="text-5xl font-mono font-bold text-white tracking-tight mb-6">
-            {formatTime(timeLeft)}
-          </div>
+            </div>
+            
+            <div className="text-6xl font-mono font-bold text-white tracking-tighter mb-8 drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+              {formatTime(timeLeft)}
+            </div>
 
-          <div className="flex items-center gap-3 w-full">
-             <button 
-               onClick={toggleTimer} 
-               className={`flex-1 py-3 rounded-2xl flex justify-center items-center gap-2 font-bold text-xs uppercase tracking-widest transition-all ${isActive ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'}`}
-             >
-                {isActive ? <><Square className="w-4 h-4" fill="currentColor"/> Parar</> : <><Play className="w-4 h-4" fill="currentColor"/> Iniciar</>}
-             </button>
-             <button 
-               onClick={resetTimer}
-               className="w-12 h-12 bg-[#0B1120] border border-slate-800 hover:bg-[#1E293B] hover:border-slate-700 text-slate-400 hover:text-slate-200 rounded-2xl flex justify-center items-center transition-colors shadow-sm"
-               title="Restaurar"
-             >
-                <RefreshCcw className="w-4 h-4" />
-             </button>
+            <div className="flex items-center gap-3 w-full">
+               <button 
+                 onClick={toggleTimer} 
+                 className={`flex-1 py-4 rounded-2xl flex justify-center items-center gap-2 font-bold text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 ${isActive ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20'}`}
+               >
+                  {isActive ? <><Square className="w-4 h-4 fill-current"/> Parar</> : <><Play className="w-4 h-4 fill-current"/> Iniciar</>}
+               </button>
+               <button 
+                 onClick={resetTimer}
+                 className="w-14 h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-white rounded-2xl flex justify-center items-center transition-all active:rotate-180"
+                 title="Reset"
+               >
+                  <RefreshCcw className="w-4 h-4" />
+               </button>
+            </div>
           </div>
-        </div>
-      )}
-      
-      {!isOpen && (
-        <button 
-          onClick={() => setIsOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white w-14 h-14 rounded-full shadow-lg shadow-indigo-900/50 flex items-center justify-center transition-transform hover:scale-110"
-        >
-           <Timer className="w-6 h-6" />
-        </button>
-      )}
+        )}
+        
+        {!isOpen && (
+          <button 
+            onClick={() => setIsOpen(true)}
+            className="group relative bg-indigo-600 hover:bg-indigo-500 text-white w-16 h-16 rounded-2xl shadow-xl shadow-indigo-600/20 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+          >
+             <div className="absolute inset-0 bg-indigo-400 rounded-2xl animate-ping opacity-20 group-hover:hidden"></div>
+             <Timer className="w-7 h-7 relative z-10" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
