@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useEdital } from "../store";
 import { format, isPast, isToday } from "date-fns";
+import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Edital } from "../types";
@@ -125,6 +126,72 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     }
   }
 
+  const downloadExcel = () => {
+    const rows: any[] = [];
+    
+    edital.areas.forEach(area => {
+      area.materias.forEach(materia => {
+        materia.topicos.forEach(topico => {
+          if (topico.subtopicos.length === 0) {
+             rows.push({
+               "Área": area.area,
+               "Matéria": materia.nome,
+               "Tópico": topico.titulo,
+               "Subtópico": "-",
+               "Concluído": topico.visto ? true : false,
+               "Data Estudo": topico.data_estudo ? format(new Date(topico.data_estudo), "dd/MM/yyyy") : "",
+               "Acertos": topico.acertos || 0,
+               "Erros": topico.erros || 0,
+               "Aproveitamento": topico.acertos || topico.erros ? Math.round((topico.acertos / (topico.acertos + topico.erros)) * 100) + '%' : "0%",
+               "Rev 1": topico.revisoes_agendadas[0] ? format(new Date(topico.revisoes_agendadas[0].data), "dd/MM/yyyy") + (topico.revisoes_agendadas[0].concluida ? ' (OK)' : '') : "",
+               "Rev 2": topico.revisoes_agendadas[1] ? format(new Date(topico.revisoes_agendadas[1].data), "dd/MM/yyyy") + (topico.revisoes_agendadas[1].concluida ? ' (OK)' : '') : "",
+               "Rev 3": topico.revisoes_agendadas[2] ? format(new Date(topico.revisoes_agendadas[2].data), "dd/MM/yyyy") + (topico.revisoes_agendadas[2].concluida ? ' (OK)' : '') : "",
+               "Rev 4": topico.revisoes_agendadas[3] ? format(new Date(topico.revisoes_agendadas[3].data), "dd/MM/yyyy") + (topico.revisoes_agendadas[3].concluida ? ' (OK)' : '') : "",
+               "Notas": topico.notas || ""
+             });
+          } else {
+             topico.subtopicos.forEach(sub => {
+                rows.push({
+                   "Área": area.area,
+                   "Matéria": materia.nome,
+                   "Tópico": topico.titulo,
+                   "Subtópico": sub.titulo,
+                   "Concluído": sub.visto ? true : false,
+                   "Data Estudo": sub.data_estudo ? format(new Date(sub.data_estudo), "dd/MM/yyyy") : "",
+                   "Acertos": sub.acertos || 0,
+                   "Erros": sub.erros || 0,
+                   "Aproveitamento": sub.acertos || sub.erros ? Math.round((sub.acertos / (sub.acertos + sub.erros)) * 100) + '%' : "0%",
+                   "Rev 1": sub.revisoes_agendadas[0] ? format(new Date(sub.revisoes_agendadas[0].data), "dd/MM/yyyy") + (sub.revisoes_agendadas[0].concluida ? ' (OK)' : '') : "",
+                   "Rev 2": sub.revisoes_agendadas[1] ? format(new Date(sub.revisoes_agendadas[1].data), "dd/MM/yyyy") + (sub.revisoes_agendadas[1].concluida ? ' (OK)' : '') : "",
+                   "Rev 3": sub.revisoes_agendadas[2] ? format(new Date(sub.revisoes_agendadas[2].data), "dd/MM/yyyy") + (sub.revisoes_agendadas[2].concluida ? ' (OK)' : '') : "",
+                   "Rev 4": sub.revisoes_agendadas[3] ? format(new Date(sub.revisoes_agendadas[3].data), "dd/MM/yyyy") + (sub.revisoes_agendadas[3].concluida ? ' (OK)' : '') : "",
+                   "Notas": sub.notas || ""
+                });
+             });
+          }
+        });
+      });
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Edital");
+    
+    const maxWidths = rows.reduce((acc, row) => {
+        Object.keys(row).forEach(key => {
+            const val = String(row[key]);
+            acc[key] = Math.max(acc[key] || key.length, val.length);
+        });
+        return acc;
+    }, {} as Record<string, number>);
+    
+    worksheet['!cols'] = Object.keys(rows[0] || {}).map(key => ({
+        wch: Math.min((maxWidths as any)[key] + 2, 50)
+    }));
+
+    XLSX.writeFile(workbook, `Edital_${edital.titulo.substring(0,20).replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`);
+  };
+
   const downloadPDF = () => {
     const doc = new jsPDF();
     doc.setFont("helvetica");
@@ -161,10 +228,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 selection:bg-blue-900/30 font-sans text-slate-800">
       {/* Header */}
-      <header className="min-h-[4rem] px-4 sm:px-8 py-3 sm:py-0 flex flex-col sm:flex-row items-start sm:items-center justify-between shrink-0 border-b border-slate-200 bg-slate-50/50 backdrop-blur-xl sticky top-0 z-30 gap-3 sm:gap-0">
+      <header className="min-h-[3.5rem] px-3 sm:px-6 py-2 sm:py-0 flex flex-col sm:flex-row items-start sm:items-center justify-between shrink-0 border-b border-slate-200 bg-slate-50/50 backdrop-blur-xl sticky top-0 z-30 gap-2 sm:gap-0">
         <div className="flex flex-col w-full sm:w-auto">
-          <h2 className="text-lg sm:text-xl font-display font-semibold text-slate-900 leading-tight flex items-center gap-2">
-            <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-blue-800 shrink-0" />
+          <h2 className="text-base sm:text-lg font-display font-semibold text-slate-900 leading-tight flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-blue-800 shrink-0" />
             {editingItemId === edital.id ? (
               <input
                  autoFocus
@@ -178,87 +245,91 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
               <span onDoubleClick={() => handleEdit(edital.id, edital.titulo)} className="cursor-text break-words line-clamp-2">{edital.titulo}</span>
             )}
           </h2>
-          <div className="flex items-center gap-3 mt-2 sm:mt-1">
-            <span className="text-[10px] text-blue-800 font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] bg-blue-900/10 px-2 py-0.5 rounded border border-blue-900/20">Edital Ativo</span>
-            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider sm:tracking-widest">{stats.completed} de {stats.total} concluídos</span>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[9px] text-blue-800 font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] bg-blue-900/10 px-1.5 py-[1px] rounded border border-blue-900/20">Edital Ativo</span>
+            <span className="text-[9px] text-slate-500 font-medium uppercase tracking-wider sm:tracking-widest">{stats.completed} de {stats.total} concluídos</span>
           </div>
         </div>
-        <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto justify-end">
-           <button onClick={downloadPDF} className="flex-1 sm:flex-none justify-center group flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all shadow-sm">
-             <Download className="w-4 h-4 shrink-0" />
+        <div className="flex items-center gap-1.5 self-end sm:self-auto w-full sm:w-auto justify-end mt-2 sm:mt-0">
+           <button onClick={downloadExcel} className="flex-1 sm:flex-none justify-center group flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-bold transition-all shadow-sm">
+             <Download className="w-3.5 h-3.5 shrink-0" />
+             <span className="hidden sm:inline">Planilha</span>
+           </button>
+           <button onClick={downloadPDF} className="flex-1 sm:flex-none justify-center group flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-[10px] font-bold transition-all shadow-sm">
+             <Download className="w-3.5 h-3.5 shrink-0" />
              <span className="hidden sm:inline">PDF</span>
            </button>
-           <button onClick={() => addItem(edital.id)} className="flex-1 sm:flex-none justify-center group flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-blue-900/20">
-             <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform shrink-0" />
+           <button onClick={() => addItem(edital.id)} className="flex-1 sm:flex-none justify-center group flex items-center gap-1.5 px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white rounded-lg text-[10px] font-bold transition-all shadow-lg shadow-blue-900/20">
+             <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform shrink-0" />
              Área
            </button>
            <button 
               onClick={() => confirm("Excluir edital completo?") && deleteEdital(edital.id)} 
-              className="p-2 sm:p-2.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/5 rounded-xl transition-all border border-slate-200 ml-1 sm:ml-2 shrink-0"
+              className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/5 rounded-xl transition-all border border-slate-200 ml-1 shrink-0"
             >
-             <Trash2 className="w-4 h-4" />
+             <Trash2 className="w-3.5 h-3.5" />
            </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 px-4 sm:px-8 pb-32 pt-6 sm:pt-8 overflow-hidden flex flex-col max-w-7xl mx-auto w-full">
+      <div className="flex-1 px-3 sm:px-6 pb-24 pt-4 overflow-hidden flex flex-col max-w-7xl mx-auto w-full">
         {/* Tabs Bar */}
-        <div className="flex items-center gap-1 mb-6 sm:mb-10 bg-white shadow-sm p-1.5 rounded-2xl border border-slate-200 w-full sm:w-fit overflow-x-auto whitespace-nowrap hide-scrollbar shrink-0">
-          <button onClick={() => setActiveTab('topicos')} className={`px-4 sm:px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider sm:tracking-widest transition-all flex items-center gap-2 ${activeTab === 'topicos' ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
-             <ListTodo className="w-4 h-4 shrink-0"/> Conteúdo
+        <div className="flex items-center gap-1 mb-4 sm:mb-6 bg-white shadow-sm p-1 rounded-xl border border-slate-200 w-full sm:w-fit overflow-x-auto whitespace-nowrap hide-scrollbar shrink-0">
+          <button onClick={() => setActiveTab('topicos')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${activeTab === 'topicos' ? 'bg-blue-900 text-white shadow-md shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
+             <ListTodo className="w-3.5 h-3.5 shrink-0"/> Conteúdo
           </button>
-          <button onClick={() => setActiveTab('revisoes')} className={`px-4 sm:px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider sm:tracking-widest transition-all flex items-center gap-2 ${activeTab === 'revisoes' ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
-             <History className="w-4 h-4 shrink-0"/> Revisões
-             {editalRevisions.length > 0 && <span className={`${activeTab === 'revisoes' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'} px-1.5 py-0.5 rounded text-[9px] ml-1`}>{editalRevisions.length}</span>}
+          <button onClick={() => setActiveTab('revisoes')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${activeTab === 'revisoes' ? 'bg-blue-900 text-white shadow-md shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
+             <History className="w-3.5 h-3.5 shrink-0"/> Revisões
+             {editalRevisions.length > 0 && <span className={`${activeTab === 'revisoes' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'} px-1 py-[1px] rounded text-[8px] ml-0.5`}>{editalRevisions.length}</span>}
           </button>
-          <button onClick={() => setActiveTab('notas')} className={`px-4 sm:px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider sm:tracking-widest transition-all flex items-center gap-2 ${activeTab === 'notas' ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
-             <FileText className="w-4 h-4 shrink-0"/> Notas
-             {allNotes.length > 0 && <span className={`${activeTab === 'notas' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'} px-1.5 py-0.5 rounded text-[9px] ml-1`}>{allNotes.length}</span>}
+          <button onClick={() => setActiveTab('notas')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${activeTab === 'notas' ? 'bg-blue-900 text-white shadow-md shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
+             <FileText className="w-3.5 h-3.5 shrink-0"/> Notas
+             {allNotes.length > 0 && <span className={`${activeTab === 'notas' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'} px-1 py-[1px] rounded text-[8px] ml-0.5`}>{allNotes.length}</span>}
           </button>
         </div>
 
         {activeTab === 'topicos' && (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {/* Stats Bar */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 sm:gap-6 mb-6 sm:mb-10 shrink-0">
-               <div className="flex-1 w-full sm:max-w-md">
-                  <div className="flex justify-between items-center mb-2.5">
-                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Progresso Geral</span>
-                     <span className="text-sm font-mono font-bold text-blue-800">{stats.percent}%</span>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 sm:gap-4 mb-4 shrink-0">
+               <div className="flex-1 w-full sm:max-w-xs">
+                  <div className="flex justify-between items-center mb-1.5">
+                     <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">Progresso Geral</span>
+                     <span className="text-[11px] font-mono font-bold text-blue-800">{stats.percent}%</span>
                   </div>
-                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
                      <div className="bg-gradient-to-r from-blue-900 to-blue-800 h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${stats.percent}%` }}></div>
                   </div>
                </div>
 
-               <div className="flex items-center gap-1 p-1 bg-slate-100 border border-slate-200 rounded-xl shrink-0 w-full sm:w-auto overflow-x-auto hide-scrollbar">
-                  <button onClick={() => setFilter('all')} className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filter==='all' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>Tudo</button>
-                  <button onClick={() => setFilter('pending')} className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filter==='pending' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>Pendentes</button>
-                  <button onClick={() => setFilter('completed')} className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filter==='completed' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>Concluídos</button>
+               <div className="flex items-center gap-0.5 p-0.5 bg-slate-100 border border-slate-200 rounded-lg shrink-0 w-full sm:w-auto overflow-x-auto hide-scrollbar">
+                  <button onClick={() => setFilter('all')} className={`flex-1 sm:flex-none px-2.5 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all ${filter==='all' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>Tudo</button>
+                  <button onClick={() => setFilter('pending')} className={`flex-1 sm:flex-none px-2.5 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all ${filter==='pending' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>Pend.</button>
+                  <button onClick={() => setFilter('completed')} className={`flex-1 sm:flex-none px-2.5 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all ${filter==='completed' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>Concl.</button>
                </div>
             </div>
 
             {/* Content List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
                {edital.areas.map(area => (
-                 <div key={area.id} className="mb-12 last:mb-32">
+                 <div key={area.id} className="mb-6 last:mb-16">
                    {/* Area Title */}
-                   <div className="flex items-center gap-6 mb-6 group">
-                      <div className="h-px bg-slate-100 flex-1"></div>
-                      <div className="flex items-center gap-3">
+                   <div className="flex items-center gap-4 mb-4 group">
+                      <div className="h-px bg-slate-200 flex-1"></div>
+                      <div className="flex items-center gap-2">
                          {editingItemId === area.id ? (
-                           <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, '', '', 'area')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, '', '', 'area')} className="bg-slate-50 text-slate-900 px-3 py-1 rounded border border-blue-900 text-[11px] font-bold uppercase tracking-[0.2em] outline-none" />
+                           <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, '', '', 'area')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, '', '', 'area')} className="bg-slate-50 text-slate-900 px-2 py-0.5 rounded border border-blue-900 text-[10px] font-bold uppercase tracking-[0.2em] outline-none" />
                          ) : (
-                           <span onDoubleClick={() => handleEdit(area.id, area.area)} className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em] cursor-text">{area.area}</span>
+                           <span onDoubleClick={() => handleEdit(area.id, area.area)} className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] cursor-text">{area.area}</span>
                          )}
-                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => setAiModal({isOpen: true, editalId: edital.id, areaId: area.id})} className="p-1 text-slate-400 hover:text-amber-500" title="Gerar Matéria com IA"><Sparkles className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => addItem(edital.id, area.id)} className="p-1 text-slate-400 hover:text-blue-800" title="Add Matéria"><Plus className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => confirm("Excluir área?") && deleteItem(edital.id, area.id, '', '', 'area')} className="p-1 text-slate-400 hover:text-rose-400" title="Delete Área"><Trash2 className="w-3.5 h-3.5" /></button>
+                         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setAiModal({isOpen: true, editalId: edital.id, areaId: area.id})} className="p-1 text-slate-400 hover:text-amber-500" title="Gerar Matéria com IA"><Sparkles className="w-3 h-3" /></button>
+                            <button onClick={() => addItem(edital.id, area.id)} className="p-1 text-slate-400 hover:text-blue-800" title="Add Matéria"><Plus className="w-3 h-3" /></button>
+                            <button onClick={() => confirm("Excluir área?") && deleteItem(edital.id, area.id, '', '', 'area')} className="p-1 text-slate-400 hover:text-rose-400" title="Delete Área"><Trash2 className="w-3 h-3" /></button>
                          </div>
                       </div>
-                      <div className="h-px bg-slate-100 flex-1"></div>
+                      <div className="h-px bg-slate-200 flex-1"></div>
                    </div>
 
                    {area.materias.map(materia => {
@@ -284,30 +355,30 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                      const matProgress = matTotal === 0 ? 0 : Math.round((matDone / matTotal) * 100);
 
                      return (
-                       <div key={materia.id} className="mb-3 rounded-2xl border border-slate-200 bg-white overflow-hidden group/mat transition-all hover:bg-white shadow-sm hover:border-slate-300">
-                          <div className="flex items-center justify-between px-6 py-4">
-                             <button onClick={() => toggleMateria(materia.id)} className="flex items-center gap-4 flex-1 text-left">
-                                <div className={`flex items-center justify-center w-6 h-6 rounded-lg transition-all ${isExp ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/20' : 'bg-slate-100 text-slate-500'}`}>
-                                   {isExp ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                       <div key={materia.id} className="mb-2 rounded-xl border border-slate-200 bg-white overflow-hidden group/mat transition-all hover:bg-white shadow-sm hover:border-slate-300">
+                          <div className="flex items-center justify-between px-3 py-2">
+                             <button onClick={() => toggleMateria(materia.id)} className="flex items-center gap-3 flex-1 text-left">
+                                <div className={`flex items-center justify-center w-5 h-5 rounded-md transition-all ${isExp ? 'bg-blue-900 text-white shadow-sm shadow-blue-900/20' : 'bg-slate-100 text-slate-500'}`}>
+                                   {isExp ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                                 </div>
                                 {editingItemId === materia.id ? (
-                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, '', 'materia')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, '', 'materia')} onClick={e => e.stopPropagation()} className="bg-slate-50 text-slate-900 px-2 py-1 rounded border border-blue-900 text-xs font-bold outline-none" />
+                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, '', 'materia')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, '', 'materia')} onClick={e => e.stopPropagation()} className="bg-slate-50 text-slate-900 px-1.5 py-0.5 rounded border border-blue-900 text-[10px] font-bold outline-none" />
                                 ) : (
-                                  <span onDoubleClick={(e) => { e.stopPropagation(); handleEdit(materia.id, materia.nome); }} className="text-xs font-bold text-slate-800 tracking-wide uppercase cursor-text">{materia.nome}</span>
+                                  <span onDoubleClick={(e) => { e.stopPropagation(); handleEdit(materia.id, materia.nome); }} className="text-[11px] font-bold text-slate-800 tracking-wide uppercase cursor-text">{materia.nome}</span>
                                 )}
                              </button>
-                             <div className="flex items-center gap-6">
-                                <div className="flex flex-col items-end gap-1 mr-2 opacity-50 group-hover/mat:opacity-100 transition-opacity">
-                                   <div className="flex items-center gap-2">
-                                      <span className="text-[10px] font-mono font-bold text-slate-500">{matProgress}%</span>
-                                      <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                             <div className="flex items-center gap-4">
+                                <div className="flex flex-col items-end gap-0.5 mr-1 opacity-50 group-hover/mat:opacity-100 transition-opacity">
+                                   <div className="flex items-center gap-1.5">
+                                      <span className="text-[9px] font-mono font-bold text-slate-500">{matProgress}%</span>
+                                      <div className="w-10 h-1 bg-slate-100 rounded-full overflow-hidden">
                                          <div className="h-full bg-blue-900 transition-all" style={{ width: `${matProgress}%` }}></div>
                                       </div>
                                    </div>
                                 </div>
-                                <div className="hidden sm:flex items-center gap-2 opacity-0 group-hover/mat:opacity-100 transition-opacity">
-                                   <button onClick={() => addItem(edital.id, area.id, materia.id)} className="p-1.5 text-slate-400 hover:text-blue-800 bg-slate-100 rounded-lg border border-slate-200" title="Add Tópico"><Plus className="w-3.5 h-3.5" /></button>
-                                   <button onClick={() => confirm("Excluir matéria?") && deleteItem(edital.id, area.id, materia.id, materia.id, 'materia')} className="p-1.5 text-slate-400 hover:text-rose-400 bg-slate-100 rounded-lg border border-slate-200" title="Delete Matéria"><Trash2 className="w-3.5 h-3.5" /></button>
+                                <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover/mat:opacity-100 transition-opacity">
+                                   <button onClick={() => addItem(edital.id, area.id, materia.id)} className="p-1 text-slate-400 hover:text-blue-800 bg-slate-100 rounded-md border border-slate-200" title="Add Tópico"><Plus className="w-3 h-3" /></button>
+                                   <button onClick={() => confirm("Excluir matéria?") && deleteItem(edital.id, area.id, materia.id, materia.id, 'materia')} className="p-1 text-slate-400 hover:text-rose-400 bg-slate-100 rounded-md border border-slate-200" title="Delete Matéria"><Trash2 className="w-3 h-3" /></button>
                                 </div>
                              </div>
                           </div>
@@ -330,53 +401,53 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                  return (
                                      <div key={topico.id}>
                                       {tMatch && (
-                                        <div className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-3 lg:gap-y-0 border-b border-slate-200 py-3 sm:py-4 px-4 sm:px-8 items-start lg:items-center group/item transition-colors ${topico.visto ? 'bg-blue-900' : 'hover:bg-slate-50'}`}>
-                                           <div className="lg:col-span-6 flex items-center gap-3 sm:gap-4 w-full">
+                                        <div className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-2 lg:gap-y-0 border-b border-slate-200 py-1.5 sm:py-2 px-3 sm:px-4 items-start lg:items-center group/item transition-colors ${topico.visto ? 'bg-blue-900' : 'hover:bg-slate-50'}`}>
+                                           <div className="lg:col-span-6 flex items-center gap-2 sm:gap-3 w-full">
                                               <label className="relative flex items-center justify-center cursor-pointer shrink-0">
                                                 <input type="checkbox" checked={topico.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id)} />
-                                                <div className={`w-4 h-4 border rounded transition-all flex items-center justify-center ${topico.visto ? 'bg-white border-white' : 'border-slate-300 peer-checked:bg-blue-900 peer-checked:border-blue-900'}`}>
-                                                   <Check className={`w-3 h-3 opacity-0 peer-checked:opacity-100 transition-opacity ${topico.visto ? 'text-blue-900' : 'text-white'}`} strokeWidth={3} />
+                                                <div className={`w-3.5 h-3.5 border rounded transition-all flex items-center justify-center ${topico.visto ? 'bg-white border-white' : 'border-slate-300 peer-checked:bg-blue-900 peer-checked:border-blue-900'}`}>
+                                                   <Check className={`w-2.5 h-2.5 opacity-0 peer-checked:opacity-100 transition-opacity ${topico.visto ? 'text-blue-900' : 'text-white'}`} strokeWidth={3} />
                                                 </div>
                                               </label>
-                                              <div className={`text-[11px] font-medium flex-1 flex items-center gap-3 ${topico.visto ? 'text-white' : 'text-slate-800'}`}>
+                                              <div className={`text-[10px] font-medium flex-1 flex items-center gap-2 ${topico.visto ? 'text-white' : 'text-slate-800'}`}>
                                                 {editingItemId === topico.id ? (
                                                   <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'topico')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'topico')} className={`bg-transparent w-full outline-none ${topico.visto ? 'text-white' : 'text-slate-900'}`} />
                                                 ) : (
-                                                  <span onDoubleClick={() => handleEdit(topico.id, topico.titulo)} className="cursor-text break-words w-full line-clamp-2">{topico.titulo}</span>
+                                                  <span onDoubleClick={() => handleEdit(topico.id, topico.titulo)} className="cursor-text break-words w-full line-clamp-1 hover:line-clamp-none">{topico.titulo}</span>
                                                 )}
                                                 {topicoProgress !== null && topicoProgress > 0 && (
-                                                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md self-center shrink-0 ${topico.visto ? 'text-white bg-white/20' : 'text-blue-800 bg-blue-900/10'}`}>{topicoProgress}%</span>
+                                                   <span className={`text-[8px] font-bold px-1 py-0.5 rounded self-center shrink-0 ${topico.visto ? 'text-white bg-white/20' : 'text-blue-800 bg-blue-900/10'}`}>{topicoProgress}%</span>
                                                 )}
                                               </div>
                                            </div>
                                            
-                                           <div className="w-full lg:col-span-6 flex items-center justify-between lg:grid lg:grid-cols-6 gap-2 sm:gap-4 pl-7 lg:pl-0">
+                                           <div className="w-full lg:col-span-6 flex items-center justify-between lg:grid lg:grid-cols-6 gap-2 pl-6 lg:pl-0">
                                              <div className="lg:col-span-2 flex justify-center">
-                                                <div className={`flex shadow-sm border rounded-md overflow-hidden text-[10px] ${topico.visto ? 'bg-white/10 border-white/20' : 'bg-white border-slate-300'}`}>
-                                                   <input type="number" placeholder="Ac." value={topico.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, parseInt(e.target.value)||0, topico.erros||0)} className={`w-8 lg:w-9 text-center bg-transparent py-1 outline-none font-mono ${topico.visto ? 'text-emerald-300 placeholder-white/30' : 'text-emerald-400'}`} />
-                                                   <div className={`w-px h-3 self-center ${topico.visto ? 'bg-white/20' : 'bg-slate-200'}`}></div>
-                                                   <input type="number" placeholder="Er." value={topico.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, topico.acertos||0, parseInt(e.target.value)||0)} className={`w-8 lg:w-9 text-center bg-transparent py-1 outline-none font-mono ${topico.visto ? 'text-rose-300 placeholder-white/30' : 'text-rose-400'}`} />
+                                                <div className={`flex shadow-sm border rounded overflow-hidden text-[9px] ${topico.visto ? 'bg-white/10 border-white/20' : 'bg-white border-slate-300'}`}>
+                                                   <input type="number" placeholder="Ac" value={topico.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, parseInt(e.target.value)||0, topico.erros||0)} className={`w-6 lg:w-7 text-center bg-transparent py-0.5 outline-none font-mono ${topico.visto ? 'text-emerald-300 placeholder-white/30' : 'text-emerald-500'}`} />
+                                                   <div className={`w-px h-2.5 self-center ${topico.visto ? 'bg-white/20' : 'bg-slate-200'}`}></div>
+                                                   <input type="number" placeholder="Er" value={topico.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, topico.acertos||0, parseInt(e.target.value)||0)} className={`w-6 lg:w-7 text-center bg-transparent py-0.5 outline-none font-mono ${topico.visto ? 'text-rose-300 placeholder-white/30' : 'text-rose-500'}`} />
                                                 </div>
                                              </div>
   
-                                             <div className={`lg:col-span-1 text-center font-mono text-[10px] ${topico.visto ? 'text-white/70' : 'text-slate-500'}`}>
+                                             <div className={`lg:col-span-1 text-center font-mono text-[9px] ${topico.visto ? 'text-white/70' : 'text-slate-500'}`}>
                                                 <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={`uppercase transition-colors ${topico.visto ? 'hover:text-white' : 'hover:text-blue-800'}`}>
                                                    {topico.data_estudo ? format(new Date(topico.data_estudo), "dd/MM") : "—"}
                                                 </button>
                                              </div>
   
-                                             <div className="lg:col-span-2 text-center font-mono text-[10px]">
+                                             <div className="lg:col-span-2 text-center font-mono text-[9px]">
                                                 {nextRevT ? (
                                                   <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={isDelayedT ? (topico.visto ? 'text-rose-200 hover:opacity-75' : 'text-rose-400 hover:opacity-75') : isDueTodayT ? (topico.visto ? 'text-amber-200 hover:opacity-75' : 'text-amber-400 hover:opacity-75') : (topico.visto ? 'text-white underline decoration-white/30 hover:opacity-75' : 'text-blue-800 underline decoration-blue-800/30 hover:opacity-75')}>
                                                     {format(new Date(nextRevT), "dd/MM")}
                                                   </button>
-                                                ) : <span className={topico.visto ? 'text-white/50' : 'text-slate-700'}>—</span>}
+                                                ) : <span className={topico.visto ? 'text-white/50' : 'text-slate-500'}>—</span>}
                                              </div>
   
-                                             <div className="lg:col-span-1 flex justify-end gap-1 opacity-100 lg:opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                                <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, currentNote: topico.notas || '', title: topico.titulo })} className={`p-1.5 lg:p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-amber-400'}`}><StickyNote className="w-3 h-3 lg:w-3 lg:h-3" /></button>
-                                                <button onClick={() => addItem(edital.id, area.id, materia.id, topico.id)} className={`p-1.5 lg:p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-blue-800'}`}><Plus className="w-3 h-3 lg:w-3 lg:h-3" /></button>
-                                                <button onClick={() => confirm("Excluir tópico?") && deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className={`p-1.5 lg:p-1 ${topico.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-500 hover:text-rose-400'}`}><Trash2 className="w-3 h-3 lg:w-3 lg:h-3" /></button>
+                                             <div className="lg:col-span-1 flex justify-end gap-0.5 opacity-100 lg:opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, currentNote: topico.notas || '', title: topico.titulo })} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-amber-500'}`}><StickyNote className="w-3 h-3" /></button>
+                                                <button onClick={() => addItem(edital.id, area.id, materia.id, topico.id)} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-blue-800'}`}><Plus className="w-3 h-3" /></button>
+                                                <button onClick={() => confirm("Excluir tópico?") && deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-500 hover:text-rose-500'}`}><Trash2 className="w-3 h-3" /></button>
                                              </div>
                                            </div>
                                         </div>
@@ -390,29 +461,30 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                               const isDueTodayS = nextRSub && isToday(nextRSub);
 
                                               return (
-                                                <div key={sub.id} className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-3 lg:gap-y-0 border-b border-slate-200 py-3 px-4 sm:px-8 items-start lg:items-center bg-slate-50/10 group/sub transition-colors ${sub.visto ? 'bg-blue-900 border-blue-800' : 'hover:bg-slate-50'}`}>
-                                                   <div className="lg:col-span-6 flex items-center gap-3 sm:gap-4 pl-0 sm:pl-6 w-full">
-                                                      <CornerDownRight className={`w-3.5 h-3.5 shrink-0 ml-2 sm:ml-0 ${sub.visto ? 'text-white/40' : 'text-slate-400'}`} />
+                                                <div key={sub.id} className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-2 lg:gap-y-0 border-b border-slate-200 py-1.5 px-3 sm:px-4 items-start lg:items-center bg-slate-50/10 group/sub transition-colors ${sub.visto ? 'bg-blue-900 border-blue-800' : 'hover:bg-slate-50'}`}>
+                                                   <div className="lg:col-span-6 flex items-center gap-2 sm:gap-2.5 pl-0 sm:pl-4 w-full">
+                                                      <CornerDownRight className={`w-3 h-3 shrink-0 ml-1 sm:ml-0 ${sub.visto ? 'text-white/40' : 'text-slate-400'}`} />
                                                       <label className="relative flex items-center justify-center cursor-pointer shrink-0">
                                                         <input type="checkbox" checked={sub.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id, sub.id)} />
-                                                        <div className={`w-3.5 h-3.5 border rounded transition-all flex items-center justify-center ${sub.visto ? 'bg-white border-white' : 'border-slate-300 peer-checked:bg-blue-900 peer-checked:border-blue-900'}`}>
-                                                           <Check className={`w-2.5 h-2.5 opacity-0 peer-checked:opacity-100 transition-opacity ${sub.visto ? 'text-blue-900' : 'text-white'}`} strokeWidth={3} />
+                                                        <div className={`w-3 h-3 border rounded-sm transition-all flex items-center justify-center ${sub.visto ? 'bg-white border-white' : 'border-slate-300 peer-checked:bg-blue-900 peer-checked:border-blue-900'}`}>
+                                                           <Check className={`w-2 h-2 opacity-0 peer-checked:opacity-100 transition-opacity ${sub.visto ? 'text-blue-900' : 'text-white'}`} strokeWidth={3} />
                                                         </div>
                                                       </label>
-                                                      <div className={`text-[11px] flex-1 break-words w-full ${sub.visto ? 'text-white line-through opacity-80' : 'text-slate-700'}`}>
+                                                      <div className={`text-[10px] flex-1 break-words w-full ${sub.visto ? 'text-white line-through opacity-80' : 'text-slate-600'}`}>
                                                         {editingItemId === sub.id ? (
                                                           <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} className={`bg-transparent w-full outline-none ${sub.visto ? 'text-white' : 'text-slate-900'}`} />
                                                         ) : (
-                                                          <span onDoubleClick={() => handleEdit(sub.id, sub.titulo)} className="cursor-text line-clamp-2">{sub.titulo}</span>
+                                                          <span onDoubleClick={() => handleEdit(sub.id, sub.titulo)} className="cursor-text line-clamp-1 hover:line-clamp-none">{sub.titulo}</span>
                                                         )}
                                                       </div>
                                                    </div>
                                                    
-                                                   <div className="w-full lg:col-span-6 flex items-center justify-between lg:grid lg:grid-cols-6 gap-2 sm:gap-4 pl-10 sm:pl-6 lg:pl-0">
+                                                   <div className="w-full lg:col-span-6 flex items-center justify-between lg:grid lg:grid-cols-6 gap-2 pl-6 sm:pl-4 lg:pl-0 mt-1 lg:mt-0">
                                                      <div className="lg:col-span-2 flex justify-center">
                                                         <div className={`flex border rounded text-[9px] opacity-70 ${sub.visto ? 'bg-white/10 border-white/20' : 'bg-white border-slate-200'}`}>
-                                                           <input type="number" placeholder="Ac." value={sub.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, parseInt(e.target.value)||0, sub.erros||0)} className={`w-8 text-center bg-transparent py-0.5 outline-none font-mono ${sub.visto ? 'text-emerald-300' : 'text-emerald-400/80'}`} />
-                                                           <input type="number" placeholder="Er." value={sub.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, sub.acertos||0, parseInt(e.target.value)||0)} className={`w-8 text-center bg-transparent py-0.5 outline-none font-mono ${sub.visto ? 'text-rose-300' : 'text-rose-400/80'}`} />
+                                                           <input type="number" placeholder="Ac" value={sub.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, parseInt(e.target.value)||0, sub.erros||0)} className={`w-6 lg:w-7 text-center bg-transparent py-[1px] outline-none font-mono ${sub.visto ? 'text-emerald-300' : 'text-emerald-500'}`} />
+                                                           <div className={`w-px h-2.5 self-center ${sub.visto ? 'bg-white/20' : 'bg-slate-200'}`}></div>
+                                                           <input type="number" placeholder="Er" value={sub.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, sub.acertos||0, parseInt(e.target.value)||0)} className={`w-6 lg:w-7 text-center bg-transparent py-[1px] outline-none font-mono ${sub.visto ? 'text-rose-300' : 'text-rose-500'}`} />
                                                         </div>
                                                      </div>
   
@@ -424,15 +496,15 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   
                                                      <div className="lg:col-span-2 text-center font-mono text-[9px]">
                                                         {nextRSub ? (
-                                                          <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 ${isDelayedS ? (sub.visto ? 'text-rose-200' : 'text-rose-400/70') : isDueTodayS ? (sub.visto ? 'text-amber-200' : 'text-amber-400/70') : (sub.visto ? 'text-white' : 'text-blue-800/70')}`}>
+                                                          <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 ${isDelayedS ? (sub.visto ? 'text-rose-200' : 'text-rose-500') : isDueTodayS ? (sub.visto ? 'text-amber-200' : 'text-amber-500') : (sub.visto ? 'text-white' : 'text-blue-800/80')}`}>
                                                             {format(new Date(nextRSub), "dd/MM")}
                                                           </button>
-                                                        ) : <span className={sub.visto ? 'text-white/50' : 'text-slate-800'}>—</span>}
+                                                        ) : <span className={sub.visto ? 'text-white/50' : 'text-slate-400'}>—</span>}
                                                      </div>
   
-                                                     <div className="lg:col-span-1 flex justify-end gap-1 opacity-100 lg:opacity-0 group-hover/sub:opacity-100 transition-opacity">
-                                                        <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, currentNote: sub.notas || '', title: sub.titulo })} className={`p-1.5 lg:p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-amber-400'}`}><StickyNote className="w-3 h-3 lg:w-3 lg:h-3" /></button>
-                                                        <button onClick={() => confirm("Excluir subtópico?") && deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico', topico.id)} className={`p-1.5 lg:p-1 ${sub.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-400'}`}><Trash2 className="w-3 h-3 lg:w-3 lg:h-3" /></button>
+                                                     <div className="lg:col-span-1 flex justify-end gap-0.5 opacity-100 lg:opacity-0 group-hover/sub:opacity-100 transition-opacity">
+                                                        <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, currentNote: sub.notas || '', title: sub.titulo })} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-amber-500'}`}><StickyNote className="w-2.5 h-2.5" /></button>
+                                                        <button onClick={() => confirm("Excluir subtópico?") && deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico', topico.id)} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-500'}`}><Trash2 className="w-2.5 h-2.5" /></button>
                                                      </div>
                                                    </div>
                                                 </div>
