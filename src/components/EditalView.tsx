@@ -406,7 +406,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                               <label className="relative flex items-center justify-center cursor-pointer shrink-0">
                                                 <input type="checkbox" checked={topico.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id)} />
                                                 <div className={`w-3.5 h-3.5 border rounded transition-all flex items-center justify-center ${topico.visto ? 'bg-white border-white' : 'border-slate-300 peer-checked:bg-blue-900 peer-checked:border-blue-900'}`}>
-                                                   <Check className={`w-2.5 h-2.5 opacity-0 peer-checked:opacity-100 transition-opacity ${topico.visto ? 'text-blue-900' : 'text-white'}`} strokeWidth={3} />
+                                                   <Check className={`w-2.5 h-2.5 transition-opacity ${topico.visto ? 'opacity-100 text-blue-900' : 'opacity-0 peer-checked:opacity-100 text-white'}`} strokeWidth={3} />
                                                 </div>
                                               </label>
                                               <div className={`text-[10px] font-medium flex-1 flex items-center gap-2 ${topico.visto ? 'text-white' : 'text-slate-800'}`}>
@@ -461,13 +461,13 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                               const isDueTodayS = nextRSub && isToday(nextRSub);
 
                                               return (
-                                                <div key={sub.id} className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-2 lg:gap-y-0 border-b border-slate-200 py-1.5 px-3 sm:px-4 items-start lg:items-center bg-slate-50/10 group/sub transition-colors ${sub.visto ? 'bg-blue-900 border-blue-800' : 'hover:bg-slate-50'}`}>
+                                                <div key={sub.id} className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-2 lg:gap-y-0 border-b border-slate-200 py-1.5 px-3 sm:px-4 items-start lg:items-center group/sub transition-colors ${sub.visto ? 'bg-blue-900 border-blue-800' : 'hover:bg-slate-50'}`}>
                                                    <div className="lg:col-span-6 flex items-center gap-2 sm:gap-2.5 pl-0 sm:pl-4 w-full">
                                                       <CornerDownRight className={`w-3 h-3 shrink-0 ml-1 sm:ml-0 ${sub.visto ? 'text-white/40' : 'text-slate-400'}`} />
                                                       <label className="relative flex items-center justify-center cursor-pointer shrink-0">
                                                         <input type="checkbox" checked={sub.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id, sub.id)} />
                                                         <div className={`w-3 h-3 border rounded-sm transition-all flex items-center justify-center ${sub.visto ? 'bg-white border-white' : 'border-slate-300 peer-checked:bg-blue-900 peer-checked:border-blue-900'}`}>
-                                                           <Check className={`w-2 h-2 opacity-0 peer-checked:opacity-100 transition-opacity ${sub.visto ? 'text-blue-900' : 'text-white'}`} strokeWidth={3} />
+                                                           <Check className={`w-2 h-2 transition-opacity ${sub.visto ? 'opacity-100 text-blue-900' : 'opacity-0 peer-checked:opacity-100 text-white'}`} strokeWidth={3} />
                                                         </div>
                                                       </label>
                                                       <div className={`text-[10px] flex-1 break-words w-full ${sub.visto ? 'text-white line-through opacity-80' : 'text-slate-600'}`}>
