@@ -13,20 +13,24 @@ Extract the following text from a Public Exam Syllabus (Edital) into a structure
 Follow the hierarchy: Area de Conhecimento -> Materias -> Topicos -> Subtopicos.
 Only output Area de Conhecimento at the top level of the array.
 
+CRITICAL INSTRUCTION FOR NESTED TERMS:
+If the text contains highly nested items (e.g., 4.1, 4.1.1, Título I, Capítulo II) that go deeper than the standard 4 levels, you MUST flatten them into the "subtopicos" array of their parent "topico". 
+Make sure NO nested checkboxes or bullet points are lost. Treat everything below a "Topico" as a "Subtopico", even if it has multiple levels of indentation (just include the title text as a subtopic string).
+
 Example structure:
 [
   {
     "area": "CONHECIMENTOS GERAIS",
     "materias": [
       {
-        "nome": "LÍNGUA PORTUGUESA",
+        "nome": "4. NOÇÕES DE DIREITO",
         "topicos": [
           {
-            "titulo": "1 Compreensão e interpretação de textos",
+            "titulo": "4.1 Constituição da República Federativa do Brasil",
             "subtopicos": [
-              {
-                "titulo": "1.1 Elementos de referenciação"
-              }
+              { "titulo": "Título I: Dos Princípios Fundamentais" },
+              { "titulo": "Título II: Dos Direitos e Garantias Fundamentais" },
+              { "titulo": "Capítulo I: Dos Direitos e Deveres Individuais e Coletivos" }
             ]
           }
         ]

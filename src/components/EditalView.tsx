@@ -430,8 +430,8 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                            <div className="lg:col-span-6 flex items-center gap-2 sm:gap-3 w-full">
                                               <label className="relative flex items-center justify-center cursor-pointer shrink-0">
                                                 <input type="checkbox" checked={topico.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id)} />
-                                                <div className={`w-3.5 h-3.5 border rounded transition-all flex items-center justify-center ${topico.visto ? 'bg-white border-white' : 'border-slate-300 peer-checked:bg-blue-900 peer-checked:border-blue-900'}`}>
-                                                   <Check className={`w-2.5 h-2.5 transition-opacity ${topico.visto ? 'opacity-100 text-blue-900' : 'opacity-0 peer-checked:opacity-100 text-white'}`} strokeWidth={3} />
+                                                <div className={`w-3.5 h-3.5 border rounded transition-all flex items-center justify-center ${topico.visto ? 'bg-blue-500 border-blue-500' : 'border-slate-300 peer-checked:bg-blue-500 peer-checked:border-blue-500'}`}>
+                                                   <Check className={`w-2.5 h-2.5 transition-opacity ${topico.visto ? 'opacity-100 text-white' : 'opacity-0 peer-checked:opacity-100 text-white'}`} strokeWidth={3} />
                                                 </div>
                                               </label>
                                               <div className={`text-[10px] font-medium flex-1 flex items-center gap-2 ${topico.visto ? 'text-white' : 'text-slate-800'}`}>
@@ -491,8 +491,8 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                       <CornerDownRight className={`w-3 h-3 shrink-0 ml-1 sm:ml-0 ${sub.visto ? 'text-white/40' : 'text-slate-400'}`} />
                                                       <label className="relative flex items-center justify-center cursor-pointer shrink-0">
                                                         <input type="checkbox" checked={sub.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id, sub.id)} />
-                                                        <div className={`w-3 h-3 border rounded-sm transition-all flex items-center justify-center ${sub.visto ? 'bg-white border-white' : 'border-slate-300 peer-checked:bg-blue-900 peer-checked:border-blue-900'}`}>
-                                                           <Check className={`w-2 h-2 transition-opacity ${sub.visto ? 'opacity-100 text-blue-900' : 'opacity-0 peer-checked:opacity-100 text-white'}`} strokeWidth={3} />
+                                                        <div className={`w-3 h-3 border rounded-sm transition-all flex items-center justify-center ${sub.visto ? 'bg-blue-500 border-blue-500' : 'border-slate-300 peer-checked:bg-blue-500 peer-checked:border-blue-500'}`}>
+                                                           <Check className={`w-2 h-2 transition-opacity ${sub.visto ? 'opacity-100 text-white' : 'opacity-0 peer-checked:opacity-100 text-white'}`} strokeWidth={3} />
                                                         </div>
                                                       </label>
                                                       <div className={`text-[10px] flex-1 break-words w-full ${sub.visto ? 'text-white line-through opacity-80' : 'text-slate-600'}`}>
