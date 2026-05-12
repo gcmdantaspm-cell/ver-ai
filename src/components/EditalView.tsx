@@ -47,9 +47,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     setEditalPublic
   } = useEdital();
 
-  const [expandedMaterias, setExpandedMaterias] = useState<string[]>(() => {
-    return edital.areas[0]?.materias[0] ? [edital.areas[0].materias[0].id] : [];
-  });
+  const [expandedMaterias, setExpandedMaterias] = useState<string[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [activeTab, setActiveTab] = useState<'topicos' | 'revisoes' | 'notas'>('topicos');
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
