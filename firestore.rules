@@ -18,16 +18,17 @@ service cloud.firestore {
     
     function isValidEdital(data) {
         return data.keys().hasAll(['userId', 'titulo', 'areas'])
-            && data.keys().size() <= 4
+            && data.keys().size() <= 5
             && data.userId is string
             && data.userId == request.auth.uid
             && data.titulo is string
             && data.titulo.size() <= 200
-            && data.areas is list;
+            && data.areas is list
+            && (!('isPublic' in data) || data.isPublic is bool);
     }
     
     match /editais/{editalId} {
-        allow read: if isSignedIn() && existing().userId == request.auth.uid;
+        allow read: if isSignedIn() && (existing().userId == request.auth.uid || existing().isPublic == true);
         
         allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
         
@@ -39,7 +40,7 @@ service cloud.firestore {
                       && existing().userId == request.auth.uid 
                       && isValidEdital(incoming())
                       && incoming().userId == existing().userId
-                      && (incoming().diff(existing()).affectedKeys().hasOnly(['titulo', 'areas']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
+                      && (incoming().diff(existing()).affectedKeys().hasOnly(['titulo', 'areas', 'isPublic']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
                       
         allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }

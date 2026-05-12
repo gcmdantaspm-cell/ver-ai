@@ -23,7 +23,8 @@ import {
   CornerDownRight,
   Download,
   Loader2,
-  Sparkles
+  Sparkles,
+  Share2
 } from "lucide-react";
 
 import { parseEditalText } from "../services/ai";
@@ -42,7 +43,8 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     setStudyDate, 
     updateNota, 
     updateMetricas, 
-    revisions 
+    revisions,
+    setEditalPublic
   } = useEdital();
 
   const [expandedMaterias, setExpandedMaterias] = useState<string[]>(() => {
@@ -58,6 +60,25 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [isSharing, setIsSharing] = useState(false);
+
+  const handleShare = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
+    try {
+       if (!edital.isPublic) {
+         await setEditalPublic(edital.id, true);
+       }
+       const url = `${window.location.origin}/?import=${edital.id}`;
+       await navigator.clipboard.writeText(url);
+       alert("Link copiado! Compartilhe o link para importar este edital.");
+    } catch (e) {
+       console.error("Erro ao gerar link:", e);
+       alert("Erro ao gerar link de compartilhamento.");
+    } finally {
+       setIsSharing(false);
+    }
+  };
 
   const handleEdit = (id: string, currentTitle: string) => {
     setEditingItemId(id);
@@ -250,7 +271,11 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
             <span className="text-[9px] text-slate-500 font-medium uppercase tracking-wider sm:tracking-widest">{stats.completed} de {stats.total} concluídos</span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 self-end sm:self-auto w-full sm:w-auto justify-end mt-2 sm:mt-0">
+        <div className="flex items-center gap-1.5 self-end sm:self-auto w-full sm:w-auto justify-end mt-2 sm:mt-0 flex-wrap">
+           <button disabled={isSharing} onClick={handleShare} className="flex-1 sm:flex-none justify-center group flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold transition-all shadow-sm disabled:opacity-50">
+             {isSharing ? <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" /> : <Share2 className="w-3.5 h-3.5 shrink-0" />}
+             <span className="hidden sm:inline">Compartilhar</span>
+           </button>
            <button onClick={downloadExcel} className="flex-1 sm:flex-none justify-center group flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-bold transition-all shadow-sm">
              <Download className="w-3.5 h-3.5 shrink-0" />
              <span className="hidden sm:inline">Planilha</span>

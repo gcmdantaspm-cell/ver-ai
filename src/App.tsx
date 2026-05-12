@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { EditalProvider, useEdital } from "./store";
 import { Dashboard } from "./components/Dashboard";
 import { ParseEdital } from "./components/ParseEdital";
@@ -7,12 +7,49 @@ import { RevisaoSugestoes } from "./components/RevisaoSugestoes";
 import { FloatingPomodoro } from "./components/Pomodoro";
 import { LayoutDashboard, FileText, Plus, BookOpen, Menu, X, ChevronDown, LogOut, Loader2, History } from "lucide-react";
 import { useAuth } from "./AuthContext";
+import { v4 as uuidv4 } from "uuid";
 
 function AppContent() {
-  const { editais } = useEdital();
+  const { editais, getPublicEdital, addEdital } = useEdital();
   const [currentView, setCurrentView] = useState<string>("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
+  const [isImporting, setIsImporting] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const importId = params.get('import');
+    
+    if (importId && user) {
+      const handleImport = async () => {
+         setIsImporting(true);
+         try {
+            const ed = await getPublicEdital(importId);
+            if (ed) {
+              const clone = JSON.parse(JSON.stringify(ed));
+              clone.id = uuidv4();
+              // Reset some fields if desired, or just copy stats. But definitely change userId and copy content
+              // Subtopics/visto items could be reset or kept. Let's keep them so it's a true copy.
+              clone.userId = user.uid;
+              clone.isPublic = false;
+              addEdital(clone);
+              
+              // Remove param from url
+              window.history.replaceState({}, document.title, "/");
+              setCurrentView(`edital-${clone.id}`);
+            } else {
+              alert("Edital não encontrado ou não está público.");
+              window.history.replaceState({}, document.title, "/");
+            }
+         } catch(e) {
+            alert("Erro ao importar edital.");
+         } finally {
+            setIsImporting(false);
+         }
+      };
+      handleImport();
+    }
+  }, [user, getPublicEdital, addEdital]);
 
   const navigateTo = (view: string) => {
     setCurrentView(view);
@@ -21,7 +58,12 @@ function AppContent() {
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden relative">
-      
+      {isImporting && (
+         <div className="absolute inset-0 z-50 bg-slate-50/80 backdrop-blur-sm flex flex-col items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-900 mb-4" />
+            <span className="text-sm font-bold text-slate-900 animate-pulse">Importando Edital...</span>
+         </div>
+      )}
       {/* Sidebar on Desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 z-40 shrink-0">
          <div className="h-16 flex items-center px-6 border-b border-slate-200 shrink-0">

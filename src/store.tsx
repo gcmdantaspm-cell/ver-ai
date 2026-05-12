@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { Edital, RevisaoAgendada } from "./types";
 import { addDays, isPast, isToday, differenceInDays } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
-import { collection, doc, onSnapshot, query, setDoc, where, deleteDoc } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, setDoc, where, deleteDoc, getDocFromServer } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "./firebase";
 import { useAuth } from "./AuthContext";
 
@@ -23,6 +23,8 @@ interface EditalContextType {
   updateMetricas: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, acertos: number, erros: number) => void;
   revisions: RevisaoAgendada[];
   completeRevision: (topicoOuSubId: string, dataRevisao: string) => void;
+  getPublicEdital: (id: string) => Promise<Edital | null>;
+  setEditalPublic: (id: string, isPublic: boolean) => Promise<void>;
 }
 
 const EditalContext = createContext<EditalContextType | undefined>(undefined);
@@ -393,8 +395,40 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   revisions.sort((a, b) => b.diasAtraso - a.diasAtraso);
 
+  const getPublicEdital = async (id: string): Promise<Edital | null> => {
+    try {
+      const docSnap = await getDocFromServer(doc(db, "editais", id));
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Edital;
+        if (data.isPublic) {
+          data.id = docSnap.id;
+          return data;
+        }
+      }
+      return null;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  };
+
+  const setEditalPublic = async (id: string, isPublic: boolean): Promise<void> => {
+    if (!user) return;
+    try {
+      await setDoc(doc(db, "editais", id), { isPublic }, { merge: true });
+      setEditais(prev => prev.map(e => e.id === id ? { ...e, isPublic } : e));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `editais/${id}`);
+    }
+  };
+
   return (
-    <EditalContext.Provider value={{ editais, addEdital, deleteEdital, toggleVisto, updateItemTitle, deleteItem, addItem, addMaterias, addCustomRevisionDate, removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, updateMetricas, revisions, completeRevision }}>
+    <EditalContext.Provider value={{
+      editais, addEdital, deleteEdital, toggleVisto, updateItemTitle,
+      deleteItem, addItem, addMaterias, addCustomRevisionDate,
+      removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota,
+      updateMetricas, revisions, completeRevision, getPublicEdital, setEditalPublic
+    }}>
       {children}
     </EditalContext.Provider>
   );

@@ -15,6 +15,10 @@
         "areas": {
           "type": "array",
           "description": "Areas array. Given its size, this will be stored as an array to minimize reads, or as JSON. Storing the whole edital as a JSON tree is acceptable since it's generally < 1MB and requested wholesale."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Optional flag to indicate if this edital is publicly viewable/shareable."
         }
       },
       "required": ["userId", "titulo", "areas"]

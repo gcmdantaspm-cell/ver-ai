@@ -39,6 +39,7 @@ export interface Edital {
   id: string;
   titulo: string;
   areas: AreaConhecimento[];
+  isPublic?: boolean;
 }
 
 // Logic Models for Revision Queue
