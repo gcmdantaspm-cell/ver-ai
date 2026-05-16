@@ -18,19 +18,21 @@ service cloud.firestore {
     
     function isValidEdital(data) {
         return data.keys().hasAll(['userId', 'titulo', 'areas'])
-            && data.keys().size() <= 5
+            && data.keys().size() <= 7
             && data.userId is string
             && data.userId == request.auth.uid
             && data.titulo is string
             && data.titulo.size() <= 200
             && data.areas is list
-            && (!('isPublic' in data) || data.isPublic is bool);
+            && (!('isPublic' in data) || data.isPublic is bool)
+            && (!('ownerName' in data) || data.ownerName is string)
+            && (!('importedFrom' in data) || data.importedFrom is string);
     }
     
     match /editais/{editalId} {
         allow read: if isSignedIn() && (existing().userId == request.auth.uid || existing().isPublic == true);
         
-        allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+        allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.isPublic == true);
         
         allow create: if isSignedIn() 
                       && isValidId(editalId) 
@@ -40,14 +42,14 @@ service cloud.firestore {
                       && existing().userId == request.auth.uid 
                       && isValidEdital(incoming())
                       && incoming().userId == existing().userId
-                      && (incoming().diff(existing()).affectedKeys().hasOnly(['titulo', 'areas', 'isPublic']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
+                      && (incoming().diff(existing()).affectedKeys().hasOnly(['titulo', 'areas', 'isPublic', 'ownerName', 'importedFrom']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
                       
         allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
 
     function isValidCiclo(data) {
         return data.keys().hasAll(['userId', 'editalId', 'nome', 'items', 'created_at'])
-            && data.keys().size() <= 8
+            && data.keys().size() <= 10
             && data.userId is string
             && data.userId == request.auth.uid
             && data.editalId is string
@@ -55,11 +57,15 @@ service cloud.firestore {
             && data.items is list
             && data.created_at is string
             && (!data.keys().hasAny(['targetMinutes']) || data.targetMinutes is number)
-            && (!data.keys().hasAny(['ordem']) || data.ordem is number);
+            && (!data.keys().hasAny(['ordem']) || data.ordem is number)
+            && (!data.keys().hasAny(['isPublic']) || data.isPublic is bool)
+            && (!data.keys().hasAny(['ownerName']) || data.ownerName is string);
     }
 
     match /ciclos/{cicloId} {
-        allow read, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+        allow read: if isSignedIn() && (existing().userId == request.auth.uid || existing().isPublic == true);
+        
+        allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.isPublic == true);
         
         allow create: if isSignedIn() 
                       && isValidId(cicloId) 
@@ -69,7 +75,7 @@ service cloud.firestore {
                       && existing().userId == request.auth.uid 
                       && isValidCiclo(incoming())
                       && incoming().userId == existing().userId
-                      && (incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'items', 'targetMinutes', 'ordem']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
+                      && (incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'items', 'targetMinutes', 'ordem', 'isPublic', 'ownerName']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
                       
         allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }

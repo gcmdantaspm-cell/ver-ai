@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { Edital, Materia, RevisaoAgendada, StudyCycle, StudyCycleItem } from "./types";
 import { addDays, isPast, isToday, differenceInDays } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
-import { collection, doc, onSnapshot, query, setDoc, where, deleteDoc, getDocFromServer } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, setDoc, where, deleteDoc, getDocFromServer, getDocs } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "./firebase";
 import { useAuth } from "./AuthContext";
 
@@ -30,6 +30,7 @@ interface EditalContextType {
   deleteCiclo: (id: string) => void;
   updateCiclo: (ciclo: StudyCycle) => void;
   toggleCicloItem: (cicloId: string, itemId: string) => void;
+  getPublicCiclos: (editalId: string) => Promise<StudyCycle[]>;
 }
 
 const EditalContext = createContext<EditalContextType | undefined>(undefined);
@@ -467,11 +468,39 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getPublicCiclos = async (editalId: string): Promise<StudyCycle[]> => {
+    try {
+      const q = query(collection(db, "ciclos"), where("editalId", "==", editalId), where("isPublic", "==", true));
+      const querySnapshot = await getDocs(q); 
+      const results: StudyCycle[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as StudyCycle;
+        data.id = doc.id;
+        results.push(data);
+      });
+      return results;
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
+  };
+
   const setEditalPublic = async (id: string, isPublic: boolean): Promise<void> => {
     if (!user) return;
     try {
-      await setDoc(doc(db, "editais", id), { isPublic }, { merge: true });
-      setEditais(prev => prev.map(e => e.id === id ? { ...e, isPublic } : e));
+      const ownerName = user.displayName || user.email || "Usuário Anônimo";
+      await setDoc(doc(db, "editais", id), { isPublic, ownerName }, { merge: true });
+      setEditais(prev => prev.map(e => e.id === id ? { ...e, isPublic, ownerName } : e));
+      // Also update isPublic for ciclos linked to this edital
+      const relatedCiclos = ciclos.filter(c => c.editalId === id);
+      for (const c of relatedCiclos) {
+        if (c.isPublic !== isPublic) {
+          await setDoc(doc(db, "ciclos", c.id), { isPublic, ownerName }, { merge: true }).catch(err => {
+            console.error("Erro ao atualizar ciclo", err);
+          });
+        }
+      }
+      setCiclos(prev => prev.map(c => c.editalId === id ? { ...c, isPublic, ownerName } : c));
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `editais/${id}`);
     }
@@ -483,7 +512,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       deleteItem, addItem, addMaterias, addCustomRevisionDate,
       removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota,
       updateMetricas, revisions, completeRevision, getPublicEdital, setEditalPublic,
-      ciclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem
+      ciclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem, getPublicCiclos
     }}>
       {children}
     </EditalContext.Provider>

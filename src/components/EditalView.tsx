@@ -266,6 +266,11 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
           </h2>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[9px] text-blue-800 font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] bg-blue-900/10 px-1.5 py-[1px] rounded border border-blue-900/20">Edital Ativo</span>
+            {edital.importedFrom && (
+              <span className="text-[9px] text-purple-700 font-bold uppercase tracking-wider bg-purple-100 px-1.5 py-[1px] rounded border border-purple-200" title={`Importado de: ${edital.importedFrom}`}>
+                Importado: {edital.importedFrom.split(' ')[0]}
+              </span>
+            )}
             <span className="text-[9px] text-slate-500 font-medium uppercase tracking-wider sm:tracking-widest">{stats.completed} de {stats.total} concluídos</span>
           </div>
         </div>

@@ -11,7 +11,7 @@ import { useAuth } from "./AuthContext";
 import { v4 as uuidv4 } from "uuid";
 
 function AppContent() {
-  const { editais, getPublicEdital, addEdital } = useEdital();
+  const { editais, getPublicEdital, addEdital, getPublicCiclos, addCiclo } = useEdital();
   const [currentView, setCurrentView] = useState<string>("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
@@ -29,12 +29,20 @@ function AppContent() {
             if (ed) {
               const clone = JSON.parse(JSON.stringify(ed));
               clone.id = uuidv4();
-              // Reset some fields if desired, or just copy stats. But definitely change userId and copy content
-              // Subtopics/visto items could be reset or kept. Let's keep them so it's a true copy.
-              clone.userId = user.uid;
+              clone.importedFrom = ed.ownerName;
               clone.isPublic = false;
               addEdital(clone);
               
+              // Also import any public ciclos
+              const pCiclos = await getPublicCiclos(importId);
+              for (const c of pCiclos) {
+                 const cicloClone = JSON.parse(JSON.stringify(c));
+                 cicloClone.id = uuidv4();
+                 cicloClone.editalId = clone.id; // Link to the new edital ID
+                 cicloClone.isPublic = false;
+                 addCiclo(cicloClone);
+              }
+
               // Remove param from url
               window.history.replaceState({}, document.title, "/");
               setCurrentView(`edital-${clone.id}`);
@@ -50,7 +58,7 @@ function AppContent() {
       };
       handleImport();
     }
-  }, [user, getPublicEdital, addEdital]);
+  }, [user, getPublicEdital, addEdital, getPublicCiclos, addCiclo]);
 
   const navigateTo = (view: string) => {
     setCurrentView(view);

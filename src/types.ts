@@ -40,6 +40,8 @@ export interface Edital {
   titulo: string;
   areas: AreaConhecimento[];
   isPublic?: boolean;
+  ownerName?: string;
+  importedFrom?: string;
 }
 
 export interface StudyCycleItem {
@@ -58,6 +60,7 @@ export interface StudyCycle {
   created_at: string;
   targetMinutes?: number;
   ordem?: number;
+  isPublic?: boolean;
 }
 
 // Logic Models for Revision Queue
