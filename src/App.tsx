@@ -10,6 +10,8 @@ import { SharedHub } from "./components/SharedHub";
 import { LayoutDashboard, FileText, Plus, BookOpen, Menu, X, ChevronDown, LogOut, Loader2, History, Target, Users } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import { v4 as uuidv4 } from "uuid";
+import { query, collection, where, getDocs } from "firebase/firestore";
+import { db } from "./firebase";
 
 function AppContent() {
   const { editais, getPublicEdital, addEdital, getPublicCiclos, addCiclo } = useEdital();
@@ -29,11 +31,23 @@ function AppContent() {
       const handleImport = async () => {
          setIsImporting(true);
          try {
-            // Check if we already have this edital imported
-            let existingEdital = editais.find(e => e.id === importId || e.originalEditalId === importId);
+            // Check if we already have this edital imported (query DB directly)
+            const qEdital1 = query(collection(db, "editais"), where("userId", "==", user.uid), where("originalEditalId", "==", importId));
+            const qEdital2 = query(collection(db, "editais"), where("userId", "==", user.uid));
+            const editalSnap1 = await getDocs(qEdital1);
+            
+            let existingEditalId: string | null = null;
+            if (!editalSnap1.empty) {
+               existingEditalId = editalSnap1.docs[0].id;
+            } else {
+               const editalSnap2 = await getDocs(qEdital2);
+               const ext = editalSnap2.docs.find(d => d.id === importId);
+               if (ext) existingEditalId = ext.id;
+            }
+            
             let targetEditalId = "";
 
-            if (!existingEdital) {
+            if (!existingEditalId) {
               const ed = await getPublicEdital(importId);
               if (ed) {
                 const clone = JSON.parse(JSON.stringify(ed));
@@ -41,6 +55,7 @@ function AppContent() {
                 clone.originalEditalId = importId;
                 clone.importedFrom = ed.ownerName;
                 clone.isPublic = false;
+                clone.userId = user.uid;
                 clone.managedBy = ed.userId;
                 clone.copiedByEmail = user.email || "";
                 clone.copiedByName = user.displayName || "";
@@ -53,7 +68,7 @@ function AppContent() {
                 return;
               }
             } else {
-              targetEditalId = existingEdital.id;
+              targetEditalId = existingEditalId;
             }
 
             // At this point, targetEditalId is the ID of the edital (new or existing)
@@ -61,17 +76,26 @@ function AppContent() {
             const pCiclos = await getPublicCiclos(importId);
             const requestedIds = importCiclos ? importCiclos.split(',') : [];
 
+            const qCiclos = query(collection(db, "ciclos"), where("userId", "==", user.uid));
+            const existingCiclosSnap = await getDocs(qCiclos);
+            const existingCicloIds = existingCiclosSnap.docs.map(d => d.id);
+            const existingOriginalIds = existingCiclosSnap.docs.map(d => d.data().originalCycleId).filter(Boolean);
+
             for (const c of pCiclos) {
                if (requestedIds.length > 0 && !requestedIds.includes(c.id)) {
                   continue;
                }
                
-               // Check if we already have this cycle - handled by store.addCiclo
+               if (existingCicloIds.includes(c.id) || existingOriginalIds.includes(c.id)) {
+                  continue; // already have it
+               }
+               
                const cicloClone = JSON.parse(JSON.stringify(c));
                cicloClone.id = uuidv4();
                cicloClone.originalCycleId = c.id;
                cicloClone.editalId = targetEditalId; // Correct link!
                cicloClone.isPublic = false;
+               cicloClone.userId = user.uid;
                cicloClone.managedBy = c.userId;
                cicloClone.copiedByEmail = user.email || "";
                cicloClone.copiedByName = user.displayName || "";
@@ -90,7 +114,7 @@ function AppContent() {
       };
       handleImport();
     }
-  }, [user, getPublicEdital, addEdital, getPublicCiclos, addCiclo, editais]);
+  }, [user, getPublicEdital, addEdital, getPublicCiclos, addCiclo]);
 
   const navigateTo = (view: string) => {
     setCurrentView(view);

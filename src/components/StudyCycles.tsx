@@ -578,8 +578,21 @@ export function StudyCycles({
             onClick={() => {
               const code = window.prompt("Cole o código de exportação (Ex: EDT-xxxx...):");
               if (code) {
-                const id = code.startsWith('EDT-') ? code.substring(4) : code;
-                window.location.href = `/?import=${id}`;
+                let id = code;
+                let ciclosStr = "";
+                if (code.startsWith('EDT-')) {
+                   const withoutPrefix = code.substring(4);
+                   const parts = withoutPrefix.split(';;');
+                   id = parts[0];
+                   if (parts.length > 1) ciclosStr = parts[1];
+                } else if (code.includes(';;')) {
+                   const parts = code.split(';;');
+                   id = parts[0];
+                   ciclosStr = parts[1];
+                }
+                let url = `/?import=${id}`;
+                if (ciclosStr) url += `&ciclos=${ciclosStr}`;
+                window.location.href = url;
               }
             }}
             className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 border border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900 rounded-xl transition-all font-bold text-sm shadow-sm"

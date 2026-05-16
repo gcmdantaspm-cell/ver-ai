@@ -135,8 +135,21 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
                   onClick={() => {
                     const code = window.prompt("Cole o código de exportação (Ex: EDT-xxxx...):");
                     if (code) {
-                      const id = code.startsWith('EDT-') ? code.substring(4) : code;
-                      window.location.href = `/?import=${id}`;
+                      let id = code;
+                      let ciclosStr = "";
+                      if (code.startsWith('EDT-')) {
+                         const withoutPrefix = code.substring(4);
+                         const parts = withoutPrefix.split(';;');
+                         id = parts[0];
+                         if (parts.length > 1) ciclosStr = parts[1];
+                      } else if (code.includes(';;')) {
+                         const parts = code.split(';;');
+                         id = parts[0];
+                         ciclosStr = parts[1];
+                      }
+                      let url = `/?import=${id}`;
+                      if (ciclosStr) url += `&ciclos=${ciclosStr}`;
+                      window.location.href = url;
                     }
                   }}
                   className="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 text-xs font-bold px-8 py-3 rounded-xl uppercase tracking-widest transition-all shadow-sm flex items-center justify-center gap-2 w-full md:w-auto"

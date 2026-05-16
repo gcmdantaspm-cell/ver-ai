@@ -84,7 +84,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
          await navigator.clipboard.writeText(url);
          alert("Link copiado! Compartilhe o link para importar este edital" + (shareModal.selectedCiclos.length > 0 ? " e seus ciclos." : "."));
        } else {
-         const code = `EDT-${edital.id}`;
+         let code = `EDT-${edital.id}`;
+         if (shareModal.selectedCiclos.length > 0) {
+           code += `;;${shareModal.selectedCiclos.join(",")}`;
+         }
          await navigator.clipboard.writeText(code);
          alert("Código de exportação copiado: " + code);
        }
