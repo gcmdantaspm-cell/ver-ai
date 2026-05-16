@@ -311,17 +311,17 @@ export function StudyCycles() {
 
   const [draggedCycleId, setDraggedCycleId] = useState<string | null>(null);
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
+  const handleDragStart = (e: any, id: string) => {
     setDraggedCycleId(id);
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragOver = (e: React.DragEvent, id: string) => {
+  const handleDragOver = (e: any, id: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, targetId: string) => {
+  const handleDrop = (e: any, targetId: string) => {
     e.preventDefault();
     if (!draggedCycleId || draggedCycleId === targetId) return;
 
@@ -360,7 +360,7 @@ export function StudyCycles() {
     return acc;
   }, {} as Record<string, number>);
 
-  const sortedGlobalSubjects = Object.entries(globalSubjectResumo).sort((a, b) => b[1] - a[1]);
+  const sortedGlobalSubjects = Object.entries(globalSubjectResumo).sort((a, b) => (b[1] as number) - (a[1] as number));
 
   return (
     <div className="flex-1 p-4 sm:p-8 overflow-y-auto bg-slate-50">
@@ -418,9 +418,9 @@ export function StudyCycles() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 draggable
-                onDragStart={(e) => handleDragStart(e as unknown as React.DragEvent, ciclo.id)}
-                onDragOver={(e) => handleDragOver(e as unknown as React.DragEvent, ciclo.id)}
-                onDrop={(e) => handleDrop(e as unknown as React.DragEvent, ciclo.id)}
+                onDragStart={(e) => handleDragStart(e, ciclo.id)}
+                onDragOver={(e) => handleDragOver(e, ciclo.id)}
+                onDrop={(e) => handleDrop(e, ciclo.id)}
                 onDragEnd={handleDragEnd}
                 className={`bg-white rounded-2xl border ${draggedCycleId === ciclo.id ? 'opacity-50 border-indigo-500 border-dashed' : 'border-slate-200'} shadow-sm overflow-hidden flex flex-col group/card cursor-grab active:cursor-grabbing`}
               >
@@ -622,7 +622,9 @@ export function StudyCycles() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
-            {sortedGlobalSubjects.map(([name, mins], index) => (
+            {sortedGlobalSubjects.map(([name, minsObj], index) => {
+              const mins = Number(minsObj);
+              return (
               <div key={name} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0 relative group">
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="w-5 text-center text-xs font-bold text-slate-300">{index + 1}</span>
@@ -632,7 +634,7 @@ export function StudyCycles() {
                   {Math.floor(mins / 60)}h {(mins % 60).toString().padStart(2, '0')}m
                 </div>
               </div>
-            ))}
+            )})}
             {sortedGlobalSubjects.length === 0 && (
               <div className="col-span-full text-center py-8 text-slate-400 text-sm">
                 Nenhuma matéria adicionada ainda.
