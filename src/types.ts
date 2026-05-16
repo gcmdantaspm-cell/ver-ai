@@ -37,11 +37,15 @@ export interface AreaConhecimento {
 
 export interface Edital {
   id: string;
+  userId?: string;
   titulo: string;
   areas: AreaConhecimento[];
   isPublic?: boolean;
   ownerName?: string;
   importedFrom?: string;
+  managedBy?: string;
+  copiedByEmail?: string;
+  copiedByName?: string;
 }
 
 export interface StudyCycleItem {
@@ -61,6 +65,10 @@ export interface StudyCycle {
   targetMinutes?: number;
   ordem?: number;
   isPublic?: boolean;
+  ownerName?: string;
+  managedBy?: string;
+  copiedByEmail?: string;
+  copiedByName?: string;
 }
 
 // Logic Models for Revision Queue

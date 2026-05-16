@@ -44,8 +44,12 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     updateNota, 
     updateMetricas, 
     revisions,
-    setEditalPublic
+    setEditalPublic,
+    ciclos
   } = useEdital();
+  
+  const editalCiclos = ciclos.filter(c => c.editalId === edital.id);
+  const [shareModal, setShareModal] = useState<{ isOpen: boolean, selectedCiclos: string[] } | null>(null);
 
   const [expandedMaterias, setExpandedMaterias] = useState<string[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
@@ -60,16 +64,24 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   const [aiError, setAiError] = useState("");
   const [isSharing, setIsSharing] = useState(false);
 
-  const handleShare = async () => {
-    if (isSharing) return;
+  const handleShareClick = () => {
+     setShareModal({ isOpen: true, selectedCiclos: editalCiclos.map(c => c.id) });
+  };
+
+  const handleShareSubmit = async () => {
+    if (isSharing || !shareModal) return;
     setIsSharing(true);
     try {
        if (!edital.isPublic) {
          await setEditalPublic(edital.id, true);
        }
-       const url = `${window.location.origin}/?import=${edital.id}`;
+       let url = `${window.location.origin}/?import=${edital.id}`;
+       if (shareModal.selectedCiclos.length > 0) {
+         url += `&ciclos=${shareModal.selectedCiclos.join(",")}`;
+       }
        await navigator.clipboard.writeText(url);
-       alert("Link copiado! Compartilhe o link para importar este edital.");
+       alert("Link copiado! Compartilhe o link para importar este edital" + (shareModal.selectedCiclos.length > 0 ? " e seus ciclos." : "."));
+       setShareModal(null);
     } catch (e) {
        console.error("Erro ao gerar link:", e);
        alert("Erro ao gerar link de compartilhamento.");
@@ -275,7 +287,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
           </div>
         </div>
         <div className="flex items-center gap-1.5 self-end sm:self-auto w-full sm:w-auto justify-end mt-2 sm:mt-0 flex-wrap">
-           <button disabled={isSharing} onClick={handleShare} className="flex-1 sm:flex-none justify-center group flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold transition-all shadow-sm disabled:opacity-50">
+           <button disabled={isSharing} onClick={handleShareClick} className="flex-1 sm:flex-none justify-center group flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold transition-all shadow-sm disabled:opacity-50">
              {isSharing ? <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" /> : <Share2 className="w-3.5 h-3.5 shrink-0" />}
              <span className="hidden sm:inline">Compartilhar</span>
            </button>
@@ -845,6 +857,67 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {shareModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+           <div className="bg-slate-50 rounded-3xl w-full max-w-sm shadow-2xl border border-slate-300 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+             <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-white">
+               <div>
+                 <h3 className="text-lg font-display font-bold text-slate-900">Compartilhar Edital</h3>
+                 <p className="text-[10px] text-slate-500 mt-1 font-bold uppercase tracking-widest truncate max-w-[200px]">{edital.titulo}</p>
+               </div>
+               <button onClick={() => setShareModal(null)} className="text-slate-500 hover:text-slate-900 p-2 hover:bg-slate-100 rounded-xl transition-all"><X className="w-5 h-5"/></button>
+             </div>
+             
+             <div className="p-6 flex flex-col max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <p className="text-xs text-slate-600 mb-4">
+                   Selecione os ciclos de estudo que deseja incluir no compartilhamento. O usuário irá importar o edital e os ciclos selecionados.
+                </p>
+                {editalCiclos.length > 0 ? (
+                   <div className="flex flex-col gap-2">
+                      {editalCiclos.map(ciclo => {
+                         const isSelected = shareModal.selectedCiclos.includes(ciclo.id);
+                         return (
+                            <label key={ciclo.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-blue-900 bg-blue-50/50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
+                               <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'bg-blue-900 border-blue-900 text-white' : 'border-slate-300'}`}>
+                                  {isSelected && <Check className="w-3 h-3" />}
+                               </div>
+                               <span className={`text-sm font-medium flex-1 ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>{ciclo.nome}</span>
+                               <input 
+                                  type="checkbox" 
+                                  className="hidden" 
+                                  checked={isSelected}
+                                  onChange={() => {
+                                     setShareModal(prev => {
+                                        if (!prev) return prev;
+                                        if (isSelected) {
+                                           return { ...prev, selectedCiclos: prev.selectedCiclos.filter(id => id !== ciclo.id) };
+                                        } else {
+                                           return { ...prev, selectedCiclos: [...prev.selectedCiclos, ciclo.id] };
+                                        }
+                                     });
+                                  }}
+                               />
+                            </label>
+                         );
+                      })}
+                   </div>
+                ) : (
+                   <div className="text-xs text-slate-400 italic bg-white p-5 rounded-2xl border border-slate-200 text-center">Nenhum ciclo associado a este edital.</div>
+                )}
+             </div>
+             
+             <div className="p-6 border-t border-slate-200 flex justify-end gap-3 bg-white">
+                <button onClick={() => setShareModal(null)} className="px-6 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase tracking-widest">Cancelar</button>
+                <button disabled={isSharing} onClick={handleShareSubmit} className="px-6 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest flex items-center gap-2 disabled:opacity-50">
+                   {isSharing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
+                   Compartilhar
+                </button>
+             </div>
+           </div>
         </div>
       )}
     </div>

@@ -18,40 +18,42 @@ service cloud.firestore {
     
     function isValidEdital(data) {
         return data.keys().hasAll(['userId', 'titulo', 'areas'])
-            && data.keys().size() <= 7
+            && data.keys().size() <= 10
             && data.userId is string
-            && data.userId == request.auth.uid
             && data.titulo is string
             && data.titulo.size() <= 200
             && data.areas is list
             && (!('isPublic' in data) || data.isPublic is bool)
             && (!('ownerName' in data) || data.ownerName is string)
-            && (!('importedFrom' in data) || data.importedFrom is string);
+            && (!('importedFrom' in data) || data.importedFrom is string)
+            && (!('managedBy' in data) || data.managedBy is string)
+            && (!('copiedByEmail' in data) || data.copiedByEmail is string)
+            && (!('copiedByName' in data) || data.copiedByName is string);
     }
     
     match /editais/{editalId} {
-        allow read: if isSignedIn() && (existing().userId == request.auth.uid || existing().isPublic == true);
+        allow read: if isSignedIn() && (existing().userId == request.auth.uid || existing().isPublic == true || (('managedBy' in existing()) && existing().managedBy == request.auth.uid));
         
-        allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.isPublic == true);
+        allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.isPublic == true || (('managedBy' in resource.data) && resource.data.managedBy == request.auth.uid));
         
         allow create: if isSignedIn() 
                       && isValidId(editalId) 
-                      && isValidEdital(incoming());
+                      && isValidEdital(incoming())
+                      && incoming().userId == request.auth.uid;
                       
         allow update: if isSignedIn() 
-                      && existing().userId == request.auth.uid 
+                      && (existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid)) 
                       && isValidEdital(incoming())
                       && incoming().userId == existing().userId
-                      && (incoming().diff(existing()).affectedKeys().hasOnly(['titulo', 'areas', 'isPublic', 'ownerName', 'importedFrom']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
+                      && (incoming().diff(existing()).affectedKeys().hasOnly(['titulo', 'areas', 'isPublic', 'ownerName', 'importedFrom', 'managedBy', 'copiedByEmail', 'copiedByName']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
                       
         allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
 
     function isValidCiclo(data) {
         return data.keys().hasAll(['userId', 'editalId', 'nome', 'items', 'created_at'])
-            && data.keys().size() <= 10
+            && data.keys().size() <= 13
             && data.userId is string
-            && data.userId == request.auth.uid
             && data.editalId is string
             && data.nome is string
             && data.items is list
@@ -59,23 +61,27 @@ service cloud.firestore {
             && (!data.keys().hasAny(['targetMinutes']) || data.targetMinutes is number)
             && (!data.keys().hasAny(['ordem']) || data.ordem is number)
             && (!data.keys().hasAny(['isPublic']) || data.isPublic is bool)
-            && (!data.keys().hasAny(['ownerName']) || data.ownerName is string);
+            && (!data.keys().hasAny(['ownerName']) || data.ownerName is string)
+            && (!data.keys().hasAny(['managedBy']) || data.managedBy is string)
+            && (!data.keys().hasAny(['copiedByEmail']) || data.copiedByEmail is string)
+            && (!data.keys().hasAny(['copiedByName']) || data.copiedByName is string);
     }
 
     match /ciclos/{cicloId} {
-        allow read: if isSignedIn() && (existing().userId == request.auth.uid || existing().isPublic == true);
+        allow read: if isSignedIn() && (existing().userId == request.auth.uid || existing().isPublic == true || (('managedBy' in existing()) && existing().managedBy == request.auth.uid));
         
-        allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.isPublic == true);
+        allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.isPublic == true || (('managedBy' in resource.data) && resource.data.managedBy == request.auth.uid));
         
         allow create: if isSignedIn() 
                       && isValidId(cicloId) 
-                      && isValidCiclo(incoming());
+                      && isValidCiclo(incoming())
+                      && incoming().userId == request.auth.uid;
                       
         allow update: if isSignedIn() 
-                      && existing().userId == request.auth.uid 
+                      && (existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid)) 
                       && isValidCiclo(incoming())
                       && incoming().userId == existing().userId
-                      && (incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'items', 'targetMinutes', 'ordem', 'isPublic', 'ownerName']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
+                      && (incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'items', 'targetMinutes', 'ordem', 'isPublic', 'ownerName', 'managedBy', 'copiedByEmail', 'copiedByName']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
                       
         allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }

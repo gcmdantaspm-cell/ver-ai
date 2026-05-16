@@ -3,6 +3,7 @@ import { useEdital } from "../store";
 import { StudyCycle, StudyCycleItem, Edital } from "../types";
 import { v4 as uuidv4 } from "uuid";
 import { motion, AnimatePresence } from "motion/react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { 
   Plus, 
   Trash2, 
@@ -30,10 +31,32 @@ import { generateStudyCycleAI } from "../services/ai";
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../firebase';
 
-export function StudyCycles() {
-  const { editais, ciclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem } = useEdital();
+export function StudyCycles({ 
+  customEditais, 
+  customCiclos, 
+  isManagedMode = false 
+}: { 
+  customEditais?: Edital[], 
+  customCiclos?: StudyCycle[], 
+  isManagedMode?: boolean 
+} = {}) {
+  const store = useEdital();
+  const editais = customEditais || store.editais;
+  const ciclos = customCiclos || store.ciclos;
+  const addCiclo = store.addCiclo;
+  const deleteCiclo = store.deleteCiclo;
+  const updateCiclo = store.updateCiclo;
+  const toggleCicloItem = store.toggleCicloItem;
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedEditalId, setSelectedEditalId] = useState<string>("");
+  
+  // Auto-select edital if customEditais is exactly 1
+  useEffect(() => {
+    if (customEditais && customEditais.length === 1 && selectedEditalId !== customEditais[0].id) {
+       setSelectedEditalId(customEditais[0].id);
+    }
+  }, [customEditais, selectedEditalId]);
+
   const [showNewCycleModal, setShowNewCycleModal] = useState(false);
   
   // IA Suggestion Params
@@ -96,6 +119,8 @@ export function StudyCycles() {
         return {
           id: uuidv4(),
           editalId: edital.id,
+          userId: isManagedMode ? edital.userId : undefined,
+          managedBy: isManagedMode ? auth.currentUser?.uid : undefined,
           nome: cycleData.nome || `Ciclo IA ${idx + 1} - ${edital.titulo}`,
           items: newItems,
           created_at: new Date().toISOString(),
@@ -114,9 +139,15 @@ export function StudyCycles() {
   };
 
   const handleAddManualCycle = () => {
+    let edital = undefined;
+    if (isManagedMode && selectedEditalId) {
+      edital = editais.find(e => e.id === selectedEditalId);
+    }
     const newCycle: StudyCycle = {
       id: uuidv4(),
-      editalId: "",
+      editalId: selectedEditalId || "",
+      userId: isManagedMode && edital ? edital.userId : undefined,
+      managedBy: isManagedMode ? auth.currentUser?.uid : undefined,
       nome: `Novo Ciclo ${ciclos.length + 1}`,
       items: [],
       created_at: new Date().toISOString()
@@ -311,23 +342,18 @@ export function StudyCycles() {
 
   const [draggedCycleId, setDraggedCycleId] = useState<string | null>(null);
 
-  const handleDragStart = (e: any, id: string) => {
-    setDraggedCycleId(id);
-    e.dataTransfer.effectAllowed = "move";
-  };
+  const sortedCiclos = [...ciclos].sort((a, b) => {
+    if (a.ordem !== undefined && b.ordem !== undefined) {
+      return a.ordem - b.ordem;
+    }
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
 
-  const handleDragOver = (e: any, id: string) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = (e: any, targetId: string) => {
-    e.preventDefault();
-    if (!draggedCycleId || draggedCycleId === targetId) return;
-
-    const sourceIndex = sortedCiclos.findIndex(c => c.id === draggedCycleId);
-    const targetIndex = sortedCiclos.findIndex(c => c.id === targetId);
-    if (sourceIndex === -1 || targetIndex === -1) return;
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const sourceIndex = result.source.index;
+    const targetIndex = result.destination.index;
+    if (sourceIndex === targetIndex) return;
 
     const newCiclos = [...sortedCiclos];
     const [removed] = newCiclos.splice(sourceIndex, 1);
@@ -339,19 +365,7 @@ export function StudyCycles() {
         updateCiclo({ ...ciclo, ordem: idx });
       }
     });
-    setDraggedCycleId(null);
   };
-
-  const handleDragEnd = () => {
-    setDraggedCycleId(null);
-  };
-
-  const sortedCiclos = [...ciclos].sort((a, b) => {
-    if (a.ordem !== undefined && b.ordem !== undefined) {
-      return a.ordem - b.ordem;
-    }
-    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-  });
 
   const globalSubjectResumo = ciclos.reduce((acc, ciclo) => {
     ciclo.items.forEach(item => {
@@ -402,30 +416,36 @@ export function StudyCycles() {
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        <AnimatePresence>
-          {sortedCiclos.map((ciclo) => {
-            const completed = ciclo.items.filter(i => i.concluido).length;
-            const progress = ciclo.items.length > 0 ? (completed / ciclo.items.length) * 100 : 0;
-            const totalMinutes = ciclo.items.reduce((acc, i) => acc + i.duracao, 0);
-            const targetMinutes = ciclo.targetMinutes;
-            const timeDiff = targetMinutes ? targetMinutes - totalMinutes : 0;
-            
-            return (
-              <motion.div 
-                key={ciclo.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                draggable
-                onDragStart={(e) => handleDragStart(e, ciclo.id)}
-                onDragOver={(e) => handleDragOver(e, ciclo.id)}
-                onDrop={(e) => handleDrop(e, ciclo.id)}
-                onDragEnd={handleDragEnd}
-                className={`bg-white rounded-2xl border ${draggedCycleId === ciclo.id ? 'opacity-50 border-indigo-500 border-dashed' : 'border-slate-200'} shadow-sm overflow-hidden flex flex-col group/card cursor-grab active:cursor-grabbing`}
-              >
-                <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-                  <div className="flex justify-between items-start mb-2">
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="ciclos" direction="horizontal" type="CICLO">
+          {(provided) => (
+            <div 
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
+            >
+              <AnimatePresence>
+                {sortedCiclos.map((ciclo, index) => {
+                  const completed = ciclo.items.filter(i => i.concluido).length;
+                  const progress = ciclo.items.length > 0 ? (completed / ciclo.items.length) * 100 : 0;
+                  const totalMinutes = ciclo.items.reduce((acc, i) => acc + i.duracao, 0);
+                  const targetMinutes = ciclo.targetMinutes;
+                  const timeDiff = targetMinutes ? targetMinutes - totalMinutes : 0;
+                  
+                  return (
+                    <Draggable key={ciclo.id} draggableId={ciclo.id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`bg-white rounded-2xl border ${snapshot.isDragging ? 'shadow-2xl border-indigo-500 scale-105 z-50' : 'border-slate-200 shadow-sm'} overflow-hidden flex flex-col group/card transition-all`}
+                          style={provided.draggableProps.style}
+                        >
+                          <div 
+                            {...provided.dragHandleProps}
+                            className="p-5 border-b border-slate-100 bg-slate-50/50 cursor-grab active:cursor-grabbing rounded-t-2xl"
+                          >
+                            <div className="flex justify-between items-start mb-2">
                     {editingCycleId === ciclo.id ? (
                       <input 
                         autoFocus
@@ -593,7 +613,9 @@ export function StudyCycles() {
                     BAIXAR PLANILHA
                   </button>
                 </div>
-              </motion.div>
+              </div>
+            )}
+          </Draggable>
             );
           })}
         </AnimatePresence>
@@ -607,7 +629,11 @@ export function StudyCycles() {
             <p className="text-sm">Clique em "Novo Ciclo" para começar.</p>
           </div>
         )}
+        {provided.placeholder}
       </div>
+      )}
+      </Droppable>
+      </DragDropContext>
 
       {ciclos.length > 0 && (
         <div className="max-w-5xl mx-auto mt-12 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 overflow-hidden">
@@ -641,6 +667,18 @@ export function StudyCycles() {
               </div>
             )}
           </div>
+          
+          {sortedGlobalSubjects.length > 0 && (() => {
+            const totalGeralMins = sortedGlobalSubjects.reduce((acc, [_, m]) => acc + Number(m), 0);
+            return (
+              <div className="mt-8 pt-6 border-t border-slate-200 flex flex-col items-end">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Total Geral da Semana</span>
+                <div className="font-mono text-2xl font-black text-white bg-indigo-900 px-6 py-3 rounded-2xl shadow-lg shadow-indigo-900/20">
+                  {Math.floor(totalGeralMins / 60)}h {(totalGeralMins % 60).toString().padStart(2, '0')}m
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
