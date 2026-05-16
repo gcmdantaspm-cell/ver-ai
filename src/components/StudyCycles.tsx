@@ -26,6 +26,9 @@ import {
 import * as XLSX from "xlsx";
 import { generateStudyCycleAI } from "../services/ai";
 
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '../firebase';
+
 export function StudyCycles() {
   const { editais, ciclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem } = useEdital();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -41,6 +44,8 @@ export function StudyCycles() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [editDuration, setEditDuration] = useState<number>(0);
+  
+  const [isUploadingDrive, setIsUploadingDrive] = useState(false);
 
   const handleEditalSelect = (editalId: string) => {
     setSelectedEditalId(editalId);
@@ -201,8 +206,72 @@ export function StudyCycles() {
     XLSX.writeFile(wb, `Todos_os_Ciclos_${new Date().toLocaleDateString()}.xlsx`);
   };
 
-  const saveToGoogleDrive = () => {
-    alert("Para salvar diretamente no Google Drive, este recurso requer integração com a API do Google Drive (o que exige configuração de credenciais OAuth).\n\nComo alternativa, você pode baixar a planilha e fazer o upload manual para o Drive, ou usar o recurso 'Sincronizar no Google Sheets' que estamos desenvolvendo.");
+  const saveToGoogleDrive = async () => {
+    if (ciclos.length === 0) return;
+    
+    setIsUploadingDrive(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/drive.file');
+      provider.setCustomParameters({
+        prompt: 'consent'
+      });
+      
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      
+      if (!credential || !credential.accessToken) {
+        throw new Error("Não foi possível obter a permissão do Google Drive.");
+      }
+      
+      const token = credential.accessToken;
+      
+      const wb = XLSX.utils.book_new();
+      
+      ciclos.forEach(ciclo => {
+        const data = ciclo.items.map((item, index) => ({
+          "Ordem": index + 1,
+          "Matéria": item.materiaNome,
+          "Duração (min)": item.duracao,
+          "Concluido": item.concluido ? "SIM" : "NÃO"
+        }));
+        const ws = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, (ciclo.nome.substring(0, 31)).replace(/[\\\/\?\*\[\]]/g, ''));
+      });
+      
+      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      const metadata = {
+        name: `Sincronizacao_Ciclos_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      };
+      
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      form.append('file', blob);
+      
+      const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: form
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Drive upload error", errorData);
+        throw new Error('Falha ao fazer upload para o Google Drive');
+      }
+      
+      alert("Planilha salva com sucesso no seu Google Drive!");
+    } catch (err: any) {
+      console.error(err);
+      alert(`Erro ao salvar no Drive: ${err.message}`);
+    } finally {
+      setIsUploadingDrive(false);
+    }
   };
 
   return (
@@ -227,10 +296,11 @@ export function StudyCycles() {
               </button>
               <button 
                 onClick={saveToGoogleDrive}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-xl transition-all font-bold text-sm shadow-sm"
+                disabled={isUploadingDrive}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-xl transition-all font-bold text-sm shadow-sm disabled:opacity-50"
               >
-                <Cloud className="w-4 h-4" />
-                Google Drive
+                {isUploadingDrive ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cloud className="w-4 h-4" />}
+                {isUploadingDrive ? "Salvando..." : "Google Drive"}
               </button>
             </>
           )}

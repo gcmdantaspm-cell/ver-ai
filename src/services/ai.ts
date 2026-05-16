@@ -158,14 +158,25 @@ export async function generateStudyCycleAI(editalTitle: string, materias: string
     if (params) {
       extraContext = `
 Additional Context for calculation:
-- Total hours suggested for ONE FULL CYCLE: ${params.totalHoursPerCycle} hours.
-- Subject Details (Questions and Weights):
-${params.subjectsInfo.map(s => `  * ${s.nome}: ${s.questoes} questions, Weight: ${s.peso}`).join("\n")}
+- Total cycle time: ${params.totalHoursPerCycle} hours (${params.totalHoursPerCycle * 60} minutes).
 
-IMPORTANT CALCULATION RULE:
-Use the formula (Questions * Weight) to determine the relative importance of each subject. 
-Distribute the ${params.totalHoursPerCycle} hours proportionally among the subjects based on their importance, while maintaining a balanced cycle.
-If a subject is much more important, it can appear twice in the cycle or have a longer duration (max 120min per block).
+Based on the number of questions and weights provided, here is the EXACT total amount of minutes each subject MUST be studied in this cycle:
+${(function() {
+  const totalPoints = params.subjectsInfo.reduce((acc, s) => acc + (s.questoes * s.peso), 0);
+  const totalMinutes = params.totalHoursPerCycle * 60;
+  return params.subjectsInfo.map(s => {
+    const points = s.questoes * s.peso;
+    const proportion = totalPoints > 0 ? points / totalPoints : 0;
+    const subjectMinutes = Math.round(proportion * totalMinutes);
+    return `  * ${s.nome}: ${subjectMinutes} minutes (Calculated from ${s.questoes} questions x ${s.peso} weight)`;
+  }).join("\n");
+})()}
+
+IMPORTANT RULES FOR DISTRIBUTION:
+1. You MUST distribute the EXACT calculated minutes for each subject.
+2. If a subject has more than 120 minutes, split it into multiple blocks (e.g., two blocks of 60 mins or one 90 and one 60) and place them at different points in the cycle to maintain a balanced sequence.
+3. The sum of all "duracao" for a specific subject in your output MUST equal the calculated minutes above.
+4. The GRAND TOTAL of all internal "duracao" values MUST be exactly ${params.totalHoursPerCycle * 60} minutes.
 `;
     }
 
