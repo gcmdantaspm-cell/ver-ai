@@ -386,6 +386,183 @@ export function StudyCycles({
 
   const standaloneCiclos = sortedCiclos.filter(c => !c.editalId || !editais.find(e => e.id === c.editalId));
 
+  const CycleCard = ({ ciclo, index }: { ciclo: StudyCycle, index: number }) => {
+    const completed = ciclo.items.filter(i => i.concluido).length;
+    const progress = ciclo.items.length > 0 ? (completed / ciclo.items.length) * 100 : 0;
+    const totalMinutes = ciclo.items.reduce((acc, i) => acc + i.duracao, 0);
+    const targetMinutes = ciclo.targetMinutes;
+
+    return (
+      <Draggable draggableId={ciclo.id} index={index}>
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            className={`bg-white rounded-2xl border ${snapshot.isDragging ? 'shadow-2xl border-indigo-500 scale-105 z-50' : 'border-slate-200 shadow-sm'} overflow-hidden flex flex-col group/card transition-all`}
+            style={provided.draggableProps.style}
+          >
+            <div 
+              {...provided.dragHandleProps}
+              className="p-5 border-b border-slate-100 bg-slate-50/50 cursor-grab active:cursor-grabbing rounded-t-2xl"
+            >
+              <div className="flex justify-between items-start mb-2">
+                {editingCycleId === ciclo.id ? (
+                  <input 
+                    autoFocus
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onBlur={() => saveCycleTitle(ciclo.id)}
+                    onKeyDown={(e) => e.key === 'Enter' && saveCycleTitle(ciclo.id)}
+                    className="font-bold text-slate-900 bg-white border border-indigo-200 rounded px-2 py-1 flex-1 outline-none"
+                  />
+                ) : (
+                  <h2 
+                    onDoubleClick={() => { setEditingCycleId(ciclo.id); setEditValue(ciclo.nome); }}
+                    className="font-bold text-slate-900 line-clamp-1 cursor-text flex-1"
+                  >
+                    {ciclo.nome}
+                  </h2>
+                )}
+                <div className="flex items-center">
+                  <button 
+                    onClick={() => { setEditingCycleId(ciclo.id); setEditValue(ciclo.nome); }}
+                    className="text-slate-400 hover:text-indigo-600 p-1 opacity-0 group-hover/card:opacity-100 transition-opacity"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button 
+                    onClick={() => confirm("Remover ciclo?") && deleteCiclo(ciclo.id)}
+                    className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 mb-2">
+                <div className="flex items-center gap-1">
+                  <History className="w-3 h-3" />
+                  {new Date(ciclo.created_at).toLocaleDateString()}
+                </div>
+                {targetMinutes ? (
+                  <div className="flex items-center gap-1 pl-2 border-l border-slate-200" title={`Objetivo: ${Math.floor(targetMinutes/60)}h${targetMinutes%60 ? ` ${targetMinutes%60}m` : ''}`}>
+                    <Target className="w-3 h-3 text-indigo-500" />
+                    <span className="font-bold text-slate-700">{Math.floor(totalMinutes/60)}h {totalMinutes%60}m acumulado</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 pl-2 border-l border-slate-200">
+                    <Clock className="w-3 h-3" />
+                    <span>{Math.floor(totalMinutes/60)}h {totalMinutes%60}m</span>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-[10px] font-bold text-indigo-600 uppercase tracking-tighter">
+                  <span>Progresso do Ciclo</span>
+                  <span>{Math.round(progress)}%</span>
+                </div>
+                <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    className="h-full bg-indigo-600"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 p-4 space-y-2 overflow-y-auto max-h-[350px] scrollbar-thin">
+              {ciclo.items.map((item) => (
+                <div 
+                  key={item.id}
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all group/item ${
+                    item.concluido 
+                      ? 'bg-emerald-50 border-emerald-100 text-emerald-900' 
+                      : 'bg-white border-slate-100 hover:border-indigo-100'
+                  }`}
+                >
+                  <button 
+                    onClick={() => toggleCicloItem(ciclo.id, item.id)}
+                    className={`shrink-0 transition-transform active:scale-90 ${
+                      item.concluido ? 'text-emerald-500' : 'text-slate-300'
+                    }`}
+                  >
+                    {item.concluido ? <CheckCircle2 className="w-5 h-5 fill-emerald-50" /> : <Circle className="w-5 h-5" />}
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    {editingItemId === item.id ? (
+                      <div className="flex flex-col gap-2">
+                        <input 
+                          autoFocus
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="text-sm font-bold bg-white border border-indigo-200 rounded px-2 py-1 outline-none"
+                          placeholder="Nome da matéria"
+                        />
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          <input 
+                            type="number"
+                            value={editDuration}
+                            onChange={(e) => setEditDuration(parseInt(e.target.value) || 0)}
+                            className="w-16 text-xs border border-indigo-100 rounded px-1 py-0.5 outline-none"
+                          />
+                          <span className="text-[10px] text-slate-400 uppercase font-bold">min</span>
+                          <div className="ml-auto flex gap-1">
+                            <button onClick={() => saveSubjectEdit(ciclo.id, item.id)} className="p-1 text-emerald-600 hover:bg-emerald-50 rounded"><Check className="w-3.5 h-3.5"/></button>
+                            <button onClick={() => setEditingItemId(null)} className="p-1 text-slate-400 hover:bg-slate-50 rounded"><X className="w-3.5 h-3.5"/></button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div 
+                        onDoubleClick={() => {
+                          setEditingItemId(item.id);
+                          setEditValue(item.materiaNome);
+                          setEditDuration(item.duracao);
+                        }}
+                        className="cursor-text"
+                      >
+                        <p className={`text-sm font-medium truncate ${item.concluido ? 'line-through opacity-60' : ''}`}>{item.materiaNome}</p>
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500"><Clock className="w-3 h-3" /> {item.duracao} min</div>
+                      </div>
+                    )}
+                  </div>
+                  {!editingItemId && (
+                    <div className="flex flex-col gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => {
+                          setEditingItemId(item.id);
+                          setEditValue(item.materiaNome);
+                          setEditDuration(item.duracao);
+                        }}
+                        className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-all"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                      <button 
+                        onClick={() => handleRemoveSubject(ciclo.id, item.id)}
+                        className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded transition-all"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <button 
+                onClick={() => handleAddSubject(ciclo.id)}
+                className="w-full py-3 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all font-bold text-xs"
+              >
+                <Plus className="w-4 h-4" />
+                Adicionar Matéria
+              </button>
+            </div>
+          </div>
+        )}
+      </Draggable>
+    );
+  };
+
   return (
     <div className="flex-1 p-4 sm:p-8 overflow-y-auto bg-slate-50">
       <header className="max-w-5xl mx-auto mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -462,121 +639,9 @@ export function StudyCycles({
                         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
                       >
                         <AnimatePresence>
-                          {group.ciclosFromEdital.map((ciclo, index) => {
-                            const completed = ciclo.items.filter(i => i.concluido).length;
-                            const progress = ciclo.items.length > 0 ? (completed / ciclo.items.length) * 100 : 0;
-                            const totalMinutes = ciclo.items.reduce((acc, i) => acc + i.duracao, 0);
-                            const targetMinutes = ciclo.targetMinutes;
-                            const timeDiff = targetMinutes ? targetMinutes - totalMinutes : 0;
-                            
-                            return (
-                              // @ts-ignore
-                              <Draggable key={ciclo.id} draggableId={ciclo.id} index={index}>
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    className={`bg-white rounded-2xl border ${snapshot.isDragging ? 'shadow-2xl border-indigo-500 scale-105 z-50' : 'border-slate-200 shadow-sm'} overflow-hidden flex flex-col group/card transition-all`}
-                                    style={provided.draggableProps.style}
-                                  >
-                                    <div 
-                                      {...provided.dragHandleProps}
-                                      className="p-5 border-b border-slate-100 bg-slate-50/50 cursor-grab active:cursor-grabbing rounded-t-2xl"
-                                    >
-                                      <div className="flex justify-between items-start mb-2">
-                                        {editingCycleId === ciclo.id ? (
-                                          <input 
-                                            autoFocus
-                                            value={editValue}
-                                            onChange={(e) => setEditValue(e.target.value)}
-                                            onBlur={() => saveCycleTitle(ciclo.id)}
-                                            onKeyDown={(e) => e.key === 'Enter' && saveCycleTitle(ciclo.id)}
-                                            className="font-bold text-slate-900 bg-white border border-indigo-200 rounded px-2 py-1 flex-1 outline-none"
-                                          />
-                                        ) : (
-                                          <h2 
-                                            onDoubleClick={() => { setEditingCycleId(ciclo.id); setEditValue(ciclo.nome); }}
-                                            className="font-bold text-slate-900 line-clamp-1 cursor-text flex-1"
-                                          >
-                                            {ciclo.nome}
-                                          </h2>
-                                        )}
-                                        <div className="flex items-center">
-                                          <button 
-                                            onClick={() => { setEditingCycleId(ciclo.id); setEditValue(ciclo.nome); }}
-                                            className="text-slate-400 hover:text-indigo-600 p-1 opacity-0 group-hover/card:opacity-100 transition-opacity"
-                                          >
-                                            <Edit2 className="w-3.5 h-3.5" />
-                                          </button>
-                                          <button 
-                                            onClick={() => confirm("Remover ciclo?") && deleteCiclo(ciclo.id)}
-                                            className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
-                                          >
-                                            <Trash2 className="w-4 h-4" />
-                                          </button>
-                                        </div>
-                                      </div>
-                                      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 mb-2">
-                                        <div className="flex items-center gap-1">
-                                          <History className="w-3 h-3" />
-                                          {new Date(ciclo.created_at).toLocaleDateString()}
-                                        </div>
-                                        {targetMinutes ? (
-                                          <div className="flex items-center gap-1 pl-2 border-l border-slate-200" title={`Objetivo: ${Math.floor(targetMinutes/60)}h${targetMinutes%60 ? ` ${targetMinutes%60}m` : ''}`}>
-                                            <Target className="w-3 h-3 text-indigo-500" />
-                                            <span className="font-bold text-slate-700">{Math.floor(totalMinutes/60)}h {totalMinutes%60}m acumulado</span>
-                                          </div>
-                                        ) : (
-                                          <div className="flex items-center gap-1 pl-2 border-l border-slate-200">
-                                            <Clock className="w-3 h-3" />
-                                            <span>{Math.floor(totalMinutes/60)}h {totalMinutes%60}m</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="space-y-1">
-                                        <div className="flex justify-between text-[10px] font-bold text-indigo-600 uppercase tracking-tighter">
-                                          <span>Progresso do Ciclo</span>
-                                          <span>{Math.round(progress)}%</span>
-                                        </div>
-                                        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                          <motion.div 
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${progress}%` }}
-                                            className="h-full bg-indigo-600"
-                                          />
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="flex-1 p-4 space-y-2 overflow-y-auto max-h-[350px] scrollbar-thin">
-                                      {ciclo.items.map((item) => (
-                                        <div 
-                                          key={item.id}
-                                          className={`flex items-center gap-3 p-3 rounded-xl border transition-all group/item ${
-                                            item.concluido 
-                                              ? 'bg-emerald-50 border-emerald-100 text-emerald-900' 
-                                              : 'bg-white border-slate-100 hover:border-indigo-100'
-                                          }`}
-                                        >
-                                          <button 
-                                            onClick={() => toggleCicloItem(ciclo.id, item.id)}
-                                            className={`shrink-0 transition-transform active:scale-90 ${
-                                              item.concluido ? 'text-emerald-500' : 'text-slate-300'
-                                            }`}
-                                          >
-                                            {item.concluido ? <CheckCircle2 className="w-5 h-5 fill-emerald-50" /> : <Circle className="w-5 h-5" />}
-                                          </button>
-                                          <div className="flex-1 min-w-0">
-                                            <p className={`text-sm font-medium truncate ${item.concluido ? 'line-through opacity-60' : ''}`}>{item.materiaNome}</p>
-                                            <div className="flex items-center gap-1.5 text-[10px] text-slate-500"><Clock className="w-3 h-3" /> {item.duracao} min</div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </Draggable>
-                            );
-                          })}
+                          {group.ciclosFromEdital.map((ciclo, index) => (
+                            <CycleCard key={ciclo.id} ciclo={ciclo} index={index} />
+                          ))}
                         </AnimatePresence>
                         {provided.placeholder}
                       </div>
@@ -617,27 +682,7 @@ export function StudyCycles({
                     >
                       <AnimatePresence>
                         {standaloneCiclos.map((ciclo, index) => (
-                          // @ts-ignore
-                          <Draggable key={ciclo.id} draggableId={ciclo.id} index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className={`bg-white rounded-2xl border ${snapshot.isDragging ? 'shadow-2xl border-indigo-500 scale-105 z-50' : 'border-slate-200 shadow-sm'} overflow-hidden flex flex-col group/card transition-all`}
-                                style={provided.draggableProps.style}
-                              >
-                                <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-                                   <h2 className="font-bold text-slate-900 line-clamp-1">{ciclo.nome}</h2>
-                                </div>
-                                <div className="p-4 flex-1">
-                                   <div className="text-[10px] text-slate-500">
-                                      {ciclo.items.length} matérias • {Math.floor(ciclo.items.reduce((a,b)=>a+b.duracao,0)/60)}h de ciclo
-                                   </div>
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
+                          <CycleCard key={ciclo.id} ciclo={ciclo} index={index} />
                         ))}
                       </AnimatePresence>
                       {provided.placeholder}
