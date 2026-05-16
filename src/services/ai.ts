@@ -225,15 +225,25 @@ Example:
         model: "gemini-2.0-flash"
       });
     } catch (err: any) {
+      console.warn("Fallback to gemini-1.5-flash due to:", err);
       response = await ai.models.generateContent({
         ...configOptions,
         model: "gemini-1.5-flash"
       });
     }
 
-    return JSON.parse(response.text || "[]");
-  } catch (error) {
+    if (!response.text) {
+      throw new Error(`Empty response from Gemini API.`);
+    }
+
+    try {
+      return JSON.parse(response.text);
+    } catch (parseError) {
+      console.error("Failed to parse JSON:", response.text);
+      throw new Error(`Invalid JSON format returned by AI.`);
+    }
+  } catch (error: any) {
     console.error("Failed to generate cycle with Gemini", error);
-    throw error;
+    throw new Error(error.message || "Failed to generate cycle");
   }
 }

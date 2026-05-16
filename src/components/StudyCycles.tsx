@@ -97,9 +97,9 @@ export function StudyCycles() {
 
       addCiclo(newCycle);
       setShowNewCycleModal(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Erro ao gerar ciclo com IA.");
+      alert(`Erro ao gerar ciclo com IA: ${error.message || JSON.stringify(error)}`);
     } finally {
       setIsGenerating(false);
     }
