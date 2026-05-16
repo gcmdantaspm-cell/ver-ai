@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useEdital } from "../store";
 import { StudyCycle, StudyCycleItem, Edital } from "../types";
 import { v4 as uuidv4 } from "uuid";
@@ -433,6 +433,7 @@ export function StudyCycles({
                   const timeDiff = targetMinutes ? targetMinutes - totalMinutes : 0;
                   
                   return (
+                    // @ts-ignore
                     <Draggable key={ciclo.id} draggableId={ciclo.id} index={index}>
                       {(provided, snapshot) => (
                         <div

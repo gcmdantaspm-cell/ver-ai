@@ -27,7 +27,7 @@ interface EditalContextType {
   revisions: RevisaoAgendada[];
   completeRevision: (topicoOuSubId: string, dataRevisao: string) => void;
   getPublicEdital: (id: string) => Promise<Edital | null>;
-  setEditalPublic: (id: string, isPublic: boolean) => Promise<void>;
+  setEditalPublic: (id: string, isPublic: boolean, cycleIdsToPublic?: string[]) => Promise<void>;
   addCiclo: (ciclo: StudyCycle) => void;
   deleteCiclo: (id: string) => void;
   updateCiclo: (ciclo: StudyCycle) => void;
@@ -230,37 +230,41 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const completeRevision = (itemId: string, dataRevisao: string) => {
     if (!user) return;
-    setEditais(prev => {
-      const newArray = JSON.parse(JSON.stringify(prev)) as Edital[];
-      for (const edital of newArray) {
-        let changed = false;
-        for (const area of edital.areas) {
+    
+    // Find which edital contains this itemId
+    const allEditais = [...editais, ...managedEditais];
+    const targetEdital = allEditais.find(ed => {
+       for (const area of ed.areas) {
           for (const materia of area.materias) {
-            for (const topico of materia.topicos) {
-              if (topico.id === itemId) {
-                topico.revisoes_agendadas = topico.revisoes_agendadas.filter(r => r !== dataRevisao);
-                topico.revisoes_concluidas = (topico.revisoes_concluidas || 0) + 1;
-                changed = true;
-              }
-              for (const sub of topico.subtopicos) {
-                if (sub.id === itemId) {
-                  sub.revisoes_agendadas = sub.revisoes_agendadas.filter(r => r !== dataRevisao);
-                  sub.revisoes_concluidas = (sub.revisoes_concluidas || 0) + 1;
-                  changed = true;
+             for (const topico of materia.topicos) {
+                if (topico.id === itemId) return true;
+                if (topico.subtopicos.some(s => s.id === itemId)) return true;
+             }
+          }
+       }
+       return false;
+    });
+
+    if (targetEdital) {
+       handleUpdate(targetEdital.id, (edital) => {
+          for (const area of edital.areas) {
+            for (const materia of area.materias) {
+              for (const topico of materia.topicos) {
+                if (topico.id === itemId) {
+                  topico.revisoes_agendadas = topico.revisoes_agendadas.filter(r => r !== dataRevisao);
+                  topico.revisoes_concluidas = (topico.revisoes_concluidas || 0) + 1;
+                }
+                for (const sub of topico.subtopicos) {
+                  if (sub.id === itemId) {
+                    sub.revisoes_agendadas = sub.revisoes_agendadas.filter(r => r !== dataRevisao);
+                    sub.revisoes_concluidas = (sub.revisoes_concluidas || 0) + 1;
+                  }
                 }
               }
             }
           }
-        }
-        if (changed) {
-           setDoc(doc(db, "editais", edital.id), JSON.parse(JSON.stringify({ ...edital, userId: user.uid }))).catch(err => {
-             handleFirestoreError(err, OperationType.UPDATE, `editais/${edital.id}`);
-           });
-           return newArray;
-        }
-      }
-      return newArray;
-    });
+       });
+    }
   };
 
   const addItem = (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title: string = "Novo Item") => {
@@ -446,7 +450,8 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   };
 
   const revisions: RevisaoAgendada[] = [];
-  editais.forEach(edital => {
+  const allCurrentEditais = [...editais, ...managedEditais];
+  allCurrentEditais.forEach(edital => {
     if (!edital || !edital.areas) return;
     edital.areas.forEach(area => {
       if (!area || !area.materias) return;
@@ -540,22 +545,30 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const setEditalPublic = async (id: string, isPublic: boolean): Promise<void> => {
+  const setEditalPublic = async (id: string, isPublic: boolean, cycleIdsToPublic?: string[]): Promise<void> => {
     if (!user) return;
     try {
       const ownerName = user.displayName || user.email || "Usuário Anônimo";
       await setDoc(doc(db, "editais", id), { isPublic, ownerName }, { merge: true });
       setEditais(prev => prev.map(e => e.id === id ? { ...e, isPublic, ownerName } : e));
-      // Also update isPublic for ciclos linked to this edital
+      
+      // Update isPublic for ALL cycles linked to this edital, but based on cycleIdsToPublic
       const relatedCiclos = ciclos.filter(c => c.editalId === id);
       for (const c of relatedCiclos) {
-        if (c.isPublic !== isPublic) {
-          await setDoc(doc(db, "ciclos", c.id), { isPublic, ownerName }, { merge: true }).catch(err => {
+        const shouldBePublic = cycleIdsToPublic ? cycleIdsToPublic.includes(c.id) : isPublic;
+        if (c.isPublic !== shouldBePublic) {
+          await setDoc(doc(db, "ciclos", c.id), { isPublic: shouldBePublic, ownerName }, { merge: true }).catch(err => {
             console.error("Erro ao atualizar ciclo", err);
           });
         }
       }
-      setCiclos(prev => prev.map(c => c.editalId === id ? { ...c, isPublic, ownerName } : c));
+      setCiclos(prev => prev.map(c => {
+         if (c.editalId === id) {
+            const shouldBePublic = cycleIdsToPublic ? cycleIdsToPublic.includes(c.id) : isPublic;
+            return { ...c, isPublic: shouldBePublic, ownerName };
+         }
+         return c;
+      }));
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `editais/${id}`);
     }

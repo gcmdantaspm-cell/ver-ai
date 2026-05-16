@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { EditalProvider, useEdital } from "./store";
 import { Dashboard } from "./components/Dashboard";
 import { ParseEdital } from "./components/ParseEdital";
@@ -17,20 +17,23 @@ function AppContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const [isImporting, setIsImporting] = useState(false);
+  const importProcessed = useRef<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const importId = params.get('import');
     const importCiclos = params.get('ciclos');
     
-    if (importId && user) {
+    if (importId && user && importProcessed.current !== importId) {
       const handleImport = async () => {
+         importProcessed.current = importId;
          setIsImporting(true);
          try {
             const ed = await getPublicEdital(importId);
             if (ed) {
               const clone = JSON.parse(JSON.stringify(ed));
               clone.id = uuidv4();
+              clone.originalEditalId = importId; // Track origin
               clone.importedFrom = ed.ownerName;
               clone.isPublic = false;
               clone.managedBy = ed.userId;
@@ -47,6 +50,7 @@ function AppContent() {
                  }
                  const cicloClone = JSON.parse(JSON.stringify(c));
                  cicloClone.id = uuidv4();
+                 cicloClone.originalCycleId = c.id;
                  cicloClone.editalId = clone.id; // Link to the new edital ID
                  cicloClone.isPublic = false;
                  cicloClone.managedBy = c.userId;

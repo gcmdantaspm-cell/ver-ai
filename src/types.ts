@@ -46,6 +46,7 @@ export interface Edital {
   managedBy?: string;
   copiedByEmail?: string;
   copiedByName?: string;
+  originalEditalId?: string;
 }
 
 export interface StudyCycleItem {
@@ -59,6 +60,7 @@ export interface StudyCycleItem {
 export interface StudyCycle {
   id: string;
   editalId: string;
+  userId?: string;
   nome: string;
   items: StudyCycleItem[];
   created_at: string;
@@ -69,6 +71,7 @@ export interface StudyCycle {
   managedBy?: string;
   copiedByEmail?: string;
   copiedByName?: string;
+  originalCycleId?: string;
 }
 
 // Logic Models for Revision Queue

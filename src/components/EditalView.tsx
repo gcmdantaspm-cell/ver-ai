@@ -72,9 +72,9 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     if (isSharing || !shareModal) return;
     setIsSharing(true);
     try {
-       if (!edital.isPublic) {
-         await setEditalPublic(edital.id, true);
-       }
+       // Always set edital public and correctly set specified cycles public
+       await setEditalPublic(edital.id, true, shareModal.selectedCiclos);
+       
        let url = `${window.location.origin}/?import=${edital.id}`;
        if (shareModal.selectedCiclos.length > 0) {
          url += `&ciclos=${shareModal.selectedCiclos.join(",")}`;
