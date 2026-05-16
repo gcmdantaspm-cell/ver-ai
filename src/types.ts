@@ -42,6 +42,22 @@ export interface Edital {
   isPublic?: boolean;
 }
 
+export interface StudyCycleItem {
+  id: string;
+  materiaId: string;
+  materiaNome: string;
+  duracao: number; // minutes
+  concluido: boolean;
+}
+
+export interface StudyCycle {
+  id: string;
+  editalId: string;
+  nome: string;
+  items: StudyCycleItem[];
+  created_at: string;
+}
+
 // Logic Models for Revision Queue
 export interface RevisaoAgendada {
   editalId: string;

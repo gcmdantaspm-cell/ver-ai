@@ -4,8 +4,9 @@ import { Dashboard } from "./components/Dashboard";
 import { ParseEdital } from "./components/ParseEdital";
 import { EditalView } from "./components/EditalView";
 import { RevisaoSugestoes } from "./components/RevisaoSugestoes";
+import { StudyCycles } from "./components/StudyCycles";
 import { FloatingPomodoro } from "./components/Pomodoro";
-import { LayoutDashboard, FileText, Plus, BookOpen, Menu, X, ChevronDown, LogOut, Loader2, History } from "lucide-react";
+import { LayoutDashboard, FileText, Plus, BookOpen, Menu, X, ChevronDown, LogOut, Loader2, History, Target } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import { v4 as uuidv4 } from "uuid";
 
@@ -88,6 +89,12 @@ function AppContent() {
               <History className="w-4 h-4" /> Revisão Inteligente
             </button>
             <button
+              onClick={() => navigateTo("ciclos")}
+              className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "ciclos" ? "bg-blue-900 text-white shadow-md shadow-blue-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
+            >
+              <Target className="w-4 h-4" /> Ciclos de Estudos
+            </button>
+            <button
               onClick={() => navigateTo("import")}
               className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "import" ? "bg-blue-900 text-white shadow-md shadow-blue-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
             >
@@ -149,6 +156,13 @@ function AppContent() {
               <span>Revisão Inteligente</span>
             </button>
             <button
+              onClick={() => navigateTo("ciclos")}
+              className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-1 border ${currentView === "ciclos" ? "bg-blue-900 text-white shadow-md border-transparent" : "text-slate-500 hover:bg-slate-100 border-transparent"}`}
+            >
+              <Target className="w-5 h-5" />
+              <span>Ciclos de Estudos</span>
+            </button>
+            <button
                onClick={() => navigateTo("import")}
               className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-6 border ${currentView === "import" ? "bg-blue-900 text-white shadow-md border-transparent" : "text-slate-500 hover:bg-slate-100 border-transparent"}`}
             >
@@ -187,6 +201,7 @@ function AppContent() {
       <main className="flex-1 flex flex-col overflow-hidden h-full pt-16 md:pt-0">
          {currentView === "dashboard" && <Dashboard />}
          {currentView === "revisao" && <RevisaoSugestoes />}
+         {currentView === "ciclos" && <StudyCycles />}
          {currentView === "import" && <ParseEdital onSuccess={() => navigateTo("dashboard")} />}
          {currentView.startsWith("edital-") && (
             (() => {

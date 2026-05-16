@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Edital, RevisaoAgendada } from "./types";
+import { Edital, RevisaoAgendada, StudyCycle, StudyCycleItem } from "./types";
 import { addDays, isPast, isToday, differenceInDays } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 import { collection, doc, onSnapshot, query, setDoc, where, deleteDoc, getDocFromServer } from "firebase/firestore";
@@ -14,7 +14,7 @@ interface EditalContextType {
   updateItemTitle: (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'edital' | 'area' | 'materia' | 'topico' | 'subtopico') => void;
   deleteItem: (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area' | 'materia' | 'topico' | 'subtopico') => void;
   addItem: (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title?: string) => void;
-  addMaterias: (editalId: string, areaId: string, materias: Materia[]) => void;
+  addMaterias: (editalId: string, areaId: string, materias: any[]) => void;
   addCustomRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => void;
   removeRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => void;
   setNextRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
@@ -25,6 +25,11 @@ interface EditalContextType {
   completeRevision: (topicoOuSubId: string, dataRevisao: string) => void;
   getPublicEdital: (id: string) => Promise<Edital | null>;
   setEditalPublic: (id: string, isPublic: boolean) => Promise<void>;
+  ciclos: StudyCycle[];
+  addCiclo: (ciclo: StudyCycle) => void;
+  deleteCiclo: (id: string) => void;
+  updateCiclo: (ciclo: StudyCycle) => void;
+  toggleCicloItem: (cicloId: string, itemId: string) => void;
 }
 
 const EditalContext = createContext<EditalContextType | undefined>(undefined);
@@ -32,14 +37,16 @@ const EditalContext = createContext<EditalContextType | undefined>(undefined);
 export function EditalProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [editais, setEditais] = useState<Edital[]>([]);
+  const [ciclos, setCiclos] = useState<StudyCycle[]>([]);
 
   useEffect(() => {
     if (!user) {
       setEditais([]);
+      setCiclos([]);
       return;
     }
     const q = query(collection(db, "editais"), where("userId", "==", user.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeEditais = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(changeDoc => {
          const obj = changeDoc.data();
          obj.id = changeDoc.id;
@@ -49,8 +56,56 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     }, (err) => {
        handleFirestoreError(err, OperationType.GET, "editais");
     });
-    return () => unsubscribe();
+
+    const qCiclos = query(collection(db, "ciclos"), where("userId", "==", user.uid));
+    const unsubscribeCiclos = onSnapshot(qCiclos, (snapshot) => {
+      const data = snapshot.docs.map(doc => {
+        const obj = doc.data();
+        obj.id = doc.id;
+        return obj as StudyCycle;
+      });
+      setCiclos(data);
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, "ciclos");
+    });
+
+    return () => {
+      unsubscribeEditais();
+      unsubscribeCiclos();
+    };
   }, [user]);
+
+  const addCiclo = (ciclo: StudyCycle) => {
+    if (!user) return;
+    setDoc(doc(db, "ciclos", ciclo.id), { ...ciclo, userId: user.uid }).catch(err => {
+      handleFirestoreError(err, OperationType.CREATE, `ciclos/${ciclo.id}`);
+    });
+  };
+
+  const deleteCiclo = (id: string) => {
+    if (!user) return;
+    deleteDoc(doc(db, "ciclos", id)).catch(err => {
+      handleFirestoreError(err, OperationType.DELETE, `ciclos/${id}`);
+    });
+  };
+
+  const updateCiclo = (ciclo: StudyCycle) => {
+    if (!user) return;
+    setDoc(doc(db, "ciclos", ciclo.id), { ...ciclo, userId: user.uid }).catch(err => {
+      handleFirestoreError(err, OperationType.UPDATE, `ciclos/${ciclo.id}`);
+    });
+  };
+
+  const toggleCicloItem = (cicloId: string, itemId: string) => {
+    const ciclo = ciclos.find(c => c.id === cicloId);
+    if (ciclo) {
+      const newItems = ciclo.items.map(item => {
+        if (item.id === itemId) return { ...item, concluido: !item.concluido };
+        return item;
+      });
+      updateCiclo({ ...ciclo, items: newItems });
+    }
+  };
 
   const handleUpdate = (editalId: string, updater: (edital: Edital) => void) => {
     if (!user) return;
@@ -427,7 +482,8 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       editais, addEdital, deleteEdital, toggleVisto, updateItemTitle,
       deleteItem, addItem, addMaterias, addCustomRevisionDate,
       removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota,
-      updateMetricas, revisions, completeRevision, getPublicEdital, setEditalPublic
+      updateMetricas, revisions, completeRevision, getPublicEdital, setEditalPublic,
+      ciclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem
     }}>
       {children}
     </EditalContext.Provider>

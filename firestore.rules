@@ -44,5 +44,32 @@ service cloud.firestore {
                       
         allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
+
+    function isValidCiclo(data) {
+        return data.keys().hasAll(['userId', 'editalId', 'nome', 'items', 'created_at'])
+            && data.keys().size() <= 6
+            && data.userId is string
+            && data.userId == request.auth.uid
+            && data.editalId is string
+            && data.nome is string
+            && data.items is list
+            && data.created_at is string;
+    }
+
+    match /ciclos/{cicloId} {
+        allow read, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+        
+        allow create: if isSignedIn() 
+                      && isValidId(cicloId) 
+                      && isValidCiclo(incoming());
+                      
+        allow update: if isSignedIn() 
+                      && existing().userId == request.auth.uid 
+                      && isValidCiclo(incoming())
+                      && incoming().userId == existing().userId
+                      && (incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'items']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
+                      
+        allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
   }
 }

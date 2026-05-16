@@ -142,3 +142,61 @@ ${text}`,
     throw error;
   }
 }
+
+export async function generateStudyCycleAI(editalTitle: string, materias: string[]): Promise<any[]> {
+  try {
+    const configOptions = {
+      contents: `You are a Study Mentor specializing in High-Performance Preparation for Public Exams.
+Design a Study Cycle (Ciclo de Estudos) for the exam: "${editalTitle}".
+List of subjects available: ${materias.join(", ")}.
+
+Guidelines:
+1. Organize subjects into a logical sequence (cycle).
+2. Assign a suggested duration for each subject session (in MINUTES).
+3. The cycle should be balanced, alternating between high-concentration subjects and more mechanical/fast ones.
+4. Suggest a realistic time block for each (typically 60 to 120 minutes).
+
+Return a JSON array of items, each with:
+- materiaNome: Name of the subject (must be one from the list provided).
+- duracao: Duration in minutes.
+
+Example:
+[
+  { "materiaNome": "Direito Constitucional", "duracao": 90 },
+  { "materiaNome": "Língua Portuguesa", "duracao": 60 }
+]`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              materiaNome: { type: Type.STRING },
+              duracao: { type: Type.NUMBER }
+            },
+            required: ["materiaNome", "duracao"]
+          }
+        }
+      }
+    };
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        ...configOptions,
+        model: "gemini-2.0-flash"
+      });
+    } catch (err: any) {
+      response = await ai.models.generateContent({
+        ...configOptions,
+        model: "gemini-1.5-flash"
+      });
+    }
+
+    return JSON.parse(response.text || "[]");
+  } catch (error) {
+    console.error("Failed to generate cycle with Gemini", error);
+    throw error;
+  }
+}
