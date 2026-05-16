@@ -90,23 +90,15 @@ ${text}`,
     try {
       response = await ai.models.generateContent({
         ...configOptions,
-        model: "gemini-2.5-flash"
+        model: "gemini-3.1-pro-preview"
       });
     } catch (err: any) {
       if (err?.status === 503 || err?.status === 429 || err?.message?.match(/high demand|429|503/i)) {
-        console.log("gemini-2.5-flash failed, falling back to gemini-1.5-pro");
-        try {
-          response = await ai.models.generateContent({
-            ...configOptions,
-            model: "gemini-1.5-pro"
-          });
-        } catch(fallbackErr: any) {
-           console.log("gemini-1.5-pro failed, falling back to gemini-1.5-flash");
-           response = await ai.models.generateContent({
-             ...configOptions,
-             model: "gemini-1.5-flash"
-           });
-        }
+        console.log("gemini-3.1-pro-preview failed, falling back to gemini-3-flash-preview");
+        response = await ai.models.generateContent({
+          ...configOptions,
+          model: "gemini-3-flash-preview"
+        });
       } else {
         throw err;
       }
@@ -233,13 +225,13 @@ Example:
     try {
       response = await ai.models.generateContent({
         ...configOptions,
-        model: "gemini-2.0-flash"
+        model: "gemini-3.1-pro-preview"
       });
     } catch (err: any) {
-      console.warn("Fallback to gemini-1.5-flash due to:", err);
+      console.warn("Fallback to gemini-3-flash-preview due to:", err);
       response = await ai.models.generateContent({
         ...configOptions,
-        model: "gemini-1.5-flash"
+        model: "gemini-3-flash-preview"
       });
     }
 
