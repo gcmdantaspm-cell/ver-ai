@@ -47,14 +47,15 @@ service cloud.firestore {
 
     function isValidCiclo(data) {
         return data.keys().hasAll(['userId', 'editalId', 'nome', 'items', 'created_at'])
-            && data.keys().size() <= 7
+            && data.keys().size() <= 8
             && data.userId is string
             && data.userId == request.auth.uid
             && data.editalId is string
             && data.nome is string
             && data.items is list
             && data.created_at is string
-            && (!data.keys().hasAny(['targetMinutes']) || data.targetMinutes is number);
+            && (!data.keys().hasAny(['targetMinutes']) || data.targetMinutes is number)
+            && (!data.keys().hasAny(['ordem']) || data.ordem is number);
     }
 
     match /ciclos/{cicloId} {
@@ -68,7 +69,7 @@ service cloud.firestore {
                       && existing().userId == request.auth.uid 
                       && isValidCiclo(incoming())
                       && incoming().userId == existing().userId
-                      && (incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'items', 'targetMinutes']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
+                      && (incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'items', 'targetMinutes', 'ordem']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
                       
         allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }

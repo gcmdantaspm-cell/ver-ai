@@ -309,6 +309,59 @@ export function StudyCycles() {
     }
   };
 
+  const [draggedCycleId, setDraggedCycleId] = useState<string | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedCycleId(id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedCycleId || draggedCycleId === targetId) return;
+
+    const sourceIndex = sortedCiclos.findIndex(c => c.id === draggedCycleId);
+    const targetIndex = sortedCiclos.findIndex(c => c.id === targetId);
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    const newCiclos = [...sortedCiclos];
+    const [removed] = newCiclos.splice(sourceIndex, 1);
+    newCiclos.splice(targetIndex, 0, removed);
+
+    // Update 'ordem' for all to persist sorting
+    newCiclos.forEach((ciclo, idx) => {
+      if (ciclo.ordem !== idx) {
+        updateCiclo({ ...ciclo, ordem: idx });
+      }
+    });
+    setDraggedCycleId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedCycleId(null);
+  };
+
+  const sortedCiclos = [...ciclos].sort((a, b) => {
+    if (a.ordem !== undefined && b.ordem !== undefined) {
+      return a.ordem - b.ordem;
+    }
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+
+  const globalSubjectResumo = ciclos.reduce((acc, ciclo) => {
+    ciclo.items.forEach(item => {
+      acc[item.materiaNome] = (acc[item.materiaNome] || 0) + item.duracao;
+    });
+    return acc;
+  }, {} as Record<string, number>);
+
+  const sortedGlobalSubjects = Object.entries(globalSubjectResumo).sort((a, b) => b[1] - a[1]);
+
   return (
     <div className="flex-1 p-4 sm:p-8 overflow-y-auto bg-slate-50">
       <header className="max-w-5xl mx-auto mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -351,7 +404,7 @@ export function StudyCycles() {
 
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         <AnimatePresence>
-          {ciclos.map((ciclo) => {
+          {sortedCiclos.map((ciclo) => {
             const completed = ciclo.items.filter(i => i.concluido).length;
             const progress = ciclo.items.length > 0 ? (completed / ciclo.items.length) * 100 : 0;
             const totalMinutes = ciclo.items.reduce((acc, i) => acc + i.duracao, 0);
@@ -364,7 +417,12 @@ export function StudyCycles() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col group/card"
+                draggable
+                onDragStart={(e) => handleDragStart(e as unknown as React.DragEvent, ciclo.id)}
+                onDragOver={(e) => handleDragOver(e as unknown as React.DragEvent, ciclo.id)}
+                onDrop={(e) => handleDrop(e as unknown as React.DragEvent, ciclo.id)}
+                onDragEnd={handleDragEnd}
+                className={`bg-white rounded-2xl border ${draggedCycleId === ciclo.id ? 'opacity-50 border-indigo-500 border-dashed' : 'border-slate-200'} shadow-sm overflow-hidden flex flex-col group/card cursor-grab active:cursor-grabbing`}
               >
                 <div className="p-5 border-b border-slate-100 bg-slate-50/50">
                   <div className="flex justify-between items-start mb-2">
@@ -524,28 +582,6 @@ export function StudyCycles() {
                     <PlusCircle className="w-4 h-4" />
                     Adicionar Matéria
                   </button>
-
-                  {/* Summary of subjects */}
-                  <div className="pt-4 mt-2 border-t border-slate-100">
-                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Resumo por Matéria</h3>
-                    <div className="space-y-1.5">
-                      {Object.entries(
-                        ciclo.items.reduce((acc, i) => {
-                          acc[i.materiaNome] = (acc[i.materiaNome] || 0) + i.duracao;
-                          return acc;
-                        }, {} as Record<string, number>)
-                      )
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([name, mins]) => (
-                        <div key={name} className="flex justify-between items-center text-xs">
-                          <span className="text-slate-600 truncate mr-2" title={name}>{name}</span>
-                          <span className="font-mono font-medium text-slate-700 whitespace-nowrap bg-slate-100 px-1.5 py-0.5 rounded">
-                            {Math.floor(mins / 60)}h {mins % 60}m
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 <div className="p-3 bg-slate-50 border-t border-slate-100 flex gap-2">
@@ -572,6 +608,39 @@ export function StudyCycles() {
           </div>
         )}
       </div>
+
+      {ciclos.length > 0 && (
+        <div className="max-w-5xl mx-auto mt-12 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 overflow-hidden">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Resumo Geral (Horas Semanais)</h2>
+              <p className="text-sm text-slate-500">Tempo total de cada matéria na semana.</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
+            {sortedGlobalSubjects.map(([name, mins], index) => (
+              <div key={name} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0 relative group">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="w-5 text-center text-xs font-bold text-slate-300">{index + 1}</span>
+                  <span className="text-sm font-medium text-slate-700 truncate" title={name}>{name}</span>
+                </div>
+                <div className="font-mono text-sm font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg shrink-0">
+                  {Math.floor(mins / 60)}h {(mins % 60).toString().padStart(2, '0')}m
+                </div>
+              </div>
+            ))}
+            {sortedGlobalSubjects.length === 0 && (
+              <div className="col-span-full text-center py-8 text-slate-400 text-sm">
+                Nenhuma matéria adicionada ainda.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* New Cycle Modal */}
       <AnimatePresence>
