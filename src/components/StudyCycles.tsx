@@ -32,11 +32,34 @@ export function StudyCycles() {
   const [selectedEditalId, setSelectedEditalId] = useState<string>("");
   const [showNewCycleModal, setShowNewCycleModal] = useState(false);
   
+  // IA Suggestion Params
+  const [totalCycleHours, setTotalCycleHours] = useState<number>(20);
+  const [subjectsParams, setSubjectsParams] = useState<{nome: string, questoes: number, peso: number}[]>([]);
+
   // Editing states
   const [editingCycleId, setEditingCycleId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [editDuration, setEditDuration] = useState<number>(0);
+
+  const handleEditalSelect = (editalId: string) => {
+    setSelectedEditalId(editalId);
+    if (!editalId) {
+      setSubjectsParams([]);
+      return;
+    }
+    const edital = editais.find(e => e.id === editalId);
+    if (edital) {
+      const allMaterias = edital.areas.flatMap(a => a.materias.map(m => m.nome));
+      setSubjectsParams(allMaterias.map(m => ({ nome: m, questoes: 10, peso: 1 })));
+    }
+  };
+
+  const handleUpdateSubjectParam = (index: number, field: 'questoes' | 'peso', value: number) => {
+    const newParams = [...subjectsParams];
+    newParams[index] = { ...newParams[index], [field]: value };
+    setSubjectsParams(newParams);
+  };
 
   const handleGenerateAI = async () => {
     if (!selectedEditalId) return;
@@ -46,7 +69,10 @@ export function StudyCycles() {
     setIsGenerating(true);
     try {
       const allMaterias = edital.areas.flatMap(a => a.materias.map(m => m.nome));
-      const result = await generateStudyCycleAI(edital.titulo, allMaterias);
+      const result = await generateStudyCycleAI(edital.titulo, allMaterias, {
+        totalHoursPerCycle: totalCycleHours,
+        subjectsInfo: subjectsParams
+      });
       
       const newItems: StudyCycleItem[] = result.map((item: any) => ({
         id: uuidv4(),
@@ -447,7 +473,7 @@ export function StudyCycles() {
                   <label className="block text-sm font-bold text-slate-700 mb-2">Gerar com IA (Escolha o Edital)</label>
                   <select 
                     value={selectedEditalId}
-                    onChange={(e) => setSelectedEditalId(e.target.value)}
+                    onChange={(e) => handleEditalSelect(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all mb-4"
                   >
                     <option value="">Selecione um edital...</option>
@@ -456,14 +482,66 @@ export function StudyCycles() {
                     ))}
                   </select>
 
+                  {selectedEditalId && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="space-y-4 mb-6"
+                    >
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div className="flex items-center justify-between mb-4">
+                          <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            Horas por Ciclo
+                          </label>
+                          <input 
+                            type="number"
+                            value={totalCycleHours}
+                            onChange={(e) => setTotalCycleHours(parseInt(e.target.value) || 0)}
+                            className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm font-bold text-center outline-none focus:ring-2 focus:ring-indigo-500/20"
+                          />
+                        </div>
+
+                        <div className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Peso e Questões por Matéria</div>
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2 scrollbar-thin">
+                          {subjectsParams.map((param, idx) => (
+                            <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100">
+                              <span className="flex-1 text-[11px] font-medium text-slate-700 truncate">{param.nome}</span>
+                              <div className="flex gap-1 items-center">
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[8px] text-slate-400 font-bold">QUESTÕES</span>
+                                  <input 
+                                    type="number"
+                                    value={param.questoes}
+                                    onChange={(e) => handleUpdateSubjectParam(idx, 'questoes', parseInt(e.target.value) || 0)}
+                                    className="w-12 text-[10px] border border-slate-100 rounded p-1 text-center font-bold"
+                                  />
+                                </div>
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[8px] text-slate-400 font-bold">PESO</span>
+                                  <input 
+                                    type="number"
+                                    value={param.peso}
+                                    onChange={(e) => handleUpdateSubjectParam(idx, 'peso', parseInt(e.target.value) || 0)}
+                                    className="w-10 text-[10px] border border-slate-100 rounded p-1 text-center font-bold"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
                   <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex gap-4">
                     <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
                       <Sparkles className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-indigo-900 mb-1">Ciclo Inteligente por IA</h4>
+                      <h4 className="text-sm font-bold text-indigo-900 mb-1">Cálculo Inteligente por IA</h4>
                       <p className="text-xs text-indigo-700 leading-relaxed">
-                        Análise automática para criar uma sequência lógica, alternando conteúdos e definindo durações ideais.
+                        A IA usará o peso e número de questões para calcular a importância de cada matéria e distribuir as horas proporcionalmente.
                       </p>
                     </div>
                   </div>

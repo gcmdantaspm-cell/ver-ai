@@ -143,18 +143,44 @@ ${text}`,
   }
 }
 
-export async function generateStudyCycleAI(editalTitle: string, materias: string[]): Promise<any[]> {
+export interface StudyCycleParams {
+  totalHoursPerCycle: number;
+  subjectsInfo: {
+    nome: string;
+    questoes: number;
+    peso: number;
+  }[];
+}
+
+export async function generateStudyCycleAI(editalTitle: string, materias: string[], params?: StudyCycleParams): Promise<any[]> {
   try {
+    let extraContext = "";
+    if (params) {
+      extraContext = `
+Additional Context for calculation:
+- Total hours suggested for ONE FULL CYCLE: ${params.totalHoursPerCycle} hours.
+- Subject Details (Questions and Weights):
+${params.subjectsInfo.map(s => `  * ${s.nome}: ${s.questoes} questions, Weight: ${s.peso}`).join("\n")}
+
+IMPORTANT CALCULATION RULE:
+Use the formula (Questions * Weight) to determine the relative importance of each subject. 
+Distribute the ${params.totalHoursPerCycle} hours proportionally among the subjects based on their importance, while maintaining a balanced cycle.
+If a subject is much more important, it can appear twice in the cycle or have a longer duration (max 120min per block).
+`;
+    }
+
     const configOptions = {
       contents: `You are a Study Mentor specializing in High-Performance Preparation for Public Exams.
 Design a Study Cycle (Ciclo de Estudos) for the exam: "${editalTitle}".
 List of subjects available: ${materias.join(", ")}.
+${extraContext}
 
 Guidelines:
 1. Organize subjects into a logical sequence (cycle).
 2. Assign a suggested duration for each subject session (in MINUTES).
 3. The cycle should be balanced, alternating between high-concentration subjects and more mechanical/fast ones.
 4. Suggest a realistic time block for each (typically 60 to 120 minutes).
+5. If the total hours per cycle was provided, ensure the sum of durations matches approximately that total.
 
 Return a JSON array of items, each with:
 - materiaNome: Name of the subject (must be one from the list provided).
