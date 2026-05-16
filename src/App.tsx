@@ -66,12 +66,7 @@ function AppContent() {
                   continue;
                }
                
-               // Check if we already have this cycle
-               const alreadyHasCycle = addCiclo.toString().includes('originalCycleId') ? false : false; // Placeholder for check
-               // In store, addCiclo already checks for duplicates, but we need to make sure 
-               // even if it's a duplicate in store, we might want to update its editalId if it was loose?
-               // No, store.addCiclo returns early.
-               
+               // Check if we already have this cycle - handled by store.addCiclo
                const cicloClone = JSON.parse(JSON.stringify(c));
                cicloClone.id = uuidv4();
                cicloClone.originalCycleId = c.id;

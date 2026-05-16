@@ -873,19 +873,42 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
              </div>
              
              <div className="p-6 flex flex-col max-h-[60vh] overflow-y-auto custom-scrollbar">
-                <p className="text-xs text-slate-600 mb-4">
-                   Selecione os ciclos de estudo que deseja incluir no compartilhamento. O usuário irá importar o edital e os ciclos selecionados.
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed mb-6 bg-slate-100 p-3 rounded-xl border border-slate-200">
+                   Selecione os ciclos de estudo que deseja incluir no compartilhamento. O usuário que receber o link irá importar o edital e os ciclos marcados abaixo.
                 </p>
+                
                 {editalCiclos.length > 0 ? (
-                   <div className="flex flex-col gap-2">
+                   <div className="flex flex-col gap-2.5">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Seus Ciclos</span>
+                        <button 
+                          onClick={() => {
+                            setShareModal(prev => {
+                              if (!prev) return prev;
+                              const allSelected = prev.selectedCiclos.length === editalCiclos.length;
+                              return { 
+                                ...prev, 
+                                selectedCiclos: allSelected ? [] : editalCiclos.map(c => c.id) 
+                              };
+                            });
+                          }}
+                          className="text-[10px] font-bold text-blue-800 hover:text-blue-900 uppercase tracking-wider bg-blue-50 px-2 py-1 rounded"
+                        >
+                          {shareModal.selectedCiclos.length === editalCiclos.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                        </button>
+                      </div>
+                      
                       {editalCiclos.map(ciclo => {
                          const isSelected = shareModal.selectedCiclos.includes(ciclo.id);
                          return (
-                            <label key={ciclo.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-blue-900 bg-blue-50/50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
-                               <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'bg-blue-900 border-blue-900 text-white' : 'border-slate-300'}`}>
-                                  {isSelected && <Check className="w-3 h-3" />}
+                            <label key={ciclo.id} className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${isSelected ? 'border-blue-900 bg-blue-900/5 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'}`}>
+                               <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-blue-900 border-blue-900 text-white' : 'border-slate-300 bg-white'}`}>
+                                  {isSelected && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
                                </div>
-                               <span className={`text-sm font-medium flex-1 ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>{ciclo.nome}</span>
+                               <div className="flex-1">
+                                  <span className={`text-[12px] font-bold block ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{ciclo.nome}</span>
+                                  <span className="text-[9px] text-slate-400 uppercase tracking-widest font-medium">Ciclo de Estudo</span>
+                               </div>
                                <input 
                                   type="checkbox" 
                                   className="hidden" 
