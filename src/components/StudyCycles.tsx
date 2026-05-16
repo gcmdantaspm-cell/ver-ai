@@ -15,16 +15,28 @@ import {
   ChevronRight,
   BookOpen,
   History,
-  Target
+  Target,
+  Edit2,
+  Check,
+  X,
+  PlusCircle,
+  FileSpreadsheet,
+  Cloud
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { generateStudyCycleAI } from "../services/ai";
 
 export function StudyCycles() {
-  const { editais, ciclos, addCiclo, deleteCiclo, toggleCicloItem } = useEdital();
+  const { editais, ciclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem } = useEdital();
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedEditalId, setSelectedEditalId] = useState<string>("");
   const [showNewCycleModal, setShowNewCycleModal] = useState(false);
+  
+  // Editing states
+  const [editingCycleId, setEditingCycleId] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [editDuration, setEditDuration] = useState<number>(0);
 
   const handleGenerateAI = async () => {
     if (!selectedEditalId) return;
@@ -38,7 +50,7 @@ export function StudyCycles() {
       
       const newItems: StudyCycleItem[] = result.map((item: any) => ({
         id: uuidv4(),
-        materiaId: uuidv4(), // We don't necessarily need the real ID here as long as we have the name
+        materiaId: uuidv4(),
         materiaNome: item.materiaNome,
         duracao: item.duracao,
         concluido: false
@@ -62,18 +74,109 @@ export function StudyCycles() {
     }
   };
 
+  const handleAddManualCycle = () => {
+    const newCycle: StudyCycle = {
+      id: uuidv4(),
+      editalId: "",
+      nome: `Novo Ciclo ${ciclos.length + 1}`,
+      items: [],
+      created_at: new Date().toISOString()
+    };
+    addCiclo(newCycle);
+    setEditingCycleId(newCycle.id);
+    setEditValue(newCycle.nome);
+    setShowNewCycleModal(false);
+  };
+
+  const handleAddSubject = (cicloId: string) => {
+    const ciclo = ciclos.find(c => c.id === cicloId);
+    if (!ciclo) return;
+
+    const newItem: StudyCycleItem = {
+      id: uuidv4(),
+      materiaId: uuidv4(),
+      materiaNome: "Nova Matéria",
+      duracao: 60,
+      concluido: false
+    };
+
+    const updatedCiclo = {
+      ...ciclo,
+      items: [...ciclo.items, newItem]
+    };
+    updateCiclo(updatedCiclo);
+    setEditingItemId(newItem.id);
+    setEditValue(newItem.materiaNome);
+    setEditDuration(newItem.duracao);
+  };
+
+  const handleRemoveSubject = (cicloId: string, itemId: string) => {
+    const ciclo = ciclos.find(c => c.id === cicloId);
+    if (!ciclo) return;
+
+    const updatedCiclo = {
+      ...ciclo,
+      items: ciclo.items.filter(i => i.id !== itemId)
+    };
+    updateCiclo(updatedCiclo);
+  };
+
+  const saveCycleTitle = (cicloId: string) => {
+    const ciclo = ciclos.find(c => c.id === cicloId);
+    if (ciclo && editValue.trim()) {
+      updateCiclo({ ...ciclo, nome: editValue.trim() });
+    }
+    setEditingCycleId(null);
+  };
+
+  const saveSubjectEdit = (cicloId: string, itemId: string) => {
+    const ciclo = ciclos.find(c => c.id === cicloId);
+    if (ciclo) {
+      const newItems = ciclo.items.map(item => {
+        if (item.id === itemId) {
+          return { ...item, materiaNome: editValue.trim() || item.materiaNome, duracao: editDuration };
+        }
+        return item;
+      });
+      updateCiclo({ ...ciclo, items: newItems });
+    }
+    setEditingItemId(null);
+  };
+
   const downloadExcel = (ciclo: StudyCycle) => {
     const data = ciclo.items.map((item, index) => ({
       "Ordem": index + 1,
       "Matéria": item.materiaNome,
       "Duração (min)": item.duracao,
-      "Concluído": item.concluido ? "SIM" : "NÃO"
+      "Concluido": item.concluido ? "SIM" : "NÃO"
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Ciclo");
-    XLSX.writeFile(wb, `${ciclo.nome}.xlsx`);
+    XLSX.writeFile(wb, `${ciclo.nome.replace(/\//g, '-')}.xlsx`);
+  };
+
+  const downloadAllCycles = () => {
+    if (ciclos.length === 0) return;
+    const wb = XLSX.utils.book_new();
+    
+    ciclos.forEach(ciclo => {
+      const data = ciclo.items.map((item, index) => ({
+        "Ordem": index + 1,
+        "Matéria": item.materiaNome,
+        "Duração (min)": item.duracao,
+        "Concluido": item.concluido ? "SIM" : "NÃO"
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, (ciclo.nome.substring(0, 31)).replace(/[\\\/\?\*\[\]]/g, '')); // excel sheet limit 31 chars
+    });
+
+    XLSX.writeFile(wb, `Todos_os_Ciclos_${new Date().toLocaleDateString()}.xlsx`);
+  };
+
+  const saveToGoogleDrive = () => {
+    alert("Para salvar diretamente no Google Drive, este recurso requer integração com a API do Google Drive (o que exige configuração de credenciais OAuth).\n\nComo alternativa, você pode baixar a planilha e fazer o upload manual para o Drive, ou usar o recurso 'Sincronizar no Google Sheets' que estamos desenvolvendo.");
   };
 
   return (
@@ -86,20 +189,40 @@ export function StudyCycles() {
           </h1>
           <p className="text-slate-500 text-sm">Organize sua rotina de estudos de forma dinâmica e eficiente.</p>
         </div>
-        <button 
-          onClick={() => setShowNewCycleModal(true)}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-600/20 transition-all font-bold text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Ciclo
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {ciclos.length > 0 && (
+            <>
+              <button 
+                onClick={downloadAllCycles}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all font-bold text-sm shadow-sm"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Baixar Todos
+              </button>
+              <button 
+                onClick={saveToGoogleDrive}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-xl transition-all font-bold text-sm shadow-sm"
+              >
+                <Cloud className="w-4 h-4" />
+                Google Drive
+              </button>
+            </>
+          )}
+          <button 
+            onClick={() => setShowNewCycleModal(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-600/20 transition-all font-bold text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Ciclo
+          </button>
+        </div>
       </header>
 
-      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         <AnimatePresence>
           {ciclos.map((ciclo) => {
             const completed = ciclo.items.filter(i => i.concluido).length;
-            const progress = (completed / ciclo.items.length) * 100;
+            const progress = ciclo.items.length > 0 ? (completed / ciclo.items.length) * 100 : 0;
             
             return (
               <motion.div 
@@ -107,27 +230,51 @@ export function StudyCycles() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col"
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col group/card"
               >
                 <div className="p-5 border-b border-slate-100 bg-slate-50/50">
                   <div className="flex justify-between items-start mb-2">
-                    <h2 className="font-bold text-slate-900 line-clamp-1">{ciclo.nome}</h2>
-                    <button 
-                      onClick={() => confirm("Remover ciclo?") && deleteCiclo(ciclo.id)}
-                      className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {editingCycleId === ciclo.id ? (
+                      <input 
+                        autoFocus
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onBlur={() => saveCycleTitle(ciclo.id)}
+                        onKeyDown={(e) => e.key === 'Enter' && saveCycleTitle(ciclo.id)}
+                        className="font-bold text-slate-900 bg-white border border-indigo-200 rounded px-2 py-1 flex-1 outline-none"
+                      />
+                    ) : (
+                      <h2 
+                        onDoubleClick={() => { setEditingCycleId(ciclo.id); setEditValue(ciclo.nome); }}
+                        className="font-bold text-slate-900 line-clamp-1 cursor-text flex-1"
+                      >
+                        {ciclo.nome}
+                      </h2>
+                    )}
+                    <div className="flex items-center">
+                      <button 
+                        onClick={() => { setEditingCycleId(ciclo.id); setEditValue(ciclo.nome); }}
+                        className="text-slate-400 hover:text-indigo-600 p-1 opacity-0 group-hover/card:opacity-100 transition-opacity"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => confirm("Remover ciclo?") && deleteCiclo(ciclo.id)}
+                        className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-xs text-slate-500 mb-4">
+                  <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-4">
                     <History className="w-3 h-3" />
                     {new Date(ciclo.created_at).toLocaleDateString()}
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] font-bold text-indigo-600">
-                      <span>PROGRESSO</span>
+                    <div className="flex justify-between text-[10px] font-bold text-indigo-600 uppercase tracking-tighter">
+                      <span>Progresso do Ciclo</span>
                       <span>{Math.round(progress)}%</span>
                     </div>
                     <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
@@ -140,11 +287,11 @@ export function StudyCycles() {
                   </div>
                 </div>
 
-                <div className="flex-1 p-5 space-y-3 overflow-y-auto max-h-[300px]">
+                <div className="flex-1 p-4 space-y-2 overflow-y-auto max-h-[350px] scrollbar-thin">
                   {ciclo.items.map((item, idx) => (
                     <div 
                       key={item.id}
-                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all group/item ${
                         item.concluido 
                           ? 'bg-emerald-50 border-emerald-100 text-emerald-900' 
                           : 'bg-white border-slate-100 hover:border-indigo-100'
@@ -158,20 +305,68 @@ export function StudyCycles() {
                       >
                         {item.concluido ? <CheckCircle2 className="w-5 h-5 fill-emerald-50" /> : <Circle className="w-5 h-5" />}
                       </button>
+                      
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium truncate ${item.concluido ? 'line-through opacity-60' : ''}`}>
-                          {item.materiaNome}
-                        </p>
-                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                          <Clock className="w-3 h-3" />
-                          {item.duracao} min
-                        </div>
+                        {editingItemId === item.id ? (
+                          <div className="flex flex-col gap-1">
+                            <input 
+                              autoFocus
+                              value={editValue}
+                              onChange={e => setEditValue(e.target.value)}
+                              className="text-xs font-bold bg-white border border-indigo-200 rounded px-1.5 py-0.5 outline-none"
+                            />
+                            <div className="flex items-center gap-2">
+                              <input 
+                                type="number"
+                                value={editDuration}
+                                onChange={e => setEditDuration(parseInt(e.target.value)||0)}
+                                className="text-[10px] w-12 bg-white border border-indigo-200 rounded px-1.5 py-0.5 outline-none"
+                              />
+                              <span className="text-[10px] text-slate-400">min</span>
+                              <button onClick={() => saveSubjectEdit(ciclo.id, item.id)} className="p-1 bg-indigo-600 text-white rounded"><Check className="w-3 h-3" /></button>
+                              <button onClick={() => setEditingItemId(null)} className="p-1 bg-slate-200 text-slate-600 rounded"><X className="w-3 h-3" /></button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p 
+                              onDoubleClick={() => { setEditingItemId(item.id); setEditValue(item.materiaNome); setEditDuration(item.duracao); }}
+                              className={`text-sm font-medium truncate cursor-text ${item.concluido ? 'line-through opacity-60' : ''}`}
+                            >
+                              {item.materiaNome}
+                            </p>
+                            <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                              <Clock className="w-3 h-3" />
+                              {item.duracao} min
+                            </div>
+                          </>
+                        )}
                       </div>
-                      <div className="text-[10px] font-bold text-slate-300">
-                        #{idx + 1}
+                      
+                      <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                         <button 
+                           onClick={() => { setEditingItemId(item.id); setEditValue(item.materiaNome); setEditDuration(item.duracao); }}
+                           className="p-1 text-slate-400 hover:text-indigo-600"
+                         >
+                           <Edit2 className="w-3 h-3" />
+                         </button>
+                         <button 
+                           onClick={() => handleRemoveSubject(ciclo.id, item.id)}
+                           className="p-1 text-slate-400 hover:text-rose-500"
+                         >
+                           <Trash2 className="w-3 h-3" />
+                         </button>
                       </div>
                     </div>
                   ))}
+                  
+                  <button 
+                    onClick={() => handleAddSubject(ciclo.id)}
+                    className="w-full py-2 border-2 border-dashed border-slate-100 rounded-xl text-slate-400 hover:text-indigo-600 hover:border-indigo-100 hover:bg-indigo-50/30 transition-all flex items-center justify-center gap-2 text-xs font-medium"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    Adicionar Matéria
+                  </button>
                 </div>
 
                 <div className="p-3 bg-slate-50 border-t border-slate-100 flex gap-2">
@@ -180,7 +375,7 @@ export function StudyCycles() {
                     className="flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-all"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    PLANILHA
+                    BAIXAR PLANILHA
                   </button>
                 </div>
               </motion.div>
@@ -219,7 +414,7 @@ export function StudyCycles() {
               <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold text-slate-900">Gerar Novo Ciclo</h3>
-                  <p className="text-sm text-slate-500">Escolha um edital para a IA organizar seus estudos.</p>
+                  <p className="text-sm text-slate-500">Escolha como deseja criar seu ciclo de estudos.</p>
                 </div>
                 <button 
                    onClick={() => setShowNewCycleModal(false)}
@@ -230,29 +425,47 @@ export function StudyCycles() {
               </div>
 
               <div className="p-6 space-y-6">
+                <button 
+                  onClick={handleAddManualCycle}
+                  className="w-full flex items-center gap-4 p-4 border border-slate-200 rounded-xl hover:border-indigo-600 hover:bg-indigo-50/30 transition-all text-left group"
+                >
+                  <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                    <Plus className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900">Criar Manualmente</h4>
+                    <p className="text-xs text-slate-500">Adicione as matérias e tempos você mesmo.</p>
+                  </div>
+                </button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+                  <div className="relative flex justify-center text-[10px] uppercase font-bold text-slate-400"><span className="bg-white px-2">OU</span></div>
+                </div>
+
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Selecione o Edital</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Gerar com IA (Escolha o Edital)</label>
                   <select 
                     value={selectedEditalId}
                     onChange={(e) => setSelectedEditalId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all mb-4"
                   >
                     <option value="">Selecione um edital...</option>
                     {editais.map(e => (
                       <option key={e.id} value={e.id}>{e.titulo}</option>
                     ))}
                   </select>
-                </div>
 
-                <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex gap-4">
-                  <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
-                    <Sparkles className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-indigo-900 mb-1">Ciclo Inteligente por IA</h4>
-                    <p className="text-xs text-indigo-700 leading-relaxed">
-                      Nossa inteligência artificial analisará todas as matérias e tópicos para criar uma sequência lógica, alternando conteúdos e definindo durações ideais para seu foco.
-                    </p>
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex gap-4">
+                    <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-indigo-900 mb-1">Ciclo Inteligente por IA</h4>
+                      <p className="text-xs text-indigo-700 leading-relaxed">
+                        Análise automática para criar uma sequência lógica, alternando conteúdos e definindo durações ideais.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -261,7 +474,7 @@ export function StudyCycles() {
                 <button 
                   disabled={!selectedEditalId || isGenerating}
                   onClick={handleGenerateAI}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20"
                 >
                   {isGenerating ? (
                     <>

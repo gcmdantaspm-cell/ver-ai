@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Edital, RevisaoAgendada, StudyCycle, StudyCycleItem } from "./types";
+import { Edital, Materia, RevisaoAgendada, StudyCycle, StudyCycleItem } from "./types";
 import { addDays, isPast, isToday, differenceInDays } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 import { collection, doc, onSnapshot, query, setDoc, where, deleteDoc, getDocFromServer } from "firebase/firestore";
@@ -14,7 +14,7 @@ interface EditalContextType {
   updateItemTitle: (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'edital' | 'area' | 'materia' | 'topico' | 'subtopico') => void;
   deleteItem: (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area' | 'materia' | 'topico' | 'subtopico') => void;
   addItem: (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title?: string) => void;
-  addMaterias: (editalId: string, areaId: string, materias: any[]) => void;
+  addMaterias: (editalId: string, areaId: string, materias: Materia[]) => void;
   addCustomRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => void;
   removeRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => void;
   setNextRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;

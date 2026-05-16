@@ -162,10 +162,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                "Acertos": topico.acertos || 0,
                "Erros": topico.erros || 0,
                "Aproveitamento": topico.acertos || topico.erros ? Math.round((topico.acertos / (topico.acertos + topico.erros)) * 100) + '%' : "0%",
-               "Rev 1": topico.revisoes_agendadas[0] ? format(new Date(topico.revisoes_agendadas[0].data), "dd/MM/yyyy") + (topico.revisoes_agendadas[0].concluida ? ' (OK)' : '') : "",
-               "Rev 2": topico.revisoes_agendadas[1] ? format(new Date(topico.revisoes_agendadas[1].data), "dd/MM/yyyy") + (topico.revisoes_agendadas[1].concluida ? ' (OK)' : '') : "",
-               "Rev 3": topico.revisoes_agendadas[2] ? format(new Date(topico.revisoes_agendadas[2].data), "dd/MM/yyyy") + (topico.revisoes_agendadas[2].concluida ? ' (OK)' : '') : "",
-               "Rev 4": topico.revisoes_agendadas[3] ? format(new Date(topico.revisoes_agendadas[3].data), "dd/MM/yyyy") + (topico.revisoes_agendadas[3].concluida ? ' (OK)' : '') : "",
+               "Rev 1": topico.revisoes_agendadas[0] ? format(new Date(topico.revisoes_agendadas[0]), "dd/MM/yyyy") : "",
+               "Rev 2": topico.revisoes_agendadas[1] ? format(new Date(topico.revisoes_agendadas[1]), "dd/MM/yyyy") : "",
+               "Rev 3": topico.revisoes_agendadas[2] ? format(new Date(topico.revisoes_agendadas[2]), "dd/MM/yyyy") : "",
+               "Rev 4": topico.revisoes_agendadas[3] ? format(new Date(topico.revisoes_agendadas[3]), "dd/MM/yyyy") : "",
                "Notas": topico.notas || ""
              });
           } else {
@@ -180,10 +180,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                    "Acertos": sub.acertos || 0,
                    "Erros": sub.erros || 0,
                    "Aproveitamento": sub.acertos || sub.erros ? Math.round((sub.acertos / (sub.acertos + sub.erros)) * 100) + '%' : "0%",
-                   "Rev 1": sub.revisoes_agendadas[0] ? format(new Date(sub.revisoes_agendadas[0].data), "dd/MM/yyyy") + (sub.revisoes_agendadas[0].concluida ? ' (OK)' : '') : "",
-                   "Rev 2": sub.revisoes_agendadas[1] ? format(new Date(sub.revisoes_agendadas[1].data), "dd/MM/yyyy") + (sub.revisoes_agendadas[1].concluida ? ' (OK)' : '') : "",
-                   "Rev 3": sub.revisoes_agendadas[2] ? format(new Date(sub.revisoes_agendadas[2].data), "dd/MM/yyyy") + (sub.revisoes_agendadas[2].concluida ? ' (OK)' : '') : "",
-                   "Rev 4": sub.revisoes_agendadas[3] ? format(new Date(sub.revisoes_agendadas[3].data), "dd/MM/yyyy") + (sub.revisoes_agendadas[3].concluida ? ' (OK)' : '') : "",
+                   "Rev 1": sub.revisoes_agendadas[0] ? format(new Date(sub.revisoes_agendadas[0]), "dd/MM/yyyy") : "",
+                   "Rev 2": sub.revisoes_agendadas[1] ? format(new Date(sub.revisoes_agendadas[1]), "dd/MM/yyyy") : "",
+                   "Rev 3": sub.revisoes_agendadas[2] ? format(new Date(sub.revisoes_agendadas[2]), "dd/MM/yyyy") : "",
+                   "Rev 4": sub.revisoes_agendadas[3] ? format(new Date(sub.revisoes_agendadas[3]), "dd/MM/yyyy") : "",
                    "Notas": sub.notas || ""
                 });
              });
