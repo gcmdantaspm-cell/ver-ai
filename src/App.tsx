@@ -144,7 +144,7 @@ function AppContent() {
               onClick={() => navigateTo("import")}
               className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "import" ? "bg-blue-900 text-white shadow-md shadow-blue-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
             >
-              <Plus className="w-4 h-4" /> Novo Edital
+              <Plus className="w-4 h-4" /> Cadastrar / Importar
             </button>
 
             {editais.length > 0 && (
@@ -220,7 +220,7 @@ function AppContent() {
               className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-6 border ${currentView === "import" ? "bg-blue-900 text-white shadow-md border-transparent" : "text-slate-500 hover:bg-slate-100 border-transparent"}`}
             >
                <Plus className="w-5 h-5" />
-               <span>Novo Edital</span>
+               <span>Cadastrar / Importar</span>
             </button>
             
             {editais.length > 0 && (

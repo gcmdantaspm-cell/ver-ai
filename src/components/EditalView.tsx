@@ -24,7 +24,8 @@ import {
   Download,
   Loader2,
   Sparkles,
-  Share2
+  Share2,
+  Hash
 } from "lucide-react";
 
 import { parseEditalText } from "../services/ai";
@@ -68,23 +69,29 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
      setShareModal({ isOpen: true, selectedCiclos: editalCiclos.map(c => c.id) });
   };
 
-  const handleShareSubmit = async () => {
+  const handleShareSubmit = async (type: 'link' | 'code' = 'link') => {
     if (isSharing || !shareModal) return;
     setIsSharing(true);
     try {
        // Always set edital public and correctly set specified cycles public
        await setEditalPublic(edital.id, true, shareModal.selectedCiclos);
        
-       let url = `${window.location.origin}/?import=${edital.id}`;
-       if (shareModal.selectedCiclos.length > 0) {
-         url += `&ciclos=${shareModal.selectedCiclos.join(",")}`;
+       if (type === 'link') {
+         let url = `${window.location.origin}/?import=${edital.id}`;
+         if (shareModal.selectedCiclos.length > 0) {
+           url += `&ciclos=${shareModal.selectedCiclos.join(",")}`;
+         }
+         await navigator.clipboard.writeText(url);
+         alert("Link copiado! Compartilhe o link para importar este edital" + (shareModal.selectedCiclos.length > 0 ? " e seus ciclos." : "."));
+       } else {
+         const code = `EDT-${edital.id}`;
+         await navigator.clipboard.writeText(code);
+         alert("Código de exportação copiado: " + code);
        }
-       await navigator.clipboard.writeText(url);
-       alert("Link copiado! Compartilhe o link para importar este edital" + (shareModal.selectedCiclos.length > 0 ? " e seus ciclos." : "."));
        setShareModal(null);
     } catch (e) {
        console.error("Erro ao gerar link:", e);
-       alert("Erro ao gerar link de compartilhamento.");
+       alert("Erro ao compartilhar.");
     } finally {
        setIsSharing(false);
     }
@@ -933,12 +940,18 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                 )}
              </div>
              
-             <div className="p-6 border-t border-slate-200 flex justify-end gap-3 bg-white">
+             <div className="p-6 border-t border-slate-200 flex justify-end gap-3 bg-white flex-wrap">
                 <button onClick={() => setShareModal(null)} className="px-6 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase tracking-widest">Cancelar</button>
-                <button disabled={isSharing} onClick={handleShareSubmit} className="px-6 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest flex items-center gap-2 disabled:opacity-50">
-                   {isSharing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
-                   Compartilhar
-                </button>
+                <div className="flex gap-2">
+                   <button disabled={isSharing} onClick={() => handleShareSubmit('code')} className="px-4 py-2.5 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2 disabled:opacity-50">
+                      {isSharing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Hash className="w-3.5 h-3.5" />}
+                      Gerar Código
+                   </button>
+                   <button disabled={isSharing} onClick={() => handleShareSubmit('link')} className="px-6 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest flex items-center gap-2 disabled:opacity-50">
+                      {isSharing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
+                      Link
+                   </button>
+                </div>
              </div>
            </div>
         </div>

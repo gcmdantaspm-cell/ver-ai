@@ -386,7 +386,7 @@ export function StudyCycles({
 
   const standaloneCiclos = sortedCiclos.filter(c => !c.editalId || !editais.find(e => e.id === c.editalId));
 
-  const CycleCard = ({ ciclo, index }: { ciclo: StudyCycle, index: number }) => {
+  const CycleCard = ({ ciclo, index }: { ciclo: StudyCycle, index: number, key?: string | number }) => {
     const completed = ciclo.items.filter(i => i.concluido).length;
     const progress = ciclo.items.length > 0 ? (completed / ciclo.items.length) * 100 : 0;
     const totalMinutes = ciclo.items.reduce((acc, i) => acc + i.duracao, 0);
@@ -574,6 +574,19 @@ export function StudyCycles({
           <p className="text-slate-500 text-sm">Organize sua rotina de estudos de forma dinâmica e eficiente.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <button 
+            onClick={() => {
+              const code = window.prompt("Cole o código de exportação (Ex: EDT-xxxx...):");
+              if (code) {
+                const id = code.startsWith('EDT-') ? code.substring(4) : code;
+                window.location.href = `/?import=${id}`;
+              }
+            }}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 border border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900 rounded-xl transition-all font-bold text-sm shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            Importar
+          </button>
           {ciclos.length > 0 && (
             <>
               <button 

@@ -18,7 +18,7 @@ service cloud.firestore {
     
     function isValidEdital(data) {
         return data.keys().hasAll(['userId', 'titulo', 'areas'])
-            && data.keys().size() <= 10
+            && data.keys().size() <= 12
             && data.userId is string
             && data.titulo is string
             && data.titulo.size() <= 200
@@ -28,7 +28,8 @@ service cloud.firestore {
             && (!('importedFrom' in data) || data.importedFrom is string)
             && (!('managedBy' in data) || data.managedBy is string)
             && (!('copiedByEmail' in data) || data.copiedByEmail is string)
-            && (!('copiedByName' in data) || data.copiedByName is string);
+            && (!('copiedByName' in data) || data.copiedByName is string)
+            && (!('originalEditalId' in data) || data.originalEditalId is string);
     }
     
     match /editais/{editalId} {
@@ -45,14 +46,14 @@ service cloud.firestore {
                       && (existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid)) 
                       && isValidEdital(incoming())
                       && incoming().userId == existing().userId
-                      && (incoming().diff(existing()).affectedKeys().hasOnly(['titulo', 'areas', 'isPublic', 'ownerName', 'importedFrom', 'managedBy', 'copiedByEmail', 'copiedByName']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
+                      && (incoming().diff(existing()).affectedKeys().hasOnly(['titulo', 'areas', 'isPublic', 'ownerName', 'importedFrom', 'managedBy', 'copiedByEmail', 'copiedByName', 'originalEditalId']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
                       
         allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
 
     function isValidCiclo(data) {
         return data.keys().hasAll(['userId', 'editalId', 'nome', 'items', 'created_at'])
-            && data.keys().size() <= 13
+            && data.keys().size() <= 15
             && data.userId is string
             && data.editalId is string
             && data.nome is string
@@ -64,7 +65,8 @@ service cloud.firestore {
             && (!data.keys().hasAny(['ownerName']) || data.ownerName is string)
             && (!data.keys().hasAny(['managedBy']) || data.managedBy is string)
             && (!data.keys().hasAny(['copiedByEmail']) || data.copiedByEmail is string)
-            && (!data.keys().hasAny(['copiedByName']) || data.copiedByName is string);
+            && (!data.keys().hasAny(['copiedByName']) || data.copiedByName is string)
+            && (!data.keys().hasAny(['originalCycleId']) || data.originalCycleId is string);
     }
 
     match /ciclos/{cicloId} {
@@ -81,7 +83,7 @@ service cloud.firestore {
                       && (existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid)) 
                       && isValidCiclo(incoming())
                       && incoming().userId == existing().userId
-                      && (incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'items', 'targetMinutes', 'ordem', 'isPublic', 'ownerName', 'managedBy', 'copiedByEmail', 'copiedByName']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
+                      && (incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'items', 'targetMinutes', 'ordem', 'isPublic', 'ownerName', 'managedBy', 'copiedByEmail', 'copiedByName', 'originalCycleId']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
                       
         allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }

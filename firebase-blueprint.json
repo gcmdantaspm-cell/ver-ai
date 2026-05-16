@@ -19,6 +19,24 @@
         "isPublic": {
           "type": "boolean",
           "description": "Optional flag to indicate if this edital is publicly viewable/shareable."
+        },
+        "originalEditalId": {
+          "type": "string"
+        },
+        "importedFrom": {
+          "type": "string"
+        },
+        "managedBy": {
+          "type": "string"
+        },
+        "copiedByEmail": {
+          "type": "string"
+        },
+        "copiedByName": {
+          "type": "string"
+        },
+        "ownerName": {
+          "type": "string"
         }
       },
       "required": ["userId", "titulo", "areas"]

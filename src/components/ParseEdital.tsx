@@ -125,6 +125,27 @@ export function ParseEdital({ onSuccess }: { onSuccess: () => void }) {
               </button>
             </div>
           </div>
+          <div className="bg-white border border-slate-200 rounded-[2.5rem] shadow-2xl overflow-hidden mt-10">
+            <div className="p-10 flex flex-col md:flex-row items-center justify-between gap-6">
+               <div className="flex-1">
+                 <h3 className="text-sm font-bold text-slate-900 mb-2">Já possui um Código de Importação?</h3>
+                 <p className="text-xs text-slate-500 font-medium">Insira o código compartilhado por outro usuário (Ex: EDT-xxxx) para importar o Edital e/ou Ciclos de Estudo imediatamente.</p>
+               </div>
+               <button 
+                  onClick={() => {
+                    const code = window.prompt("Cole o código de exportação (Ex: EDT-xxxx...):");
+                    if (code) {
+                      const id = code.startsWith('EDT-') ? code.substring(4) : code;
+                      window.location.href = `/?import=${id}`;
+                    }
+                  }}
+                  className="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 text-xs font-bold px-8 py-3 rounded-xl uppercase tracking-widest transition-all shadow-sm flex items-center justify-center gap-2 w-full md:w-auto"
+               >
+                  <PlusCircle className="w-4 h-4" />
+                  Importar via Código
+               </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
