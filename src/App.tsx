@@ -25,8 +25,8 @@ function AppContent() {
     const importCiclos = params.get('ciclos');
     
     if (importId && user && importProcessed.current !== importId) {
+      importProcessed.current = importId;
       const handleImport = async () => {
-         importProcessed.current = importId;
          setIsImporting(true);
          try {
             const ed = await getPublicEdital(importId);

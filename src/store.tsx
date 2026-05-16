@@ -108,6 +108,9 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const addCiclo = (ciclo: StudyCycle) => {
     if (!user) return;
+    // Prevent duplicates
+    if (ciclos.some(c => c.id === ciclo.id || (c.originalCycleId && c.originalCycleId === ciclo.originalCycleId))) return;
+    
     const cycleUserId = ciclo.userId || user.uid;
     setDoc(doc(db, "ciclos", ciclo.id), { ...ciclo, userId: cycleUserId }).catch(err => {
       handleFirestoreError(err, OperationType.CREATE, `ciclos/${ciclo.id}`);
@@ -180,6 +183,9 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const addEdital = (edital: Edital) => {
     if (!user) return;
+    // Prevent duplicates
+    if (editais.some(e => e.id === edital.id || (e.originalEditalId && e.originalEditalId === edital.originalEditalId))) return;
+    
     setEditais((prev) => [...prev, edital]);
     setDoc(doc(db, "editais", edital.id), JSON.parse(JSON.stringify({ ...edital, userId: user.uid }))).catch(err => {
        handleFirestoreError(err, OperationType.CREATE, `editais/${edital.id}`);
