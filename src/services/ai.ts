@@ -136,41 +136,41 @@ ${text}`,
 }
 
 export interface StudyCycleParams {
-  totalHoursPerCycle: number;
+  weeklyHours: number;
+  cycleHours: number;
+  numCycles: number;
   subjectsInfo: {
     nome: string;
     questoes: number;
     peso: number;
   }[];
-  maxSubjectsPerCycle?: number;
 }
 
 export async function generateStudyCycleAI(editalTitle: string, materias: string[], params?: StudyCycleParams): Promise<any[]> {
   try {
     let extraContext = "";
     if (params) {
+      const totalMinutesAllCycles = params.numCycles * params.cycleHours * 60;
+      
       extraContext = `
 Additional Context for calculation:
-- Target cycle time: ${params.totalHoursPerCycle} hours (${params.totalHoursPerCycle * 60} minutes).
-${params.maxSubjectsPerCycle && params.maxSubjectsPerCycle > 0 ? `- The user requested a maximum of ${params.maxSubjectsPerCycle} subjects in this cycle. The least important subjects have been pruned.` : ""}
+- Time available per week: ${params.weeklyHours} hours.
+- Target AVERAGE cycle time: ${params.cycleHours} hours.
+- The user requested exactly ${params.numCycles} separate cycles to be generated.
+- TOTAL TIME ACROSS ALL CYCLES: ${totalMinutesAllCycles} minutes.
 
-Based on the number of questions and weights provided, here is the EXACT total amount of minutes each subject MUST be studied. (Note: minimum 30 mins per subject is enforced)
+Based on the number of questions and weights provided, here is the EXACT total amount of minutes each subject MUST be studied across ALL ${params.numCycles} cycles combined.
 ${(function() {
   const sortedSubjects = [...params.subjectsInfo]
     .map(s => ({ ...s, points: s.questoes * s.peso }))
     .sort((a, b) => b.points - a.points);
   
-  const selectedSubjects = params.maxSubjectsPerCycle && params.maxSubjectsPerCycle > 0 
-    ? sortedSubjects.slice(0, params.maxSubjectsPerCycle) 
-    : sortedSubjects;
-
-  const totalPoints = selectedSubjects.reduce((acc, s) => acc + s.points, 0);
-  const totalMinutes = params.totalHoursPerCycle * 60;
+  const totalPoints = sortedSubjects.reduce((acc, s) => acc + s.points, 0);
   
   let grandTotal = 0;
-  const results = selectedSubjects.map(s => {
+  const results = sortedSubjects.map(s => {
     const proportion = totalPoints > 0 ? s.points / totalPoints : 0;
-    let subjectMinutes = Math.max(30, Math.round(proportion * totalMinutes));
+    let subjectMinutes = Math.max(30, Math.round(proportion * totalMinutesAllCycles));
     
     // Round to nearest 5 minutes
     subjectMinutes = Math.max(30, Math.round(subjectMinutes / 5) * 5);
@@ -179,39 +179,46 @@ ${(function() {
     return `  * "${s.nome}": ${subjectMinutes} minutes total.`;
   }).join("\n");
   
-  return `${results}\n\n-> GRAND TOTAL REQUIRED ACROSS ALL BLOCKS: ${grandTotal} minutes.`;
+  return `${results}\n\n-> GRAND TOTAL REQUIRED ACROSS ALL BLOCKS AND CYCLES: ${grandTotal} minutes.`;
 })()}
 
 CRITICAL INSTRUCTIONS FOR DISTRIBUTION (FOLLOW EXACTLY):
-1. MANDATORY INCLUSION: You MUST include EVERY SINGLE SUBJECT listed above in the cycle. Do not omit ANY of them!
+1. MANDATORY INCLUSION: You MUST include EVERY SINGLE SUBJECT listed above in the output. Do not omit ANY of them!
 2. CHUNKING: The MINIMUM 'duracao' for a single block is 30. The MAXIMUM 'duracao' is 90.
-3. SPLITTING: If a subject has a total time greater than 90 minutes, you MUST provide MULTIPLE JSON objects (blocks) for that subject, split into chunks between 30 and 90 minutes. Scatter these chunks throughout the array to avoid having them back-to-back.
-4. EXACT MATCH: The sum of the 'duracao' fields for a specific subject MUST EXACTLY match the required minutes above.
-5. NO EXTRAS: DO NOT include any subjects that are NOT in the list above.
+3. SPLITTING AND DISTRIBUTING: You MUST distribute these chunks across exactly ${params.numCycles} distinct cycles.
+4. EXACT MATCH: The sum of the 'duracao' fields for a specific subject across ALL cycles MUST EXACTLY match the required minutes above.
+5. BALANCED CYCLES: Try to keep each cycle roughly around ${params.cycleHours * 60} minutes, but it doesn't need to be exact if the chunks don't allow it perfectly.
 `;
     }
 
     const configOptions = {
       contents: `You are a Study Mentor specializing in High-Performance Preparation for Public Exams.
-Design a Study Cycle (Ciclo de Estudos) for the exam: "${editalTitle}".
+Design Study Cycles (Ciclos de Estudos) for the exam: "${editalTitle}".
 List of subjects available: ${materias.join(", ")}.
 ${extraContext}
 
 Guidelines:
-1. Organize subjects into a logical sequence (cycle).
+1. Return exactly ${params ? params.numCycles : 1} cycle(s).
 2. Assign a suggested duration for each subject session (in MINUTES).
-3. The cycle should be balanced, alternating between high-concentration subjects and more mechanical/fast ones.
-4. Suggest a realistic time block for each (typically 60 to 120 minutes).
-5. If the total hours per cycle was provided, ensure the sum of durations matches approximately that total.
+3. Each cycle should be balanced, alternating between high-concentration subjects and more mechanical/fast ones.
 
-Return a JSON array of items, each with:
-- materiaNome: Name of the subject (must be one from the list provided).
-- duracao: Duration in minutes.
+Return a JSON array of cycles, each cycle containing its name and array of items:
 
 Example:
 [
-  { "materiaNome": "Direito Constitucional", "duracao": 90 },
-  { "materiaNome": "Língua Portuguesa", "duracao": 60 }
+  {
+    "nome": "Ciclo 1",
+    "items": [
+      { "materiaNome": "Direito Constitucional", "duracao": 90 },
+      { "materiaNome": "Língua Portuguesa", "duracao": 60 }
+    ]
+  },
+  {
+    "nome": "Ciclo 2",
+    "items": [
+      { "materiaNome": "Direito Administrativo", "duracao": 90 }
+    ]
+  }
 ]`,
       config: {
         responseMimeType: "application/json",
@@ -220,10 +227,20 @@ Example:
           items: {
             type: Type.OBJECT,
             properties: {
-              materiaNome: { type: Type.STRING },
-              duracao: { type: Type.NUMBER }
+              nome: { type: Type.STRING },
+              items: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    materiaNome: { type: Type.STRING },
+                    duracao: { type: Type.NUMBER }
+                  },
+                  required: ["materiaNome", "duracao"]
+                }
+              }
             },
-            required: ["materiaNome", "duracao"]
+            required: ["nome", "items"]
           }
         }
       }

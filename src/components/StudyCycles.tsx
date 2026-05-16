@@ -21,7 +21,8 @@ import {
   X,
   PlusCircle,
   FileSpreadsheet,
-  Cloud
+  Cloud,
+  Layers
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { generateStudyCycleAI } from "../services/ai";
@@ -36,8 +37,9 @@ export function StudyCycles() {
   const [showNewCycleModal, setShowNewCycleModal] = useState(false);
   
   // IA Suggestion Params
-  const [totalCycleHours, setTotalCycleHours] = useState<number>(20);
-  const [maxSubjectsCount, setMaxSubjectsCount] = useState<number>(0);
+  const [weeklyHours, setWeeklyHours] = useState<number>(30);
+  const [cycleHours, setCycleHours] = useState<number>(10);
+  const [numCycles, setNumCycles] = useState<number>(3);
   const [subjectsParams, setSubjectsParams] = useState<{nome: string, questoes: number, peso: number}[]>([]);
 
   // Editing states
@@ -76,29 +78,32 @@ export function StudyCycles() {
     try {
       const allMaterias = edital.areas.flatMap(a => a.materias.map(m => m.nome));
       const result = await generateStudyCycleAI(edital.titulo, allMaterias, {
-        totalHoursPerCycle: totalCycleHours,
-        subjectsInfo: subjectsParams,
-        maxSubjectsPerCycle: maxSubjectsCount
+        weeklyHours: weeklyHours,
+        cycleHours: cycleHours,
+        numCycles: numCycles,
+        subjectsInfo: subjectsParams
       });
       
-      const newItems: StudyCycleItem[] = result.map((item: any) => ({
-        id: uuidv4(),
-        materiaId: uuidv4(),
-        materiaNome: item.materiaNome,
-        duracao: item.duracao,
-        concluido: false
-      }));
+      const generatedCycles: StudyCycle[] = result.map((cycleData: any, idx: number) => {
+        const newItems: StudyCycleItem[] = cycleData.items.map((item: any) => ({
+          id: uuidv4(),
+          materiaId: uuidv4(),
+          materiaNome: item.materiaNome,
+          duracao: item.duracao,
+          concluido: false
+        }));
 
-      const newCycle: StudyCycle = {
-        id: uuidv4(),
-        editalId: edital.id,
-        nome: `Ciclo IA - ${edital.titulo}`,
-        items: newItems,
-        created_at: new Date().toISOString(),
-        targetMinutes: totalCycleHours * 60
-      };
+        return {
+          id: uuidv4(),
+          editalId: edital.id,
+          nome: cycleData.nome || `Ciclo IA ${idx + 1} - ${edital.titulo}`,
+          items: newItems,
+          created_at: new Date().toISOString(),
+          targetMinutes: cycleHours * 60
+        };
+      });
 
-      addCiclo(newCycle);
+      generatedCycles.forEach(c => addCiclo(c));
       setShowNewCycleModal(false);
     } catch (error: any) {
       console.error(error);
@@ -293,7 +298,12 @@ export function StudyCycles() {
       alert("Planilha salva com sucesso no seu Google Drive!");
     } catch (err: any) {
       console.error(err);
-      alert(`Erro ao salvar no Drive: ${err.message}`);
+      const msg = err.message || "";
+      if (msg.includes("Google Drive API has not been used in project") || msg.includes("is disabled")) {
+        alert('ATENÇÃO: Você precisa ativar a API do Google Drive no console da Google Cloud.\n\nAcesse o link que apareceu no erro original (https://console.cloud.google.com/apis/api/drive.googleapis.com) e clique em "Ativar" (Enable API). Depois, feche e tente salvar novamente.');
+      } else {
+        alert(`Erro ao salvar no Drive: ${msg}`);
+      }
     } finally {
       setIsUploadingDrive(false);
     }
@@ -636,26 +646,38 @@ export function StudyCycles() {
                           <div className="flex items-center justify-between">
                             <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                               <Clock className="w-4 h-4" />
-                              Horas por Ciclo
+                              Tempo de estudo na semana (h)
                             </label>
                             <input 
                               type="number"
-                              value={totalCycleHours}
-                              onChange={(e) => setTotalCycleHours(parseInt(e.target.value) || 0)}
+                              value={weeklyHours}
+                              onChange={(e) => setWeeklyHours(parseInt(e.target.value) || 0)}
                               className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm font-bold text-center outline-none focus:ring-2 focus:ring-indigo-500/20"
                             />
                           </div>
                           <div className="flex items-center justify-between">
                             <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                              <BookOpen className="w-4 h-4" />
-                              Limite de Matérias (0 = Todas)
+                              <Target className="w-4 h-4" />
+                              Duração de cada ciclo (média em h)
                             </label>
                             <input 
                               type="number"
-                              value={maxSubjectsCount}
-                              onChange={(e) => setMaxSubjectsCount(parseInt(e.target.value) || 0)}
+                              value={cycleHours}
+                              onChange={(e) => setCycleHours(parseInt(e.target.value) || 0)}
                               className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm font-bold text-center outline-none focus:ring-2 focus:ring-indigo-500/20"
-                              min="0"
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                              <Layers className="w-4 h-4" />
+                              Quantidade de ciclos
+                            </label>
+                            <input 
+                              type="number"
+                              value={numCycles}
+                              onChange={(e) => setNumCycles(parseInt(e.target.value) || 0)}
+                              className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm font-bold text-center outline-none focus:ring-2 focus:ring-indigo-500/20"
+                              min="1"
                             />
                           </div>
                         </div>
