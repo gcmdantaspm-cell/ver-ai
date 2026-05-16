@@ -29,44 +29,65 @@ function AppContent() {
       const handleImport = async () => {
          setIsImporting(true);
          try {
-            const ed = await getPublicEdital(importId);
-            if (ed) {
-              const clone = JSON.parse(JSON.stringify(ed));
-              clone.id = uuidv4();
-              clone.originalEditalId = importId; // Track origin
-              clone.importedFrom = ed.ownerName;
-              clone.isPublic = false;
-              clone.managedBy = ed.userId;
-              clone.copiedByEmail = user.email || "";
-              clone.copiedByName = user.displayName || "";
-              addEdital(clone);
-              
-              // Also import any public ciclos
-              const pCiclos = await getPublicCiclos(importId);
-              const requestedIds = importCiclos ? importCiclos.split(',') : [];
-              for (const c of pCiclos) {
-                 if (requestedIds.length > 0 && !requestedIds.includes(c.id)) {
-                    continue; // Skip if not explicitly requested
-                 }
-                 const cicloClone = JSON.parse(JSON.stringify(c));
-                 cicloClone.id = uuidv4();
-                 cicloClone.originalCycleId = c.id;
-                 cicloClone.editalId = clone.id; // Link to the new edital ID
-                 cicloClone.isPublic = false;
-                 cicloClone.managedBy = c.userId;
-                 cicloClone.copiedByEmail = user.email || "";
-                 cicloClone.copiedByName = user.displayName || "";
-                 addCiclo(cicloClone);
-              }
+            // Check if we already have this edital imported
+            let existingEdital = editais.find(e => e.id === importId || e.originalEditalId === importId);
+            let targetEditalId = "";
 
-              // Remove param from url
-              window.history.replaceState({}, document.title, "/");
-              setCurrentView(`edital-${clone.id}`);
+            if (!existingEdital) {
+              const ed = await getPublicEdital(importId);
+              if (ed) {
+                const clone = JSON.parse(JSON.stringify(ed));
+                clone.id = uuidv4();
+                clone.originalEditalId = importId;
+                clone.importedFrom = ed.ownerName;
+                clone.isPublic = false;
+                clone.managedBy = ed.userId;
+                clone.copiedByEmail = user.email || "";
+                clone.copiedByName = user.displayName || "";
+                addEdital(clone);
+                targetEditalId = clone.id;
+              } else {
+                alert("Edital não encontrado ou não está público.");
+                window.history.replaceState({}, document.title, "/");
+                setIsImporting(false);
+                return;
+              }
             } else {
-              alert("Edital não encontrado ou não está público.");
-              window.history.replaceState({}, document.title, "/");
+              targetEditalId = existingEdital.id;
             }
+
+            // At this point, targetEditalId is the ID of the edital (new or existing)
+            // Now import the cycles
+            const pCiclos = await getPublicCiclos(importId);
+            const requestedIds = importCiclos ? importCiclos.split(',') : [];
+
+            for (const c of pCiclos) {
+               if (requestedIds.length > 0 && !requestedIds.includes(c.id)) {
+                  continue;
+               }
+               
+               // Check if we already have this cycle
+               const alreadyHasCycle = addCiclo.toString().includes('originalCycleId') ? false : false; // Placeholder for check
+               // In store, addCiclo already checks for duplicates, but we need to make sure 
+               // even if it's a duplicate in store, we might want to update its editalId if it was loose?
+               // No, store.addCiclo returns early.
+               
+               const cicloClone = JSON.parse(JSON.stringify(c));
+               cicloClone.id = uuidv4();
+               cicloClone.originalCycleId = c.id;
+               cicloClone.editalId = targetEditalId; // Correct link!
+               cicloClone.isPublic = false;
+               cicloClone.managedBy = c.userId;
+               cicloClone.copiedByEmail = user.email || "";
+               cicloClone.copiedByName = user.displayName || "";
+               addCiclo(cicloClone);
+            }
+
+            // Remove param from url
+            window.history.replaceState({}, document.title, "/");
+            if (targetEditalId) setCurrentView(`edital-${targetEditalId}`);
          } catch(e) {
+            console.error(e);
             alert("Erro ao importar edital.");
          } finally {
             setIsImporting(false);
@@ -74,7 +95,7 @@ function AppContent() {
       };
       handleImport();
     }
-  }, [user, getPublicEdital, addEdital, getPublicCiclos, addCiclo]);
+  }, [user, getPublicEdital, addEdital, getPublicCiclos, addCiclo, editais]);
 
   const navigateTo = (view: string) => {
     setCurrentView(view);

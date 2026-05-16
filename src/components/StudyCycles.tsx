@@ -41,8 +41,8 @@ export function StudyCycles({
   isManagedMode?: boolean 
 } = {}) {
   const store = useEdital();
-  const editais = customEditais || store.editais;
-  const ciclos = customCiclos || store.ciclos;
+  const editais = customEditais || [...store.editais, ...store.managedEditais];
+  const ciclos = customCiclos || [...store.ciclos, ...store.managedCiclos];
   const addCiclo = store.addCiclo;
   const deleteCiclo = store.deleteCiclo;
   const updateCiclo = store.updateCiclo;
@@ -82,7 +82,8 @@ export function StudyCycles({
     const edital = editais.find(e => e.id === editalId);
     if (edital) {
       const allMaterias = edital.areas.flatMap(a => a.materias.map(m => m.nome));
-      setSubjectsParams(allMaterias.map(m => ({ nome: m, questoes: 10, peso: 1 })));
+      const uniqueMaterias = Array.from(new Set(allMaterias));
+      setSubjectsParams(uniqueMaterias.map(m => ({ nome: m, questoes: 10, peso: 1 })));
     }
   };
 
@@ -370,7 +371,8 @@ export function StudyCycles({
   const getSubjectSummary = (cycles: StudyCycle[]) => {
     const summary = cycles.reduce((acc, ciclo) => {
       ciclo.items.forEach(item => {
-        acc[item.materiaNome] = (acc[item.materiaNome] || 0) + item.duracao;
+        const name = item.materiaNome.trim();
+        acc[name] = (acc[name] || 0) + item.duracao;
       });
       return acc;
     }, {} as Record<string, number>);
