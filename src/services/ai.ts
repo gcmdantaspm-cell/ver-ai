@@ -150,6 +150,7 @@ export interface StudyCycleParams {
     questoes: number;
     peso: number;
   }[];
+  maxSubjectsPerCycle?: number;
 }
 
 export async function generateStudyCycleAI(editalTitle: string, materias: string[], params?: StudyCycleParams): Promise<any[]> {
@@ -159,24 +160,34 @@ export async function generateStudyCycleAI(editalTitle: string, materias: string
       extraContext = `
 Additional Context for calculation:
 - Total cycle time: ${params.totalHoursPerCycle} hours (${params.totalHoursPerCycle * 60} minutes).
+${params.maxSubjectsPerCycle && params.maxSubjectsPerCycle > 0 ? `- Maximum total number of subjects to include in this cycle: ${params.maxSubjectsPerCycle}. If there are more subjects, you MUST drop the subjects with the lowest weight/questions.` : ""}
 
 Based on the number of questions and weights provided, here is the EXACT total amount of minutes each subject MUST be studied in this cycle:
 ${(function() {
-  const totalPoints = params.subjectsInfo.reduce((acc, s) => acc + (s.questoes * s.peso), 0);
+  const sortedSubjects = [...params.subjectsInfo]
+    .map(s => ({ ...s, points: s.questoes * s.peso }))
+    .sort((a, b) => b.points - a.points);
+  
+  const selectedSubjects = params.maxSubjectsPerCycle && params.maxSubjectsPerCycle > 0 
+    ? sortedSubjects.slice(0, params.maxSubjectsPerCycle) 
+    : sortedSubjects;
+
+  const totalPoints = selectedSubjects.reduce((acc, s) => acc + s.points, 0);
   const totalMinutes = params.totalHoursPerCycle * 60;
-  return params.subjectsInfo.map(s => {
-    const points = s.questoes * s.peso;
-    const proportion = totalPoints > 0 ? points / totalPoints : 0;
+  
+  return selectedSubjects.map(s => {
+    const proportion = totalPoints > 0 ? s.points / totalPoints : 0;
     const subjectMinutes = Math.round(proportion * totalMinutes);
     return `  * ${s.nome}: ${subjectMinutes} minutes (Calculated from ${s.questoes} questions x ${s.peso} weight)`;
   }).join("\n");
 })()}
 
 IMPORTANT RULES FOR DISTRIBUTION:
-1. You MUST distribute the EXACT calculated minutes for each subject.
-2. If a subject has more than 120 minutes, split it into multiple blocks (e.g., two blocks of 60 mins or one 90 and one 60) and place them at different points in the cycle to maintain a balanced sequence.
-3. The sum of all "duracao" for a specific subject in your output MUST equal the calculated minutes above.
-4. The GRAND TOTAL of all internal "duracao" values MUST be exactly ${params.totalHoursPerCycle * 60} minutes.
+1. You MUST distribute the EXACT calculated minutes for each subject listed above. Do not include subjects that are not listed here.
+2. The MINIMUM time for a single subject block is 30 minutes. The MAXIMUM time for a single block is 90 minutes.
+3. If a subject has more than 90 minutes, split it into multiple blocks (e.g., 90 and 60, or 60 and 60) and place them at different points in the cycle to maintain a balanced sequence. Every block MUST be between 30 and 90 minutes.
+4. The sum of all "duracao" for a specific subject in your output MUST equal the calculated minutes above.
+5. The GRAND TOTAL of all internal "duracao" values MUST be exactly ${params.totalHoursPerCycle * 60} minutes.
 `;
     }
 

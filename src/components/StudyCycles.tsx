@@ -37,6 +37,7 @@ export function StudyCycles() {
   
   // IA Suggestion Params
   const [totalCycleHours, setTotalCycleHours] = useState<number>(20);
+  const [maxSubjectsCount, setMaxSubjectsCount] = useState<number>(0);
   const [subjectsParams, setSubjectsParams] = useState<{nome: string, questoes: number, peso: number}[]>([]);
 
   // Editing states
@@ -76,7 +77,8 @@ export function StudyCycles() {
       const allMaterias = edital.areas.flatMap(a => a.materias.map(m => m.nome));
       const result = await generateStudyCycleAI(edital.titulo, allMaterias, {
         totalHoursPerCycle: totalCycleHours,
-        subjectsInfo: subjectsParams
+        subjectsInfo: subjectsParams,
+        maxSubjectsPerCycle: maxSubjectsCount
       });
       
       const newItems: StudyCycleItem[] = result.map((item: any) => ({
@@ -90,9 +92,10 @@ export function StudyCycles() {
       const newCycle: StudyCycle = {
         id: uuidv4(),
         editalId: edital.id,
-        nome: `Ciclo ${ciclos.length + 1} - ${edital.titulo}`,
+        nome: `Ciclo IA - ${edital.titulo}`,
         items: newItems,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        targetMinutes: totalCycleHours * 60
       };
 
       addCiclo(newCycle);
@@ -319,6 +322,9 @@ export function StudyCycles() {
           {ciclos.map((ciclo) => {
             const completed = ciclo.items.filter(i => i.concluido).length;
             const progress = ciclo.items.length > 0 ? (completed / ciclo.items.length) * 100 : 0;
+            const totalMinutes = ciclo.items.reduce((acc, i) => acc + i.duracao, 0);
+            const targetMinutes = ciclo.targetMinutes;
+            const timeDiff = targetMinutes ? targetMinutes - totalMinutes : 0;
             
             return (
               <motion.div 
@@ -363,10 +369,33 @@ export function StudyCycles() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-4">
-                    <History className="w-3 h-3" />
-                    {new Date(ciclo.created_at).toLocaleDateString()}
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 mb-2">
+                    <div className="flex items-center gap-1">
+                      <History className="w-3 h-3" />
+                      {new Date(ciclo.created_at).toLocaleDateString()}
+                    </div>
+                    {targetMinutes ? (
+                      <div className="flex items-center gap-1 pl-2 border-l border-slate-200" title={`Objetivo: ${Math.floor(targetMinutes/60)}h${targetMinutes%60 ? ` ${targetMinutes%60}m` : ''}`}>
+                        <Target className="w-3 h-3 text-indigo-500" />
+                        <span className="font-bold text-slate-700">{Math.floor(totalMinutes/60)}h {totalMinutes%60}m acumulado</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 pl-2 border-l border-slate-200">
+                        <Clock className="w-3 h-3" />
+                        <span>{Math.floor(totalMinutes/60)}h {totalMinutes%60}m</span>
+                      </div>
+                    )}
                   </div>
+                  
+                  {targetMinutes && timeDiff !== 0 && (
+                    <div className={`text-[10px] font-bold px-2 py-1 rounded inline-flex mb-3 ${timeDiff > 0 ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-rose-100 text-rose-800 border border-rose-200"}`}>
+                      {timeDiff > 0 ? (
+                        <span>Faltam {timeDiff} min para atingir o objetivo de {targetMinutes / 60}h. Ajuste os tempos ou adicione matéria.</span>
+                      ) : (
+                        <span>Excedeu em {Math.abs(timeDiff)} min o objetivo de {targetMinutes / 60}h.</span>
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-1">
                     <div className="flex justify-between text-[10px] font-bold text-indigo-600 uppercase tracking-tighter">
@@ -559,17 +588,32 @@ export function StudyCycles() {
                       className="space-y-4 mb-6"
                     >
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <div className="flex items-center justify-between mb-4">
-                          <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            Horas por Ciclo
-                          </label>
-                          <input 
-                            type="number"
-                            value={totalCycleHours}
-                            onChange={(e) => setTotalCycleHours(parseInt(e.target.value) || 0)}
-                            className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm font-bold text-center outline-none focus:ring-2 focus:ring-indigo-500/20"
-                          />
+                        <div className="flex flex-col gap-4 mb-4">
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                              <Clock className="w-4 h-4" />
+                              Horas por Ciclo
+                            </label>
+                            <input 
+                              type="number"
+                              value={totalCycleHours}
+                              onChange={(e) => setTotalCycleHours(parseInt(e.target.value) || 0)}
+                              className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm font-bold text-center outline-none focus:ring-2 focus:ring-indigo-500/20"
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                              <BookOpen className="w-4 h-4" />
+                              Limite de Matérias (0 = Todas)
+                            </label>
+                            <input 
+                              type="number"
+                              value={maxSubjectsCount}
+                              onChange={(e) => setMaxSubjectsCount(parseInt(e.target.value) || 0)}
+                              className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm font-bold text-center outline-none focus:ring-2 focus:ring-indigo-500/20"
+                              min="0"
+                            />
+                          </div>
                         </div>
 
                         <div className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Peso e Questões por Matéria</div>

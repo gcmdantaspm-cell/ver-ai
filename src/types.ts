@@ -56,6 +56,7 @@ export interface StudyCycle {
   nome: string;
   items: StudyCycleItem[];
   created_at: string;
+  targetMinutes?: number;
 }
 
 // Logic Models for Revision Queue
