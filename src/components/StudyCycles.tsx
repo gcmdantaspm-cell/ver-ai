@@ -250,22 +250,44 @@ export function StudyCycles() {
         mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       };
       
-      const form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-      form.append('file', blob);
-      
-      const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      // 1. Create file metadata
+      const metaResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: form
+        body: JSON.stringify(metadata)
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Drive upload error", errorData);
-        throw new Error('Falha ao fazer upload para o Google Drive');
+      if (!metaResponse.ok) {
+        let errMessage = 'Erro desconhecido';
+        try {
+          const errData = await metaResponse.json();
+          errMessage = errData.error?.message || JSON.stringify(errData);
+        } catch(e) { /* ignore */ }
+        throw new Error(`Falha ao criar arquivo no Drive: ${errMessage}`);
+      }
+      
+      const fileData = await metaResponse.json();
+      
+      // 2. Upload file content
+      const uploadResponse = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileData.id}?uploadType=media`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        },
+        body: blob
+      });
+      
+      if (!uploadResponse.ok) {
+        let errMessage = 'Erro desconhecido';
+        try {
+          const errData = await uploadResponse.json();
+          errMessage = errData.error?.message || JSON.stringify(errData);
+        } catch(e) { /* ignore */ }
+        throw new Error(`Falha ao fazer upload do conteúdo: ${errMessage}`);
       }
       
       alert("Planilha salva com sucesso no seu Google Drive!");

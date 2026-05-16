@@ -151,10 +151,10 @@ export async function generateStudyCycleAI(editalTitle: string, materias: string
     if (params) {
       extraContext = `
 Additional Context for calculation:
-- Total cycle time: ${params.totalHoursPerCycle} hours (${params.totalHoursPerCycle * 60} minutes).
-${params.maxSubjectsPerCycle && params.maxSubjectsPerCycle > 0 ? `- Maximum total number of subjects to include in this cycle: ${params.maxSubjectsPerCycle}. If there are more subjects, you MUST drop the subjects with the lowest weight/questions.` : ""}
+- Target cycle time: ${params.totalHoursPerCycle} hours (${params.totalHoursPerCycle * 60} minutes).
+${params.maxSubjectsPerCycle && params.maxSubjectsPerCycle > 0 ? `- The user requested a maximum of ${params.maxSubjectsPerCycle} subjects in this cycle. The least important subjects have been pruned.` : ""}
 
-Based on the number of questions and weights provided, here is the EXACT total amount of minutes each subject MUST be studied in this cycle:
+Based on the number of questions and weights provided, here is the EXACT total amount of minutes each subject MUST be studied. (Note: minimum 30 mins per subject is enforced)
 ${(function() {
   const sortedSubjects = [...params.subjectsInfo]
     .map(s => ({ ...s, points: s.questoes * s.peso }))
@@ -167,19 +167,27 @@ ${(function() {
   const totalPoints = selectedSubjects.reduce((acc, s) => acc + s.points, 0);
   const totalMinutes = params.totalHoursPerCycle * 60;
   
-  return selectedSubjects.map(s => {
+  let grandTotal = 0;
+  const results = selectedSubjects.map(s => {
     const proportion = totalPoints > 0 ? s.points / totalPoints : 0;
-    const subjectMinutes = Math.round(proportion * totalMinutes);
-    return `  * ${s.nome}: ${subjectMinutes} minutes (Calculated from ${s.questoes} questions x ${s.peso} weight)`;
+    let subjectMinutes = Math.max(30, Math.round(proportion * totalMinutes));
+    
+    // Round to nearest 5 minutes
+    subjectMinutes = Math.max(30, Math.round(subjectMinutes / 5) * 5);
+    
+    grandTotal += subjectMinutes;
+    return `  * "${s.nome}": ${subjectMinutes} minutes total.`;
   }).join("\n");
+  
+  return `${results}\n\n-> GRAND TOTAL REQUIRED ACROSS ALL BLOCKS: ${grandTotal} minutes.`;
 })()}
 
-IMPORTANT RULES FOR DISTRIBUTION:
-1. You MUST distribute the EXACT calculated minutes for each subject listed above. Do not include subjects that are not listed here.
-2. The MINIMUM time for a single subject block is 30 minutes. The MAXIMUM time for a single block is 90 minutes.
-3. If a subject has more than 90 minutes, split it into multiple blocks (e.g., 90 and 60, or 60 and 60) and place them at different points in the cycle to maintain a balanced sequence. Every block MUST be between 30 and 90 minutes.
-4. The sum of all "duracao" for a specific subject in your output MUST equal the calculated minutes above.
-5. The GRAND TOTAL of all internal "duracao" values MUST be exactly ${params.totalHoursPerCycle * 60} minutes.
+CRITICAL INSTRUCTIONS FOR DISTRIBUTION (FOLLOW EXACTLY):
+1. MANDATORY INCLUSION: You MUST include EVERY SINGLE SUBJECT listed above in the cycle. Do not omit ANY of them!
+2. CHUNKING: The MINIMUM 'duracao' for a single block is 30. The MAXIMUM 'duracao' is 90.
+3. SPLITTING: If a subject has a total time greater than 90 minutes, you MUST provide MULTIPLE JSON objects (blocks) for that subject, split into chunks between 30 and 90 minutes. Scatter these chunks throughout the array to avoid having them back-to-back.
+4. EXACT MATCH: The sum of the 'duracao' fields for a specific subject MUST EXACTLY match the required minutes above.
+5. NO EXTRAS: DO NOT include any subjects that are NOT in the list above.
 `;
     }
 
