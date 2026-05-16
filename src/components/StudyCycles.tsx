@@ -514,6 +514,28 @@ export function StudyCycles() {
                     <PlusCircle className="w-4 h-4" />
                     Adicionar Matéria
                   </button>
+
+                  {/* Summary of subjects */}
+                  <div className="pt-4 mt-2 border-t border-slate-100">
+                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Resumo por Matéria</h3>
+                    <div className="space-y-1.5">
+                      {Object.entries(
+                        ciclo.items.reduce((acc, i) => {
+                          acc[i.materiaNome] = (acc[i.materiaNome] || 0) + i.duracao;
+                          return acc;
+                        }, {} as Record<string, number>)
+                      )
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([name, mins]) => (
+                        <div key={name} className="flex justify-between items-center text-xs">
+                          <span className="text-slate-600 truncate mr-2" title={name}>{name}</span>
+                          <span className="font-mono font-medium text-slate-700 whitespace-nowrap bg-slate-100 px-1.5 py-0.5 rounded">
+                            {Math.floor(mins / 60)}h {mins % 60}m
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="p-3 bg-slate-50 border-t border-slate-100 flex gap-2">
