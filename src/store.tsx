@@ -23,7 +23,7 @@ interface EditalContextType {
   setNextRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   setStudyDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   updateNota: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, nota: string) => void;
-  updateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartao: { id: string, pergunta: string, resposta: string }[]) => void;
+  updateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartao: { id: string, pergunta: string, resposta: string }[], newSubtopicoTitle?: string) => void;
   updateCartaoSM2: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, quality: number) => void;
   updateMetricas: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, acertos: number, erros: number) => void;
   revisions: RevisaoAgendada[];
@@ -437,14 +437,23 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const updateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string, repetition?: number, interval?: number, easeFactor?: number, nextReview?: string }[]) => {
+  const updateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string, repetition?: number, interval?: number, easeFactor?: number, nextReview?: string }[], newSubtopicoTitle?: string) => {
     handleUpdate(editalId, (edital) => {
       const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
       const topico = materia?.topicos.find(t => t.id === topicoId);
       if (!topico) return;
 
-      if (subtopicoId) {
+      if (newSubtopicoTitle) {
+        topico.subtopicos.push({
+          id: uuidv4(),
+          titulo: newSubtopicoTitle,
+          visto: false,
+          data_estudo: null,
+          revisoes_agendadas: [],
+          cartoes: cartoes as any
+        });
+      } else if (subtopicoId) {
         const sub = topico.subtopicos.find(s => s.id === subtopicoId);
         if (sub) sub.cartoes = cartoes as any;
       } else {

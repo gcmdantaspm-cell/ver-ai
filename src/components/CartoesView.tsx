@@ -24,6 +24,7 @@ export function CartoesView() {
   // States Manual
   const [perguntaManual, setPerguntaManual] = useState("");
   const [respostaManual, setRespostaManual] = useState("");
+  const [newAssunto, setNewAssunto] = useState("");
 
   // Aggregated Cards Logic
   const allCards = useMemo(() => {
@@ -208,7 +209,7 @@ export function CartoesView() {
     const topico = materia?.topicos.find(t => t.id === selectedTopico);
     
     let currentCartoes: any[] = [];
-    if (topico) {
+    if (topico && !newAssunto.trim()) {
        if (selectedSubtopico) {
           const s = topico.subtopicos.find(sub => sub.id === selectedSubtopico);
           if (s) currentCartoes = s.cartoes || [];
@@ -218,7 +219,11 @@ export function CartoesView() {
     }
 
     const novosCartoes = newCardsData.map(c => ({ id: Math.random().toString(36).substring(7), ...c }));
-    updateCartoes(selectedEdital, selectedArea, selectedMateria, selectedTopico, selectedSubtopico || undefined, [...currentCartoes, ...novosCartoes]);
+    updateCartoes(selectedEdital, selectedArea, selectedMateria, selectedTopico, selectedSubtopico || undefined, [...currentCartoes, ...novosCartoes], newAssunto.trim() ? newAssunto.trim() : undefined);
+    
+    if (newAssunto.trim()) {
+       setNewAssunto(""); // Reset for next entries
+    }
   }
 
   const editalObj = editais.find(e => e.id === selectedEdital);
@@ -407,10 +412,26 @@ export function CartoesView() {
                     <select value={selectedTopico} onChange={(e) => { setSelectedTopico(e.target.value); setSelectedSubtopico(""); }} className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300" disabled={!selectedMateria}>
                        <option value="">O Tópico...</option>{materiaObj?.topicos.map(t => <option key={t.id} value={t.id}>{t.titulo}</option>)}
                     </select>
-                    {topicoObj && topicoObj.subtopicos.length > 0 && (
-                       <select value={selectedSubtopico} onChange={(e) => setSelectedSubtopico(e.target.value)} className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300 sm:col-span-2 md:col-span-4">
-                          <option value="">Nenhum Subtópico (Salvar no Tópico Principal)</option>{topicoObj.subtopicos.map(st => <option key={st.id} value={st.id}>{st.titulo}</option>)}
-                       </select>
+                    {topicoObj && (
+                       <div className="sm:col-span-2 md:col-span-4 grid grid-cols-1 md:grid-cols-2 gap-3 mt-1 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                          <div className="flex flex-col gap-1">
+                             <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Assunto Existente</span>
+                             <select value={selectedSubtopico} onChange={(e) => { setSelectedSubtopico(e.target.value); setNewAssunto(""); }} className="p-2.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-300 w-full" disabled={!!newAssunto}>
+                                <option value="">(Geral / Tópico Principal)</option>
+                                {topicoObj.subtopicos.map(st => <option key={st.id} value={st.id}>{st.titulo}</option>)}
+                             </select>
+                          </div>
+                          
+                          <div className="flex flex-col gap-1">
+                             <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Criar Novo Assunto</span>
+                             <input 
+                                value={newAssunto} 
+                                onChange={(e) => { setNewAssunto(e.target.value); setSelectedSubtopico(""); }} 
+                                placeholder="Digite o nome do novo assunto..."
+                                className="p-2.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-300 w-full focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                             />
+                          </div>
+                       </div>
                     )}
                  </div>
               </div>
