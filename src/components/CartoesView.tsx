@@ -43,6 +43,48 @@ export function CartoesView() {
     return cards;
   }, [editais]);
 
+  const decks = useMemo(() => {
+    const map = new Map<string, {
+      key: string;
+      editalTitulo: string;
+      materiaNome: string;
+      topicoTitulo: string;
+      subtopicoTitulo?: string;
+      total: number;
+      toReview: number;
+      cards: any[];
+    }>();
+
+    allCards.forEach(c => {
+      const key = `${c.editalId}-${c.materiaId}-${c.topicoId}-${c.subtopicoId || 'root'}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          editalTitulo: c.editalTitulo,
+          materiaNome: c.materiaNome,
+          topicoTitulo: c.topicoTitulo,
+          subtopicoTitulo: c.subtopicoTitulo,
+          total: 0,
+          toReview: 0,
+          cards: []
+        });
+      }
+      const deck = map.get(key)!;
+      deck.total++;
+      
+      let isReview = true;
+      if (c.nextReview) {
+        const d = parseISO(c.nextReview);
+        isReview = isPast(d) || isToday(d);
+      }
+      
+      if (isReview) deck.toReview++;
+      deck.cards.push(c);
+    });
+
+    return Array.from(map.values()).sort((a, b) => b.toReview - a.toReview);
+  }, [allCards]);
+
   const cardsToReview = useMemo(() => {
     return allCards.filter(c => {
       if (!c.nextReview) return true; // new string
@@ -80,9 +122,22 @@ export function CartoesView() {
     return { tomorrow, next7Days, next30Days };
   }, [allCards]);
 
-  const startStudy = () => {
-    // shuffle cards slightly for variety
-    const shuffled = [...cardsToReview].sort(() => Math.random() - 0.5);
+  const startStudy = (cardsList: any[], force: boolean = false) => {
+    let toStudy = [...cardsList];
+    if (!force) {
+      toStudy = toStudy.filter(c => {
+        if (!c.nextReview) return true;
+        const d = parseISO(c.nextReview);
+        return isPast(d) || isToday(d);
+      });
+    }
+    
+    if (toStudy.length === 0) {
+       alert("Nenhum cartão para revisar agora! Você pode fazer a revisão forçada.");
+       return;
+    }
+
+    const shuffled = toStudy.sort(() => Math.random() - 0.5);
     setStudySession({ cards: shuffled, currentIndex: 0, showAnswer: false });
   };
 
@@ -253,55 +308,82 @@ export function CartoesView() {
 
       <div className="flex-1 min-h-0 overflow-y-auto">
         {activeTab === 'painel' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
-                <Layers className="w-16 h-16 text-indigo-500 mb-4" />
-                <h3 className="text-4xl font-bold text-slate-900 mb-2">{allCards.length}</h3>
-                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-8">Cartões Totais</p>
-                <div className="bg-amber-50 border border-amber-100 text-amber-800 p-4 rounded-xl w-full">
-                   <h4 className="font-bold text-lg">{cardsToReview.length}</h4>
-                   <p className="text-xs uppercase tracking-widest opacity-80 font-semibold mb-3">Cartões para Revisar Hoje</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+             <div className="md:col-span-2 flex flex-col gap-4">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex justify-between items-center">
+                   <div>
+                      <h3 className="font-bold text-slate-900 text-lg">Tópicos (Decks)</h3>
+                      <p className="text-xs text-slate-500 font-semibold">{decks.length} tópicos com cartões</p>
+                   </div>
                 </div>
-                <button 
-                  onClick={startStudy} 
-                  disabled={cardsToReview.length === 0}
-                  className="w-full mt-4 px-6 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex justify-center items-center gap-2 uppercase tracking-widest"
-                >
-                   <Play className="w-5 h-5"/> 
-                   INICIAR REVISÃO
-                </button>
+
+                {decks.length === 0 ? (
+                   <div className="text-center p-8 bg-slate-100 rounded-3xl border border-slate-200 border-dashed text-slate-500">
+                      Nenhum cartão cadastrado. Vá em "Criar Manual" ou "Importar" para começar.
+                   </div>
+                ) : (
+                   <div className="grid grid-cols-1 gap-3">
+                      {decks.map(d => (
+                         <div key={d.key} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+                            <div>
+                               <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{d.editalTitulo} › {d.materiaNome}</div>
+                               <h4 className="font-bold text-slate-800 text-sm">{d.topicoTitulo} {d.subtopicoTitulo ? `› ${d.subtopicoTitulo}` : ''}</h4>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                               <div className="text-right mr-2 hidden sm:block">
+                                  <div className="text-xs font-bold text-amber-600">{d.toReview} pendentes</div>
+                                  <div className="text-[10px] text-slate-400 font-semibold">{d.total} no total</div>
+                               </div>
+                               <button onClick={() => startStudy(d.cards, false)} disabled={d.toReview === 0} className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 disabled:opacity-50 disabled:bg-slate-100 disabled:text-slate-400 font-bold rounded-lg text-xs transition-all tracking-widest uppercase cursor-pointer">
+                                  Revisar
+                               </button>
+                               <button onClick={() => startStudy(d.cards, true)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-lg text-xs transition-all tracking-widest uppercase">
+                                  Forçar
+                               </button>
+                            </div>
+                         </div>
+                      ))}
+                   </div>
+                )}
              </div>
              
              <div className="flex flex-col gap-6">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
-                   <h3 className="font-bold text-slate-900 mb-4">Previsão de Revisões</h3>
-                   <div className="grid grid-cols-3 gap-3">
-                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col items-center">
-                         <span className="text-2xl font-bold text-slate-800">{forecast.tomorrow}</span>
-                         <span className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mt-1">Amanhã</span>
-                      </div>
-                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col items-center">
-                         <span className="text-2xl font-bold text-slate-800">{forecast.next7Days}</span>
-                         <span className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mt-1 text-center">Próximos<br/>7 Dias</span>
-                      </div>
-                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col items-center">
-                         <span className="text-2xl font-bold text-slate-800">{forecast.next30Days}</span>
-                         <span className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mt-1 text-center">+ de<br/>7 Dias</span>
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
+                   <Layers className="w-12 h-12 text-indigo-500 mb-4" />
+                   <h3 className="text-3xl font-bold text-slate-900 mb-2">{allCards.length}</h3>
+                   <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">Cartões Totais</p>
+                   
+                   <div className="bg-amber-50 border border-amber-100 text-amber-800 p-4 rounded-xl w-full flex flex-col items-center">
+                      <p className="text-[10px] uppercase tracking-widest opacity-80 font-bold mb-1">Para Revisar Hoje</p>
+                      <h4 className="font-bold text-2xl mb-4">{cardsToReview.length}</h4>
+                      
+                      <div className="flex flex-col w-full gap-2 mt-2 border-t border-amber-200/50 pt-4">
+                         <button onClick={() => startStudy(allCards, false)} disabled={cardsToReview.length === 0} className="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-lg text-xs transition-all uppercase tracking-widest shadow-md">
+                            Revisar Tudo
+                         </button>
+                         <button onClick={() => startStudy(allCards, true)} className="w-full px-4 py-2 bg-amber-200/50 hover:bg-amber-200 text-amber-900 font-bold rounded-lg text-[10px] transition-all uppercase tracking-widest">
+                            Forçar Revisão (Tudo)
+                         </button>
                       </div>
                    </div>
                 </div>
 
                 <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
-                   <h3 className="font-bold text-slate-900 mb-4">Sobre o Método</h3>
-                   <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                     O sistema de Cartões utiliza o algoritmo <strong>SM-2 de Repetição Espaçada</strong> (similar ao Anki). O objetivo é apresentar os cartões prestes a serem esquecidos para fortalecer sua memória de longo prazo.
-                   </p>
-                   <ul className="space-y-3 text-sm text-slate-600">
-                     <li className="flex items-start gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0"/> Se considerar "Fácil", o cartão demora bem mais a voltar.</li>
-                     <li className="flex items-start gap-2"><CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0"/> Se considerar "Bom", ele aumenta seu intervalo moderadamente.</li>
-                     <li className="flex items-start gap-2"><CheckCircle2 className="w-5 h-5 text-orange-500 shrink-0"/> Se considerar "Difícil", ele aparece num futuro mais próximo.</li>
-                     <li className="flex items-start gap-2"><XCircle className="w-5 h-5 text-rose-500 shrink-0"/> Se "Errar", o aprendizado reseta e você revisa ainda hoje.</li>
-                   </ul>
+                   <h3 className="font-bold text-slate-900 mb-4">Previsão de Revisões</h3>
+                   <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col items-center justify-center">
+                         <span className="text-xl font-bold text-slate-800">{forecast.tomorrow}</span>
+                         <span className="text-[9px] uppercase font-bold text-slate-500 tracking-widest mt-1">Amanhã</span>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col items-center justify-center">
+                         <span className="text-xl font-bold text-slate-800">{forecast.next7Days}</span>
+                         <span className="text-[9px] uppercase font-bold text-slate-500 tracking-widest mt-1 text-center">Próximos<br/>7 Dias</span>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col items-center justify-center">
+                         <span className="text-xl font-bold text-slate-800">{forecast.next30Days}</span>
+                         <span className="text-[9px] uppercase font-bold text-slate-500 tracking-widest mt-1 text-center">+ de<br/>7 Dias</span>
+                      </div>
+                   </div>
                 </div>
              </div>
           </div>
