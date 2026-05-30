@@ -445,14 +445,19 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       if (!topico) return;
 
       if (newSubtopicoTitle) {
-        topico.subtopicos.push({
-          id: uuidv4(),
-          titulo: newSubtopicoTitle,
-          visto: false,
-          data_estudo: null,
-          revisoes_agendadas: [],
-          cartoes: cartoes as any
-        });
+        const existingSub = topico.subtopicos.find(s => s.titulo.toLowerCase().trim() === newSubtopicoTitle.toLowerCase().trim());
+        if (existingSub) {
+          existingSub.cartoes = [...(existingSub.cartoes || []), ...(cartoes as any)];
+        } else {
+          topico.subtopicos.push({
+            id: uuidv4(),
+            titulo: newSubtopicoTitle.trim(),
+            visto: false,
+            data_estudo: null,
+            revisoes_agendadas: [],
+            cartoes: cartoes as any
+          });
+        }
       } else if (subtopicoId) {
         const sub = topico.subtopicos.find(s => s.id === subtopicoId);
         if (sub) sub.cartoes = cartoes as any;

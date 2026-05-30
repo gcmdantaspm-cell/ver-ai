@@ -57,7 +57,8 @@ export function CartoesView() {
     }>();
 
     allCards.forEach(c => {
-      const key = `${c.editalId}-${c.materiaId}-${c.topicoId}-${c.subtopicoId || 'root'}`;
+      const subTitleKey = c.subtopicoTitulo ? c.subtopicoTitulo.toLowerCase().trim() : 'root';
+      const key = `${c.editalId}-${c.materiaId}-${c.topicoId}-${subTitleKey}`;
       if (!map.has(key)) {
         map.set(key, {
           key,
