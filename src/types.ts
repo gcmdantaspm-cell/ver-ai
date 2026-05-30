@@ -1,3 +1,11 @@
+export interface Cartao {
+  id: string;
+  pergunta: string;
+  resposta: string;
+  acertos?: number;
+  erros?: number;
+}
+
 export interface Subtopico {
   id: string;
   titulo: string;
@@ -6,6 +14,7 @@ export interface Subtopico {
   revisoes_agendadas: string[]; // ISO 8601 strings
   revisoes_concluidas?: number;
   notas?: string;
+  cartoes?: Cartao[];
   acertos?: number;
   erros?: number;
 }
@@ -18,6 +27,7 @@ export interface Topico {
   revisoes_agendadas: string[]; // ISO 8601 strings
   revisoes_concluidas?: number;
   notas?: string;
+  cartoes?: Cartao[];
   acertos?: number;
   erros?: number;
   subtopicos: Subtopico[];

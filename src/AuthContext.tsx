@@ -48,11 +48,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = async () => {
     setAuthError(null);
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Login error:", error);
-      setAuthError(error.message);
+      if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/popup-blocked') {
+         setAuthError("A janela de login com o Google foi fechada antes de concluir ou foi bloqueada pelo navegador. Por favor, tente novamente (e caso não abra, abra o aplicativo em uma nova aba).");
+      } else {
+         setAuthError(error.message);
+      }
     }
   };
 

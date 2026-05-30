@@ -276,6 +276,62 @@ Example:
   }
 }
 
+export async function generateFlashcards(materiaNome: string, topicoTitulo: string, subtopicoTitulo?: string, baseText?: string): Promise<{ pergunta: string, resposta: string }[]> {
+  try {
+    const configOptions = {
+      contents: `You are an Expert Study Mentor. Your task is to generate highly effective flashcards (Cartões de Estudo) for the following subject and topic:
+
+Subject (Matéria): ${materiaNome}
+Topic (Tópico): ${topicoTitulo}
+${subtopicoTitulo ? `Subtopic (Subtópico): ${subtopicoTitulo}` : ""}
+
+${baseText ? `BASE TEXT PROVIDED BY USER:
+"""
+${baseText}
+"""
+You MUST generate the flashcards strictly based on the information provided in the Base Text above.` : "Generate flashcards based on your general knowledge of this topic."}
+
+CRITICAL INSTRUCTIONS:
+1. Output MUST be valid JSON.
+2. Structure: An array of objects, where each object has a 'pergunta' (Question) and 'resposta' (Answer).
+3. The content MUST be directly helpful for exam review (laws, concepts, terms, translations).
+4. Do NOT use markdown code blocks \`\`\`json. Return ONLY the raw JSON string array.
+5. The language MUST be in Brazilian Portuguese (PT-BR) unless it's testing English vocabulary.`,
+      config: {
+        responseMimeType: "application/json",
+      }
+    };
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        ...configOptions,
+        model: "gemini-3.1-pro-preview"
+      });
+    } catch (err: any) {
+      if (err?.status === 503 || err?.status === 429 || err?.message?.match(/high demand|429|503/i)) {
+        response = await ai.models.generateContent({
+          ...configOptions,
+          model: "gemini-3-flash-preview"
+        });
+      } else {
+        throw err;
+      }
+    }
+
+    let text = response.text || "";
+    const firstBracket = text.indexOf('[');
+    const lastBracket = text.lastIndexOf(']');
+    if (firstBracket !== -1 && lastBracket !== -1) {
+      text = text.substring(firstBracket, lastBracket + 1);
+    }
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Failed to generate flashcards", error);
+    throw new Error("Failed to generate flashcards");
+  }
+}
+
 export async function generateStudyNotes(materiaNome: string, topicoTitulo: string, subtopicoTitulo?: string): Promise<string> {
   try {
     const configOptions = {

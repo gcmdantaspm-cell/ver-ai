@@ -23,6 +23,7 @@ interface EditalContextType {
   setNextRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   setStudyDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   updateNota: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, nota: string) => void;
+  updateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartao: { id: string, pergunta: string, resposta: string }[]) => void;
   updateMetricas: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, acertos: number, erros: number) => void;
   revisions: RevisaoAgendada[];
   completeRevision: (topicoOuSubId: string, dataRevisao: string) => void;
@@ -435,6 +436,22 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string }[]) => {
+    handleUpdate(editalId, (edital) => {
+      const area = edital.areas.find(a => a.id === areaId);
+      const materia = area?.materias.find(m => m.id === materiaId);
+      const topico = materia?.topicos.find(t => t.id === topicoId);
+      if (!topico) return;
+
+      if (subtopicoId) {
+        const sub = topico.subtopicos.find(s => s.id === subtopicoId);
+        if (sub) sub.cartoes = cartoes;
+      } else {
+        topico.cartoes = cartoes;
+      }
+    });
+  };
+
   const updateMetricas = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, acertos: number, erros: number) => {
     handleUpdate(editalId, (edital) => {
       const area = edital.areas.find(a => a.id === areaId);
@@ -584,7 +601,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     <EditalContext.Provider value={{
       editais, managedEditais, addEdital, deleteEdital, toggleVisto, updateItemTitle,
       deleteItem, addItem, addMaterias, addCustomRevisionDate,
-      removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota,
+      removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, updateCartoes,
       updateMetricas, revisions, completeRevision, getPublicEdital, setEditalPublic,
       ciclos, managedCiclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem, getPublicCiclos
     }}>

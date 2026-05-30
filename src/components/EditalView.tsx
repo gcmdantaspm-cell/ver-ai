@@ -4,7 +4,7 @@ import { format, isPast, isToday } from "date-fns";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Edital } from "../types";
+import { Edital, Cartao } from "../types";
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -28,7 +28,7 @@ import {
   Hash
 } from "lucide-react";
 
-import { parseEditalText, generateStudyNotes } from "../services/ai";
+import { parseEditalText, generateStudyNotes, generateFlashcards } from "../services/ai";
 
 export function EditalView({ edital }: { edital: Edital, key?: string | number }) {
   const { 
@@ -43,6 +43,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     removeRevisionDate, 
     setStudyDate, 
     updateNota, 
+    updateCartoes,
     updateMetricas, 
     revisions,
     setEditalPublic,
@@ -54,16 +55,19 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
 
   const [expandedMaterias, setExpandedMaterias] = useState<string[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
-  const [activeTab, setActiveTab] = useState<'topicos' | 'revisoes' | 'notas'>('topicos');
+  const [activeTab, setActiveTab] = useState<'topicos' | 'revisoes' | 'notas' | 'cartoes'>('topicos');
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [notesModal, setNotesModal] = useState<{ isOpen: boolean, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string, currentNote: string, title: string } | null>(null);
+  const [cartoesModal, setCartoesModal] = useState<{ isOpen: boolean, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string, cartoes: Cartao[], title: string } | null>(null);
   const [historyModal, setHistoryModal] = useState<{ isOpen: boolean, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string } | null>(null);
   const [aiModal, setAiModal] = useState<{isOpen: boolean, editalId: string, areaId: string} | null>(null);
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [notesAiLoading, setNotesAiLoading] = useState(false);
+  const [cartoesAiLoading, setCartoesAiLoading] = useState(false);
+  const [cartoesBaseText, setCartoesBaseText] = useState("");
   const [isSharing, setIsSharing] = useState(false);
 
   const handleGenerateNotes = async () => {
@@ -84,6 +88,29 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
        alert("Erro ao gerar resumo com IA. Tente novamente.");
     } finally {
        setNotesAiLoading(false);
+    }
+  };
+
+  const handleGenerateFlashcards = async () => {
+    if (!cartoesModal) return;
+    setCartoesAiLoading(true);
+    try {
+       const area = edital.areas.find(a => a.id === cartoesModal.areaId);
+       const materia = area?.materias.find(m => m.id === cartoesModal.materiaId);
+       const topico = materia?.topicos.find(t => t.id === cartoesModal.topicoId);
+       const subtopico = cartoesModal.subtopicoId ? topico?.subtopicos.find(s => s.id === cartoesModal.subtopicoId) : undefined;
+       
+       if (materia && topico) {
+         const generated = await generateFlashcards(materia.nome, topico.titulo, subtopico?.titulo, cartoesBaseText);
+         const novosCartoes = generated.map(g => ({ id: Math.random().toString(36).substring(7), pergunta: g.pergunta, resposta: g.resposta }));
+         setCartoesModal(prev => prev ? { ...prev, cartoes: [...(prev.cartoes || []), ...novosCartoes] } : null);
+         setCartoesBaseText("");
+       }
+    } catch (err) {
+       console.error(err);
+       alert("Erro ao gerar cartões com IA. Tente novamente.");
+    } finally {
+       setCartoesAiLoading(false);
     }
   };
 
@@ -160,6 +187,22 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     });
     return { total, completed, percent: total === 0 ? 0 : Math.round((completed / total) * 100) };
   })();
+
+  const allCartoes: any[] = [];
+  edital.areas.forEach(a => {
+    a.materias.forEach(m => {
+      m.topicos.forEach(t => {
+        if (t.cartoes && t.cartoes.length > 0) {
+          t.cartoes.forEach(c => allCartoes.push({ area: a.area, materia: m.nome, topico: t.titulo, cartao: c, areaId: a.id, materiaId: m.id, topicoId: t.id }));
+        }
+        t.subtopicos.forEach(s => {
+          if (s.cartoes && s.cartoes.length > 0) {
+            s.cartoes.forEach(c => allCartoes.push({ area: a.area, materia: m.nome, topico: t.titulo, subtopico: s.titulo, cartao: c, areaId: a.id, materiaId: m.id, topicoId: t.id, subtopicoId: s.id }));
+          }
+        });
+      });
+    });
+  });
 
   const allNotes: any[] = [];
   edital.areas.forEach(a => {
@@ -359,6 +402,9 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
              <FileText className="w-3.5 h-3.5 shrink-0"/> Notas
              {allNotes.length > 0 && <span className={`${activeTab === 'notas' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'} px-1 py-[1px] rounded text-[8px] ml-0.5`}>{allNotes.length}</span>}
           </button>
+          <button onClick={() => setActiveTab('cartoes')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${activeTab === 'cartoes' ? 'bg-blue-900 text-white shadow-md shadow-blue-900/20' : 'text-slate-500 hover:text-slate-800'}`}>
+             <Sparkles className="w-3.5 h-3.5 shrink-0"/> Cartões
+          </button>
         </div>
 
         {activeTab === 'topicos' && (
@@ -517,6 +563,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                              </div>
   
                                              <div className="lg:col-span-1 flex justify-end gap-0.5 opacity-100 lg:opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                <button onClick={() => setCartoesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, cartoes: topico.cartoes || [], title: topico.titulo })} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-indigo-500'}`}><Sparkles className="w-3 h-3" /></button>
                                                 <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, currentNote: topico.notas || '', title: topico.titulo })} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-amber-500'}`}><StickyNote className="w-3 h-3" /></button>
                                                 <button onClick={() => addItem(edital.id, area.id, materia.id, topico.id)} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-blue-800'}`}><Plus className="w-3 h-3" /></button>
                                                 <button onClick={() => confirm("Excluir tópico?") && deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-500 hover:text-rose-500'}`}><Trash2 className="w-3 h-3" /></button>
@@ -575,6 +622,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                      </div>
   
                                                      <div className="lg:col-span-1 flex justify-end gap-0.5 opacity-100 lg:opacity-0 group-hover/sub:opacity-100 transition-opacity">
+                                                        <button onClick={() => setCartoesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, cartoes: sub.cartoes || [], title: sub.titulo })} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-indigo-500'}`}><Sparkles className="w-2.5 h-2.5" /></button>
                                                         <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, currentNote: sub.notas || '', title: sub.titulo })} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-amber-500'}`}><StickyNote className="w-2.5 h-2.5" /></button>
                                                         <button onClick={() => confirm("Excluir subtópico?") && deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico', topico.id)} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-500'}`}><Trash2 className="w-2.5 h-2.5" /></button>
                                                      </div>
@@ -679,9 +727,153 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
               </div>
            </div>
         )}
+
+        {activeTab === 'cartoes' && (
+           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="mb-8 shrink-0">
+                 <h3 className="text-lg font-display font-bold text-slate-900 mb-2">Cartões de Estudo</h3>
+                 <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold">Flashcards para revisão espaçada</p>
+              </div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                 {allCartoes.length === 0 ? (
+                    <div className="h-64 flex flex-col items-center justify-center bg-white shadow-sm border border-slate-200 rounded-3xl border-dashed">
+                       <Sparkles className="w-10 h-10 text-slate-900/5 mb-4" />
+                       <p className="text-slate-500 font-medium tracking-tight">Nenhum cartão (flashcard) gerado.</p>
+                       <p className="text-[10px] text-slate-400 mt-2 uppercase tracking-widest">Clique no botão de estrela nos tópicos para criar cartões</p>
+                    </div>
+                 ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                       {allCartoes.map((item, i) => (
+                          <div key={i} className="bg-white shadow-sm rounded-2xl border border-slate-200 hover:border-indigo-300 transition-all flex flex-col h-full overflow-hidden group">
+                             <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-start gap-2">
+                                <div>
+                                   <div className="text-[9px] uppercase font-bold text-blue-800 tracking-[0.2em] mb-1">{item.materia}</div>
+                                   <h4 className="font-bold text-slate-700 text-xs truncate max-w-[150px]">{item.subtopico || item.topico}</h4>
+                                </div>
+                                <button className="p-1.5 bg-white border border-slate-200 rounded text-slate-400 hover:text-indigo-500 transition-colors shadow-sm" onClick={() => {
+                                   const t = edital.areas.find(a=>a.id===item.areaId)?.materias.find(m=>m.id===item.materiaId)?.topicos.find(t=>t.id===item.topicoId);
+                                   const c = item.subtopicoId ? t?.subtopicos.find(s=>s.id===item.subtopicoId)?.cartoes : t?.cartoes;
+                                   setCartoesModal({ isOpen: true, areaId: item.areaId, materiaId: item.materiaId, topicoId: item.topicoId, subtopicoId: item.subtopicoId, cartoes: c || [], title: item.subtopico || item.topico });
+                                }}>
+                                   <Edit2 className="w-3 h-3"/>
+                                </button>
+                             </div>
+                             <div className="p-5 flex-1 flex flex-col justify-center items-center text-center">
+                                <p className="text-sm font-medium text-slate-900 mb-4">{item.cartao.pergunta}</p>
+                                <div className="hidden group-hover:block w-full border-t border-dashed border-slate-200 pt-4 mt-2">
+                                   <p className="text-xs text-emerald-700 font-medium">{item.cartao.resposta}</p>
+                                </div>
+                                <p className="text-[10px] text-slate-400 block group-hover:hidden mt-auto pt-4 italic">Passe o mouse para ver a resposta</p>
+                             </div>
+                          </div>
+                       ))}
+                    </div>
+                 )}
+              </div>
+           </div>
+        )}
       </div>
 
       {/* Modals */}
+      {cartoesModal?.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+           <div className="bg-slate-50 rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-300 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+             <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-white">
+               <div>
+                 <h3 className="text-lg font-display font-bold text-slate-900">Cartões de Estudo (Flashcards)</h3>
+                 <p className="text-[10px] text-slate-500 mt-1 font-bold uppercase tracking-widest">{cartoesModal.title}</p>
+               </div>
+               <button onClick={() => setCartoesModal(null)} className="text-slate-500 hover:text-slate-900 p-2 hover:bg-slate-100 rounded-xl transition-all"><X className="w-5 h-5"/></button>
+             </div>
+             <div className="p-4 bg-slate-50/50 flex-1 overflow-y-auto max-h-[60vh] custom-scrollbar flex flex-col gap-4">
+                <div className="bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm shrink-0">
+                   <div className="flex justify-between items-center mb-2">
+                     <span className="text-xs font-bold text-indigo-900 uppercase tracking-widest flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-indigo-500" /> Gerador Inteligente</span>
+                     <span className="text-[10px] text-slate-400">Cole um texto para focar nos cartões criados gerados</span>
+                   </div>
+                   <textarea
+                       value={cartoesBaseText}
+                       onChange={e => setCartoesBaseText(e.target.value)}
+                       placeholder="Cole aqui a lei seca, PDF, ou anotações para a IA criar cartões especificamente sobre este texto..."
+                       className="w-full h-20 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs resize-none focus:border-indigo-300 focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                   />
+                </div>
+
+                {cartoesModal.cartoes?.length === 0 ? (
+                   <div className="flex flex-col items-center justify-center p-12 text-center text-slate-500">
+                      <Sparkles className="w-12 h-12 text-slate-300 mb-4" />
+                      <p className="font-medium text-sm">Nenhum cartão gerado ainda.</p>
+                      <p className="text-xs text-slate-400 mt-2 max-w-sm">Use a Inteligência Artificial para gerar cartões de memorização (Perguntas e Respostas) baseados no conteúdo deste tópico.</p>
+                   </div>
+                ) : (
+                   <div className="space-y-4">
+                      {cartoesModal.cartoes.map((cartao, i) => (
+                         <div key={cartao.id || i} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative group">
+                            <button onClick={() => {
+                               const newCartoes = cartoesModal.cartoes.filter(c => c.id !== cartao.id);
+                               setCartoesModal(prev => prev ? { ...prev, cartoes: newCartoes } : null);
+                            }} className="absolute top-2 right-2 p-1.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                               <Trash2 className="w-4 h-4" />
+                            </button>
+                            <div className="mb-3">
+                               <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1 block">Pergunta</span>
+                               <textarea
+                                 value={cartao.pergunta}
+                                 onChange={(e) => {
+                                   const newCartoes = [...cartoesModal.cartoes];
+                                   newCartoes[i].pergunta = e.target.value;
+                                   setCartoesModal(prev => prev ? { ...prev, cartoes: newCartoes } : null);
+                                 }}
+                                 className="w-full text-sm font-medium text-slate-900 bg-slate-50 p-3 rounded-xl border border-transparent focus:border-indigo-200 focus:bg-white outline-none resize-none transition-all focus:ring-4 focus:ring-indigo-500/10"
+                                 rows={2}
+                               />
+                            </div>
+                            <div>
+                               <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 block">Resposta</span>
+                               <textarea
+                                 value={cartao.resposta}
+                                 onChange={(e) => {
+                                   const newCartoes = [...cartoesModal.cartoes];
+                                   newCartoes[i].resposta = e.target.value;
+                                   setCartoesModal(prev => prev ? { ...prev, cartoes: newCartoes } : null);
+                                 }}
+                                 className="w-full text-sm text-slate-700 bg-slate-50 p-3 rounded-xl border border-transparent focus:border-emerald-200 focus:bg-white outline-none resize-none transition-all focus:ring-4 focus:ring-emerald-500/10"
+                                 rows={3}
+                               />
+                            </div>
+                         </div>
+                      ))}
+                   </div>
+                )}
+             </div>
+             <div className="p-6 border-t border-slate-200 flex justify-between gap-3 bg-white shrink-0">
+                <button 
+                  onClick={handleGenerateFlashcards} 
+                  disabled={cartoesAiLoading}
+                  className="px-4 py-2.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition-all flex items-center gap-2 uppercase tracking-widest disabled:opacity-50"
+                  title="Gerar novos cartões (Flashcards) com IA. Será adicionado ao final da lista atual."
+                >
+                   {cartoesAiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                   {cartoesAiLoading ? "Gerando..." : "Gerar Cartões (IA)"}
+                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => {
+                     const novo = { id: Math.random().toString(36).substring(7), pergunta: "", resposta: "" };
+                     setCartoesModal(prev => prev ? { ...prev, cartoes: [...prev.cartoes, novo] } : null);
+                  }} className="px-4 py-2.5 text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all uppercase tracking-widest hidden sm:block">Adicionar Manual</button>
+                  <button onClick={() => setCartoesModal(null)} className="px-6 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase tracking-widest">Cancelar</button>
+                  <button onClick={() => { 
+                     // filter out empty
+                     const finalCartoes = cartoesModal.cartoes.filter(c => c.pergunta.trim() || c.resposta.trim());
+                     updateCartoes(edital.id, cartoesModal.areaId, cartoesModal.materiaId, cartoesModal.topicoId, cartoesModal.subtopicoId, finalCartoes); 
+                     setCartoesModal(null); 
+                  }} className="px-6 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest">Salvar</button>
+                </div>
+             </div>
+           </div>
+        </div>
+      )}
+
       {notesModal?.isOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
            <div className="bg-slate-50 rounded-3xl w-full max-w-lg shadow-2xl border border-slate-300 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
