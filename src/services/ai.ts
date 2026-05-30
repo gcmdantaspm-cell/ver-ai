@@ -275,3 +275,58 @@ Example:
     throw new Error(error.message || "Failed to generate cycle");
   }
 }
+
+export async function generateStudyNotes(materiaNome: string, topicoTitulo: string, subtopicoTitulo?: string): Promise<string> {
+  try {
+    const configOptions = {
+      contents: `You are an Expert Study Mentor and Content Creator for Public Exams.
+Your task is to generate highly structured, optimized study notes for the following subject and topic:
+
+Subject (Matéria): ${materiaNome}
+Topic (Tópico): ${topicoTitulo}
+${subtopicoTitulo ? `Subtopic (Subtópico): ${subtopicoTitulo}` : ""}
+
+CRITICAL INSTRUCTIONS:
+1. Format the output in Markdown.
+2. Structure the content beautifully using Tables, Bullet Points, and Bold Text for emphasis.
+3. DYNAMIC CLASSIFICATION: You MUST adapt your structure based on the NATURE of the subject.
+   - If the subject is ENGLISH (Inglês): You MUST break down typical texts or vocabulary into grammatical structures:
+     * Verbs (Action and State) - List them in a table (English | Base | Translation).
+     * Nouns (Names and Subjects) - Table with contextual tips.
+     * Conjunctions and Prepositions (Text logic) - Table with logic/function.
+     * Pronouns (References).
+     * Adjectives and Adverbs.
+     * Expressions and Phrasal Verbs.
+   - If the subject is LAW/LEGAL (Direito): Break it down into Concepts, Main Articles, Key Keywords, Jurisprudence, and Exceptions. Table format preferred.
+   - If the subject is IT/TECH (Tecnologia/Informática): Break down into Component/Concept, Definition, Use Case, and Practical Example.
+4. Keep the content directly helpful for exam review (mnemonics, mental triggers, key summaries).
+5. The language MUST be in Brazilian Portuguese (PT-BR) except for English vocabulary examples.`,
+      config: {
+        responseMimeType: "text/plain",
+      }
+    };
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        ...configOptions,
+        model: "gemini-3.1-pro-preview"
+      });
+    } catch (err: any) {
+      if (err?.status === 503 || err?.status === 429 || err?.message?.match(/high demand|429|503/i)) {
+        console.log("gemini-3.1-pro-preview failed, falling back to gemini-3-flash-preview");
+        response = await ai.models.generateContent({
+          ...configOptions,
+          model: "gemini-3-flash-preview"
+        });
+      } else {
+        throw err;
+      }
+    }
+
+    return response.text || "";
+  } catch (error) {
+    console.error("Failed to generate study notes", error);
+    throw new Error("Failed to generate study notes");
+  }
+}

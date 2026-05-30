@@ -28,7 +28,7 @@ import {
   Hash
 } from "lucide-react";
 
-import { parseEditalText } from "../services/ai";
+import { parseEditalText, generateStudyNotes } from "../services/ai";
 
 export function EditalView({ edital }: { edital: Edital, key?: string | number }) {
   const { 
@@ -63,7 +63,29 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [notesAiLoading, setNotesAiLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+
+  const handleGenerateNotes = async () => {
+    if (!notesModal) return;
+    setNotesAiLoading(true);
+    try {
+       const area = edital.areas.find(a => a.id === notesModal.areaId);
+       const materia = area?.materias.find(m => m.id === notesModal.materiaId);
+       const topico = materia?.topicos.find(t => t.id === notesModal.topicoId);
+       const subtopico = notesModal.subtopicoId ? topico?.subtopicos.find(s => s.id === notesModal.subtopicoId) : undefined;
+       
+       if (materia && topico) {
+         const generated = await generateStudyNotes(materia.nome, topico.titulo, subtopico?.titulo);
+         setNotesModal(prev => prev ? { ...prev, currentNote: prev.currentNote ? prev.currentNote + "\n\n" + generated : generated } : null);
+       }
+    } catch (err) {
+       console.error(err);
+       alert("Erro ao gerar resumo com IA. Tente novamente.");
+    } finally {
+       setNotesAiLoading(false);
+    }
+  };
 
   const handleShareClick = () => {
      setShareModal({ isOpen: true, selectedCiclos: editalCiclos.map(c => c.id) });
@@ -670,18 +692,30 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                </div>
                <button onClick={() => setNotesModal(null)} className="text-slate-500 hover:text-slate-900 p-2 hover:bg-slate-100 rounded-xl transition-all"><X className="w-5 h-5"/></button>
              </div>
-             <div className="p-4">
+             <div className="p-4 bg-slate-50/50">
                 <textarea 
                   autoFocus
                   placeholder="Escreva seus mnemônicos, gatilhos mentais ou resumos técnicos aqui..."
-                  className="w-full h-80 p-5 outline-none resize-none text-[13px] text-slate-800 bg-white rounded-2xl border border-slate-200 focus:border-blue-900/30 transition-all placeholder:text-slate-700"
+                  className="w-full h-80 p-5 outline-none resize-none text-[13px] text-slate-800 bg-white rounded-2xl border border-slate-200 focus:border-blue-900/30 transition-all placeholder:text-slate-400 font-mono"
                   value={notesModal.currentNote}
                   onChange={(e) => setNotesModal({ ...notesModal, currentNote: e.target.value })}
+                  disabled={notesAiLoading}
                 />
              </div>
-             <div className="p-6 border-t border-slate-200 flex justify-end gap-3 bg-white">
-                <button onClick={() => setNotesModal(null)} className="px-6 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase tracking-widest">Cancelar</button>
-                <button onClick={() => { updateNota(edital.id, notesModal.areaId, notesModal.materiaId, notesModal.topicoId, notesModal.subtopicoId, notesModal.currentNote); setNotesModal(null); }} className="px-6 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest">Salvar Nota</button>
+             <div className="p-6 border-t border-slate-200 flex justify-between gap-3 bg-white">
+                <button 
+                  onClick={handleGenerateNotes} 
+                  disabled={notesAiLoading}
+                  className="px-4 py-2.5 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 transition-all flex items-center gap-2 uppercase tracking-widest disabled:opacity-50"
+                  title="A IA analisará a matéria e criará resumos estruturados e tabelas automaticamente."
+                >
+                   {notesAiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                   {notesAiLoading ? "Gerando..." : "Gerar Resumo (IA)"}
+                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => setNotesModal(null)} className="px-6 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase tracking-widest">Cancelar</button>
+                  <button onClick={() => { updateNota(edital.id, notesModal.areaId, notesModal.materiaId, notesModal.topicoId, notesModal.subtopicoId, notesModal.currentNote); setNotesModal(null); }} className="px-6 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest">Salvar Nota</button>
+                </div>
              </div>
            </div>
         </div>
