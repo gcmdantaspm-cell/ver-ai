@@ -24,6 +24,7 @@ interface EditalContextType {
   setStudyDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   updateNota: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, nota: string) => void;
   updateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartao: { id: string, pergunta: string, resposta: string }[]) => void;
+  updateCartaoSM2: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, quality: number) => void;
   updateMetricas: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, acertos: number, erros: number) => void;
   revisions: RevisaoAgendada[];
   completeRevision: (topicoOuSubId: string, dataRevisao: string) => void;
@@ -436,7 +437,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const updateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string }[]) => {
+  const updateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string, repetition?: number, interval?: number, easeFactor?: number, nextReview?: string }[]) => {
     handleUpdate(editalId, (edital) => {
       const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
@@ -445,10 +446,56 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
       if (subtopicoId) {
         const sub = topico.subtopicos.find(s => s.id === subtopicoId);
-        if (sub) sub.cartoes = cartoes;
+        if (sub) sub.cartoes = cartoes as any;
       } else {
-        topico.cartoes = cartoes;
+        topico.cartoes = cartoes as any;
       }
+    });
+  };
+
+  const updateCartaoSM2 = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, quality: number) => {
+    handleUpdate(editalId, (edital) => {
+      const area = edital.areas.find(a => a.id === areaId);
+      const materia = area?.materias.find(m => m.id === materiaId);
+      const topico = materia?.topicos.find(t => t.id === topicoId);
+      if (!topico) return;
+      
+      let cartoes = subtopicoId ? (topico.subtopicos.find(s => s.id === subtopicoId)?.cartoes) : (topico.cartoes);
+      if (!cartoes) return;
+      
+      const cartao = cartoes.find(c => c.id === cartaoId);
+      if (!cartao) return;
+      
+      // Default SM2 Values if missing
+      let repetition = cartao.repetition || 0;
+      let interval = cartao.interval || 0;
+      let easeFactor = cartao.easeFactor || 2.5;
+
+      // Anki variant logic for SM2
+      if (quality < 3) {
+        repetition = 0;
+        interval = 1;
+      } else {
+        if (repetition === 0) {
+          interval = 1;
+        } else if (repetition === 1) {
+          interval = 6;
+        } else {
+          interval = Math.round(interval * easeFactor);
+        }
+        repetition++;
+      }
+
+      easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+      if (easeFactor < 1.3) easeFactor = 1.3;
+
+      const nextDate = new Date();
+      nextDate.setDate(nextDate.getDate() + interval);
+
+      cartao.repetition = repetition;
+      cartao.interval = interval;
+      cartao.easeFactor = easeFactor;
+      cartao.nextReview = nextDate.toISOString();
     });
   };
 
@@ -601,7 +648,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     <EditalContext.Provider value={{
       editais, managedEditais, addEdital, deleteEdital, toggleVisto, updateItemTitle,
       deleteItem, addItem, addMaterias, addCustomRevisionDate,
-      removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, updateCartoes,
+      removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, updateCartoes, updateCartaoSM2,
       updateMetricas, revisions, completeRevision, getPublicEdital, setEditalPublic,
       ciclos, managedCiclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem, getPublicCiclos
     }}>

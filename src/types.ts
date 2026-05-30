@@ -4,6 +4,10 @@ export interface Cartao {
   resposta: string;
   acertos?: number;
   erros?: number;
+  repetition?: number; // SM-2
+  interval?: number; // SM-2 interval in days
+  easeFactor?: number; // SM-2 ease factor
+  nextReview?: string; // ISO 8601 string
 }
 
 export interface Subtopico {

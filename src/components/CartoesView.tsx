@@ -1,23 +1,78 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useEdital } from "../store";
-import { Sparkles, Trash2, Library, BookOpen, Layers, X, Info } from "lucide-react";
+import { Sparkles, Trash2, Layers, Info, Plus, Play, CheckCircle2, XCircle, FileText, FilePlus } from "lucide-react";
+import { isPast, isToday, parseISO } from "date-fns";
 
 export function CartoesView() {
-  const { editais, updateCartoes } = useEdital();
-  const [textoColado, setTextoColado] = useState("");
+  const { editais, updateCartoes, updateCartaoSM2 } = useEdital();
+  const [activeTab, setActiveTab] = useState<'painel'|'importar'|'manual'>('painel');
+
+  // Para o Dashboard
+  const [studySession, setStudySession] = useState<{ cards: any[], currentIndex: number, showAnswer: boolean } | null>(null);
+
+  // States GERAIS de Destino
   const [selectedEdital, setSelectedEdital] = useState("");
   const [selectedArea, setSelectedArea] = useState("");
   const [selectedMateria, setSelectedMateria] = useState("");
   const [selectedTopico, setSelectedTopico] = useState("");
   const [selectedSubtopico, setSelectedSubtopico] = useState("");
-  
+
+  // States de Importação
+  const [textoColado, setTextoColado] = useState("");
   const [parsedCards, setParsedCards] = useState<{pergunta: string, resposta: string}[]>([]);
+
+  // States Manual
+  const [perguntaManual, setPerguntaManual] = useState("");
+  const [respostaManual, setRespostaManual] = useState("");
+
+  // Aggregated Cards Logic
+  const allCards = useMemo(() => {
+    let cards: any[] = [];
+    editais.forEach(e => {
+      e.areas.forEach(a => {
+        a.materias.forEach(m => {
+          m.topicos.forEach(t => {
+            if (t.cartoes) t.cartoes.forEach(c => cards.push({ ...c, editalId: e.id, areaId: a.id, materiaId: m.id, topicoId: t.id, editalTitulo: e.titulo, materiaNome: m.nome }));
+            t.subtopicos.forEach(s => {
+              if (s.cartoes) s.cartoes.forEach(c => cards.push({ ...c, editalId: e.id, areaId: a.id, materiaId: m.id, topicoId: t.id, subtopicoId: s.id, editalTitulo: e.titulo, materiaNome: m.nome }));
+            });
+          });
+        });
+      });
+    });
+    return cards;
+  }, [editais]);
+
+  const cardsToReview = useMemo(() => {
+    return allCards.filter(c => {
+      if (!c.nextReview) return true; // new string
+      const d = parseISO(c.nextReview);
+      return isPast(d) || isToday(d);
+    });
+  }, [allCards]);
+
+  const startStudy = () => {
+    // shuffle cards slightly for variety
+    const shuffled = [...cardsToReview].sort(() => Math.random() - 0.5);
+    setStudySession({ cards: shuffled, currentIndex: 0, showAnswer: false });
+  };
+
+  const answerCard = (quality: number) => {
+    if (!studySession) return;
+    const current = studySession.cards[studySession.currentIndex];
+    updateCartaoSM2(current.editalId, current.areaId, current.materiaId, current.topicoId, current.subtopicoId, current.id, quality);
+    
+    if (studySession.currentIndex + 1 < studySession.cards.length) {
+      setStudySession({ ...studySession, currentIndex: studySession.currentIndex + 1, showAnswer: false });
+    } else {
+      setStudySession(null); // finished!
+    }
+  };
 
   const handleParse = () => {
     if (!textoColado.trim()) return;
     const lines = textoColado.split('\n');
     const cards: {pergunta: string, resposta: string}[] = [];
-    
     lines.forEach(l => {
       if (l.trim()) {
         const parts = l.split(';');
@@ -31,14 +86,33 @@ export function CartoesView() {
     setParsedCards(cards);
   };
 
-  const handleSave = () => {
+  const handleSaveImport = () => {
     if (!selectedEdital || !selectedArea || !selectedMateria || !selectedTopico) {
-       alert("Selecione onde salvar os cartões!");
-       return;
+       alert("Selecione onde salvar (Edital, Área, Matéria e Tópico)!"); return;
     }
-    
     if (parsedCards.length === 0) return;
 
+    saveToDestination(parsedCards);
+    setTextoColado("");
+    setParsedCards([]);
+    alert("Cartões importados com sucesso!");
+  };
+
+  const handleSaveManual = () => {
+    if (!selectedEdital || !selectedArea || !selectedMateria || !selectedTopico) {
+       alert("Selecione onde salvar (Edital, Área, Matéria e Tópico)!"); return;
+    }
+    if (!perguntaManual.trim() || !respostaManual.trim()) {
+       alert("Preencha a pergunta e a resposta!"); return;
+    }
+
+    saveToDestination([{ pergunta: perguntaManual, resposta: respostaManual }]);
+    setPerguntaManual("");
+    setRespostaManual("");
+    alert("Cartão salvo com sucesso!");
+  };
+
+  const saveToDestination = (newCardsData: {pergunta: string, resposta: string}[]) => {
     const edital = editais.find(e => e.id === selectedEdital);
     const area = edital?.areas.find(a => a.id === selectedArea);
     const materia = area?.materias.find(m => m.id === selectedMateria);
@@ -54,168 +128,228 @@ export function CartoesView() {
        }
     }
 
-    const novosCartoes = parsedCards.map(c => ({ id: Math.random().toString(36).substring(7), ...c }));
-    
+    const novosCartoes = newCardsData.map(c => ({ id: Math.random().toString(36).substring(7), ...c }));
     updateCartoes(selectedEdital, selectedArea, selectedMateria, selectedTopico, selectedSubtopico || undefined, [...currentCartoes, ...novosCartoes]);
-    
-    setTextoColado("");
-    setParsedCards([]);
-    alert("Cartões salvos com sucesso!");
-  };
+  }
 
   const editalObj = editais.find(e => e.id === selectedEdital);
   const areaObj = editalObj?.areas.find(a => a.id === selectedArea);
   const materiaObj = areaObj?.materias.find(m => m.id === selectedMateria);
   const topicoObj = materiaObj?.topicos.find(t => t.id === selectedTopico);
 
+  if (studySession) {
+    const card = studySession.cards[studySession.currentIndex];
+    const progress = Math.round((studySession.currentIndex / studySession.cards.length) * 100);
+
+    return (
+      <div className="flex-1 overflow-y-auto w-full max-w-3xl mx-auto p-4 sm:p-6 bg-slate-50 flex flex-col h-full">
+         <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+               <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Revisão de Cartões</span>
+               <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-1 rounded-md">{studySession.currentIndex + 1} de {studySession.cards.length}</span>
+            </div>
+            <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+               <div className="bg-blue-600 h-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+            </div>
+         </div>
+
+         <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="w-full bg-white p-8 sm:p-12 rounded-3xl shadow-lg border border-slate-200 min-h-[50vh] flex flex-col text-center transition-all">
+               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">{card.editalTitulo} &rsaquo; {card.materiaNome}</div>
+               
+               <div className="flex-1 flex flex-col justify-center gap-12">
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-900 leading-tight whitespace-pre-wrap">{card.pergunta}</h3>
+                  </div>
+
+                  {studySession.showAnswer ? (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 border-t border-slate-100 pt-8 mt-4">
+                      <p className="text-lg text-emerald-700 font-medium whitespace-pre-wrap">{card.resposta}</p>
+                    </div>
+                  ) : (
+                    <div className="mt-8">
+                       <button onClick={() => setStudySession({ ...studySession, showAnswer: true })} className="px-8 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg hover:bg-slate-800 transition-all uppercase tracking-widest text-sm">
+                          Mostrar Resposta
+                       </button>
+                    </div>
+                  )}
+               </div>
+            </div>
+         </div>
+
+         {studySession.showAnswer && (
+           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+             <button onClick={() => answerCard(0)} className="p-4 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-2xl transition-all flex flex-col items-center gap-1 border border-rose-200 shadow-sm">
+                <span className="text-sm">Errei</span>
+                <span className="text-[10px] uppercase opacity-70">Novamente</span>
+             </button>
+             <button onClick={() => answerCard(3)} className="p-4 bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold rounded-2xl transition-all flex flex-col items-center gap-1 border border-orange-200 shadow-sm">
+                <span className="text-sm">Difícil</span>
+                <span className="text-[10px] uppercase opacity-70">Em breve</span>
+             </button>
+             <button onClick={() => answerCard(4)} className="p-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-2xl transition-all flex flex-col items-center gap-1 border border-emerald-200 shadow-sm">
+                <span className="text-sm">Bom</span>
+                <span className="text-[10px] uppercase opacity-70">Amanhã</span>
+             </button>
+             <button onClick={() => answerCard(5)} className="p-4 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-2xl transition-all flex flex-col items-center gap-1 border border-blue-200 shadow-sm">
+                <span className="text-sm">Fácil</span>
+                <span className="text-[10px] uppercase opacity-70">+ Dias</span>
+             </button>
+           </div>
+         )}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 overflow-y-auto w-full max-w-7xl mx-auto p-4 sm:p-6 bg-slate-50 relative pb-24">
-      <div className="flex flex-col mb-8 pt-4">
-         <h2 className="text-2xl font-display font-bold text-slate-900 mb-1">Importar Cartões</h2>
-         <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold">Crie dezenas de cartões de uma vez colando seu texto</p>
+    <div className="flex-1 overflow-y-auto w-full max-w-5xl mx-auto p-4 sm:p-6 bg-slate-50 relative pb-24 h-full flex flex-col">
+      <div className="flex flex-col mb-8 pt-4 shrink-0">
+         <h2 className="text-2xl font-display font-bold text-slate-900 mb-1">Cartões Inteligentes</h2>
+         <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold">Crie e revise flashcards com repetição espaçada</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-         {/* Lado Esquerdo - Importação */}
-         <div className="flex flex-col gap-6">
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex-1">
-               <div className="flex items-start gap-3 mb-4">
-                  <div className="bg-indigo-100 p-2 rounded-xl text-indigo-600">
-                     <Info className="w-5 h-5"/>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900">Formato Esperado</h3>
-                    <p className="text-xs text-slate-500 leading-relaxed mt-1">
-                      Você pode gerar os cartões colando o texto onde a <span className="font-bold text-slate-700">Pergunta</span> e a <span className="font-bold text-slate-700">Resposta</span> estão separadas por <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-indigo-600 font-bold">;</span> (ponto e vírgula).
-                    </p>
-                  </div>
-               </div>
+      {/* TABS */}
+      <div className="flex gap-2 mb-6 border-b border-slate-200 pb-2 overflow-x-auto hide-scrollbar shrink-0">
+         <button onClick={() => setActiveTab('painel')} className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${activeTab === 'painel' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>Painel Principal</button>
+         <button onClick={() => setActiveTab('manual')} className={`px-4 py-2 font-bold text-sm rounded-xl transition-all flex items-center gap-2 ${activeTab === 'manual' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}><FilePlus className="w-4 h-4"/> Criar Manual</button>
+         <button onClick={() => setActiveTab('importar')} className={`px-4 py-2 font-bold text-sm rounded-xl transition-all flex items-center gap-2 ${activeTab === 'importar' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}><FileText className="w-4 h-4"/> Importar em Lote</button>
+      </div>
 
-               <div className="mb-4">
-                  <textarea 
-                     value={textoColado}
-                     onChange={(e) => setTextoColado(e.target.value)}
-                     className="w-full h-64 p-4 text-sm font-mono bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 outline-none resize-none transition-all placeholder:text-slate-400"
-                     placeholder="Exemplo:&#10;Qual a capital do Brasil?;Brasília&#10;Quem descobriu o Brasil?;Pedro Álvares Cabral&#10;O que é um ato administrativo?;É a declaração do Estado..."
-                  />
-               </div>
-               
-               <button 
-                  onClick={handleParse} 
-                  disabled={!textoColado.trim()}
-                  className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex justify-center items-center gap-2 uppercase tracking-widest"
-               >
-                  <Sparkles className="w-4 h-4"/> 
-                  Gerar Cartões (Preview)
-               </button>
-            </div>
-         </div>
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {activeTab === 'painel' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
+                <Layers className="w-16 h-16 text-indigo-500 mb-4" />
+                <h3 className="text-4xl font-bold text-slate-900 mb-2">{allCards.length}</h3>
+                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-8">Cartões Totais</p>
+                <div className="bg-amber-50 border border-amber-100 text-amber-800 p-4 rounded-xl w-full">
+                   <h4 className="font-bold text-lg">{cardsToReview.length}</h4>
+                   <p className="text-xs uppercase tracking-widest opacity-80 font-semibold mb-3">Cartões para Revisar Hoje</p>
+                </div>
+                <button 
+                  onClick={startStudy} 
+                  disabled={cardsToReview.length === 0}
+                  className="w-full mt-4 px-6 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex justify-center items-center gap-2 uppercase tracking-widest"
+                >
+                   <Play className="w-5 h-5"/> 
+                   INICIAR REVISÃO
+                </button>
+             </div>
+             
+             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
+                <h3 className="font-bold text-slate-900 mb-4">Sobre o Método</h3>
+                <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                  O sistema de Cartões utiliza o algoritmo <strong>SM-2 de Repetição Espaçada</strong> (similar ao Anki). O objetivo é apresentar os cartões prestes a serem esquecidos para fortalecer sua memória de longo prazo.
+                </p>
+                <ul className="space-y-3 text-sm text-slate-600">
+                  <li className="flex items-start gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0"/> Se considerar "Fácil", o cartão demora bem mais a voltar.</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0"/> Se considerar "Bom", ele aumenta seu intervalo moderadamente.</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="w-5 h-5 text-orange-500 shrink-0"/> Se considerar "Difícil", ele aparece num futuro mais próximo.</li>
+                  <li className="flex items-start gap-2"><XCircle className="w-5 h-5 text-rose-500 shrink-0"/> Se "Errar", o aprendizado reseta e você revisa ainda hoje.</li>
+                </ul>
+             </div>
+          </div>
+        )}
 
-         {/* Lado Direito - Destino e Preview */}
-         <div className="flex flex-col gap-6">
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex-1 flex flex-col h-[70vh]">
-               <h3 className="font-bold text-slate-900 mb-4 block">1. Selecione o Destino</h3>
-               
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 shrink-0">
-                  <select 
-                     value={selectedEdital} 
-                     onChange={(e) => { setSelectedEdital(e.target.value); setSelectedArea(""); setSelectedMateria(""); setSelectedTopico(""); setSelectedSubtopico(""); }}
-                     className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300"
-                  >
-                     <option value="">Selecione o Edital...</option>
-                     {editais.map(e => <option key={e.id} value={e.id}>{e.titulo}</option>)}
-                  </select>
+        {(activeTab === 'importar' || activeTab === 'manual') && (
+           <div className="flex flex-col gap-6">
+              {/* Seletor Comum */}
+              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm shrink-0">
+                 <h3 className="font-bold text-slate-900 mb-4 block">1. Selecione o Destino (Edital / Matéria / Tópico)</h3>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    <select value={selectedEdital} onChange={(e) => { setSelectedEdital(e.target.value); setSelectedArea(""); setSelectedMateria(""); setSelectedTopico(""); setSelectedSubtopico(""); }} className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300">
+                       <option value="">Selecione o Edital...</option>{editais.map(e => <option key={e.id} value={e.id}>{e.titulo}</option>)}
+                    </select>
+                    <select value={selectedArea} onChange={(e) => { setSelectedArea(e.target.value); setSelectedMateria(""); setSelectedTopico(""); setSelectedSubtopico(""); }} className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300" disabled={!selectedEdital}>
+                       <option value="">A Área...</option>{editalObj?.areas.map(a => <option key={a.id} value={a.id}>{a.area}</option>)}
+                    </select>
+                    <select value={selectedMateria} onChange={(e) => { setSelectedMateria(e.target.value); setSelectedTopico(""); setSelectedSubtopico(""); }} className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300" disabled={!selectedArea}>
+                       <option value="">A Matéria...</option>{areaObj?.materias.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
+                    </select>
+                    <select value={selectedTopico} onChange={(e) => { setSelectedTopico(e.target.value); setSelectedSubtopico(""); }} className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300" disabled={!selectedMateria}>
+                       <option value="">O Tópico...</option>{materiaObj?.topicos.map(t => <option key={t.id} value={t.id}>{t.titulo}</option>)}
+                    </select>
+                    {topicoObj && topicoObj.subtopicos.length > 0 && (
+                       <select value={selectedSubtopico} onChange={(e) => setSelectedSubtopico(e.target.value)} className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300 sm:col-span-2 md:col-span-4">
+                          <option value="">Nenhum Subtópico (Salvar no Tópico Principal)</option>{topicoObj.subtopicos.map(st => <option key={st.id} value={st.id}>{st.titulo}</option>)}
+                       </select>
+                    )}
+                 </div>
+              </div>
 
-                  <select 
-                     value={selectedArea} 
-                     onChange={(e) => { setSelectedArea(e.target.value); setSelectedMateria(""); setSelectedTopico(""); setSelectedSubtopico(""); }}
-                     className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300 disabled:opacity-50"
-                     disabled={!selectedEdital}
-                  >
-                     <option value="">Selecione a Área...</option>
-                     {editalObj?.areas.map(a => <option key={a.id} value={a.id}>{a.area}</option>)}
-                  </select>
+              {activeTab === 'manual' && (
+                 <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col gap-4 max-w-2xl">
+                    <h3 className="font-bold text-slate-900 mb-2">2. Digite os Dados do Cartão</h3>
+                    <div>
+                      <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1 block">Frente (Pergunta)</span>
+                      <textarea
+                         value={perguntaManual}
+                         onChange={(e) => setPerguntaManual(e.target.value)}
+                         className="w-full text-sm font-medium text-slate-900 bg-slate-50 p-4 rounded-xl border border-slate-200 focus:border-indigo-300 focus:bg-white outline-none resize-none transition-all focus:ring-4 focus:ring-indigo-500/10"
+                         rows={3} placeholder="Escreva a pergunta ou conceito aqui..."
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 block">Verso (Resposta)</span>
+                      <textarea
+                         value={respostaManual}
+                         onChange={(e) => setRespostaManual(e.target.value)}
+                         className="w-full text-sm text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200 focus:border-emerald-300 focus:bg-white outline-none resize-none transition-all focus:ring-4 focus:ring-emerald-500/10"
+                         rows={4} placeholder="Escreva a resposta ou definição aqui..."
+                      />
+                    </div>
+                    <button onClick={handleSaveManual} className="mt-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl transition-all uppercase tracking-widest self-end">Adicionar Cartão</button>
+                 </div>
+              )}
 
-                  <select 
-                     value={selectedMateria} 
-                     onChange={(e) => { setSelectedMateria(e.target.value); setSelectedTopico(""); setSelectedSubtopico(""); }}
-                     className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300 disabled:opacity-50"
-                     disabled={!selectedArea}
-                  >
-                     <option value="">Selecione a Matéria...</option>
-                     {areaObj?.materias.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
-                  </select>
+              {activeTab === 'importar' && (
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex-1">
+                       <div className="flex items-start gap-3 mb-4">
+                          <div className="bg-indigo-100 p-2 rounded-xl text-indigo-600"><Info className="w-5 h-5"/></div>
+                          <div>
+                            <h3 className="font-bold text-slate-900">Formato: Pergunta;Resposta</h3>
+                            <p className="text-xs text-slate-500 leading-relaxed mt-1">Cole o texto onde a Pergunta e a Resposta são separadas por ponto e vírgula (;).</p>
+                          </div>
+                       </div>
+                       <div className="mb-4">
+                          <textarea value={textoColado} onChange={(e) => setTextoColado(e.target.value)} className="w-full h-64 p-4 text-sm font-mono bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 outline-none resize-none transition-all placeholder:text-slate-400" placeholder="Qual a capital do Brasil?;Brasília&#10;O que é um ato administrativo?;É a declaração do Estado..." />
+                       </div>
+                       <button onClick={handleParse} disabled={!textoColado.trim()} className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-lg flex justify-center items-center gap-2 uppercase tracking-widest"><Sparkles className="w-4 h-4"/> Visualizar</button>
+                    </div>
 
-                  <select 
-                     value={selectedTopico} 
-                     onChange={(e) => { setSelectedTopico(e.target.value); setSelectedSubtopico(""); }}
-                     className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300 disabled:opacity-50"
-                     disabled={!selectedMateria}
-                  >
-                     <option value="">Selecione o Tópico...</option>
-                     {materiaObj?.topicos.map(t => <option key={t.id} value={t.id}>{t.titulo}</option>)}
-                  </select>
-                  
-                  {topicoObj && topicoObj.subtopicos.length > 0 && (
-                     <select 
-                        value={selectedSubtopico} 
-                        onChange={(e) => setSelectedSubtopico(e.target.value)}
-                        className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300 sm:col-span-2"
-                     >
-                        <option value="">Nenhum Subtópico (Salvar no Tópico Principal)</option>
-                        {topicoObj.subtopicos.map(st => <option key={st.id} value={st.id}>{st.titulo}</option>)}
-                     </select>
-                  )}
-               </div>
-
-               <h3 className="font-bold text-slate-900 mb-2 mt-4 pt-4 border-t border-slate-100 flex justify-between items-center shrink-0">
-                  <span>2. Preview e Edição</span>
-                  {parsedCards.length > 0 && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md">{parsedCards.length} cartões</span>}
-               </h3>
-               
-               <div className="flex-1 overflow-y-auto mb-4 border border-slate-200 bg-slate-50 rounded-2xl p-2 hide-scrollbar">
-                  {parsedCards.length === 0 ? (
-                     <div className="h-full flex items-center justify-center text-slate-400 text-xs">
-                         Gere os cartões à esquerda para visualizar aqui
-                     </div>
-                  ) : (
-                     <div className="flex flex-col gap-3">
-                        {parsedCards.map((c, idx) => (
-                           <div key={idx} className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 relative group">
-                              <button onClick={() => setParsedCards(parsedCards.filter((_, i) => i !== idx))} className="absolute top-2 right-2 p-1 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                 <Trash2 className="w-4 h-4"/>
-                              </button>
-                              <div className="mb-2">
-                                <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest block mb-0.5">Pergunta</span>
-                                <input value={c.pergunta} onChange={(e) => {
-                                   const nc = [...parsedCards];
-                                   nc[idx].pergunta = e.target.value;
-                                   setParsedCards(nc);
-                                }} className="w-full text-xs font-medium text-slate-900 outline-none border-b border-transparent focus:border-indigo-200"/>
-                              </div>
-                              <div>
-                                <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest block mb-0.5">Resposta</span>
-                                <input value={c.resposta} onChange={(e) => {
-                                   const nc = [...parsedCards];
-                                   nc[idx].resposta = e.target.value;
-                                   setParsedCards(nc);
-                                }} className="w-full text-xs text-slate-600 outline-none border-b border-transparent focus:border-emerald-200"/>
-                              </div>
-                           </div>
-                        ))}
-                     </div>
-                  )}
-               </div>
-
-               <button 
-                  onClick={handleSave} 
-                  disabled={parsedCards.length === 0 || !selectedTopico}
-                  className="w-full px-6 py-3 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-blue-900/20 uppercase tracking-widest shrink-0"
-               >
-                  Salvar Cartões
-               </button>
-            </div>
-         </div>
+                    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex-1 flex flex-col h-[60vh]">
+                       <h3 className="font-bold text-slate-900 mb-2 mt-2 pt-2 flex justify-between items-center shrink-0">
+                          <span>Preview e Edição</span>
+                          {parsedCards.length > 0 && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md">{parsedCards.length} cartões</span>}
+                       </h3>
+                       <div className="flex-1 overflow-y-auto mb-4 border border-slate-200 bg-slate-50 rounded-2xl p-2 hide-scrollbar">
+                          {parsedCards.length === 0 ? (
+                             <div className="h-full flex items-center justify-center text-slate-400 text-xs text-center p-4">Gere os cartões à esquerda para visualizar aqui</div>
+                          ) : (
+                             <div className="flex flex-col gap-3">
+                                {parsedCards.map((c, idx) => (
+                                   <div key={idx} className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 relative group">
+                                      <button onClick={() => setParsedCards(parsedCards.filter((_, i) => i !== idx))} className="absolute top-2 right-2 p-1 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4"/></button>
+                                      <div className="mb-2">
+                                        <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest block mb-0.5">Pergunta</span>
+                                        <input value={c.pergunta} onChange={(e) => { const nc = [...parsedCards]; nc[idx].pergunta = e.target.value; setParsedCards(nc); }} className="w-full text-xs font-medium text-slate-900 outline-none border-b border-transparent focus:border-indigo-200"/>
+                                      </div>
+                                      <div>
+                                        <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest block mb-0.5">Resposta</span>
+                                        <input value={c.resposta} onChange={(e) => { const nc = [...parsedCards]; nc[idx].resposta = e.target.value; setParsedCards(nc); }} className="w-full text-xs text-slate-600 outline-none border-b border-transparent focus:border-emerald-200"/>
+                                      </div>
+                                   </div>
+                                ))}
+                             </div>
+                          )}
+                       </div>
+                       <button onClick={handleSaveImport} disabled={parsedCards.length === 0 || !selectedTopico} className="w-full px-6 py-3 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-blue-900/20 uppercase tracking-widest shrink-0">Salvar Cartões</button>
+                    </div>
+                 </div>
+              )}
+           </div>
+        )}
       </div>
     </div>
   );
