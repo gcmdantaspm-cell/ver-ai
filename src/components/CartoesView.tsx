@@ -32,9 +32,9 @@ export function CartoesView() {
       e.areas.forEach(a => {
         a.materias.forEach(m => {
           m.topicos.forEach(t => {
-            if (t.cartoes) t.cartoes.forEach(c => cards.push({ ...c, editalId: e.id, areaId: a.id, materiaId: m.id, topicoId: t.id, editalTitulo: e.titulo, materiaNome: m.nome }));
+            if (t.cartoes) t.cartoes.forEach(c => cards.push({ ...c, editalId: e.id, areaId: a.id, materiaId: m.id, topicoId: t.id, editalTitulo: e.titulo, materiaNome: m.nome, topicoTitulo: t.titulo }));
             t.subtopicos.forEach(s => {
-              if (s.cartoes) s.cartoes.forEach(c => cards.push({ ...c, editalId: e.id, areaId: a.id, materiaId: m.id, topicoId: t.id, subtopicoId: s.id, editalTitulo: e.titulo, materiaNome: m.nome }));
+              if (s.cartoes) s.cartoes.forEach(c => cards.push({ ...c, editalId: e.id, areaId: a.id, materiaId: m.id, topicoId: t.id, subtopicoId: s.id, editalTitulo: e.titulo, materiaNome: m.nome, topicoTitulo: t.titulo, subtopicoTitulo: s.titulo }));
             });
           });
         });
@@ -51,6 +51,35 @@ export function CartoesView() {
     });
   }, [allCards]);
 
+  const forecast = useMemo(() => {
+    let tomorrow = 0;
+    let next7Days = 0;
+    let next30Days = 0;
+    
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+    
+    const tomorrowEnd = new Date(todayEnd);
+    tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
+    
+    const d7End = new Date(todayEnd);
+    d7End.setDate(d7End.getDate() + 7);
+    
+    const d30End = new Date(todayEnd);
+    d30End.setDate(d30End.getDate() + 30);
+
+    allCards.forEach(c => {
+       if (c.nextReview) {
+          const d = parseISO(c.nextReview);
+          if (d > todayEnd && d <= tomorrowEnd) tomorrow++;
+          else if (d > tomorrowEnd && d <= d7End) next7Days++;
+          else if (d > d7End && d <= d30End) next30Days++;
+       }
+    });
+
+    return { tomorrow, next7Days, next30Days };
+  }, [allCards]);
+
   const startStudy = () => {
     // shuffle cards slightly for variety
     const shuffled = [...cardsToReview].sort(() => Math.random() - 0.5);
@@ -62,8 +91,13 @@ export function CartoesView() {
     const current = studySession.cards[studySession.currentIndex];
     updateCartaoSM2(current.editalId, current.areaId, current.materiaId, current.topicoId, current.subtopicoId, current.id, quality);
     
-    if (studySession.currentIndex + 1 < studySession.cards.length) {
-      setStudySession({ ...studySession, currentIndex: studySession.currentIndex + 1, showAnswer: false });
+    const newCards = [...studySession.cards];
+    if (quality < 3) {
+      newCards.push({ ...current }); // Add back to the end of the queue
+    }
+
+    if (studySession.currentIndex + 1 < newCards.length) {
+      setStudySession({ cards: newCards, currentIndex: studySession.currentIndex + 1, showAnswer: false });
     } else {
       setStudySession(null); // finished!
     }
@@ -155,7 +189,9 @@ export function CartoesView() {
 
          <div className="flex-1 flex flex-col items-center justify-center">
             <div className="w-full bg-white p-8 sm:p-12 rounded-3xl shadow-lg border border-slate-200 min-h-[50vh] flex flex-col text-center transition-all">
-               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">{card.editalTitulo} &rsaquo; {card.materiaNome}</div>
+               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">
+                  {card.editalTitulo} &rsaquo; {card.materiaNome} &rsaquo; {card.topicoTitulo} {card.subtopicoTitulo ? `› ${card.subtopicoTitulo}` : ''}
+               </div>
                
                <div className="flex-1 flex flex-col justify-center gap-12">
                   <div>
@@ -236,17 +272,37 @@ export function CartoesView() {
                 </button>
              </div>
              
-             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
-                <h3 className="font-bold text-slate-900 mb-4">Sobre o Método</h3>
-                <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                  O sistema de Cartões utiliza o algoritmo <strong>SM-2 de Repetição Espaçada</strong> (similar ao Anki). O objetivo é apresentar os cartões prestes a serem esquecidos para fortalecer sua memória de longo prazo.
-                </p>
-                <ul className="space-y-3 text-sm text-slate-600">
-                  <li className="flex items-start gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0"/> Se considerar "Fácil", o cartão demora bem mais a voltar.</li>
-                  <li className="flex items-start gap-2"><CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0"/> Se considerar "Bom", ele aumenta seu intervalo moderadamente.</li>
-                  <li className="flex items-start gap-2"><CheckCircle2 className="w-5 h-5 text-orange-500 shrink-0"/> Se considerar "Difícil", ele aparece num futuro mais próximo.</li>
-                  <li className="flex items-start gap-2"><XCircle className="w-5 h-5 text-rose-500 shrink-0"/> Se "Errar", o aprendizado reseta e você revisa ainda hoje.</li>
-                </ul>
+             <div className="flex flex-col gap-6">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
+                   <h3 className="font-bold text-slate-900 mb-4">Previsão de Revisões</h3>
+                   <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col items-center">
+                         <span className="text-2xl font-bold text-slate-800">{forecast.tomorrow}</span>
+                         <span className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mt-1">Amanhã</span>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col items-center">
+                         <span className="text-2xl font-bold text-slate-800">{forecast.next7Days}</span>
+                         <span className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mt-1 text-center">Próximos<br/>7 Dias</span>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col items-center">
+                         <span className="text-2xl font-bold text-slate-800">{forecast.next30Days}</span>
+                         <span className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mt-1 text-center">+ de<br/>7 Dias</span>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
+                   <h3 className="font-bold text-slate-900 mb-4">Sobre o Método</h3>
+                   <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                     O sistema de Cartões utiliza o algoritmo <strong>SM-2 de Repetição Espaçada</strong> (similar ao Anki). O objetivo é apresentar os cartões prestes a serem esquecidos para fortalecer sua memória de longo prazo.
+                   </p>
+                   <ul className="space-y-3 text-sm text-slate-600">
+                     <li className="flex items-start gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0"/> Se considerar "Fácil", o cartão demora bem mais a voltar.</li>
+                     <li className="flex items-start gap-2"><CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0"/> Se considerar "Bom", ele aumenta seu intervalo moderadamente.</li>
+                     <li className="flex items-start gap-2"><CheckCircle2 className="w-5 h-5 text-orange-500 shrink-0"/> Se considerar "Difícil", ele aparece num futuro mais próximo.</li>
+                     <li className="flex items-start gap-2"><XCircle className="w-5 h-5 text-rose-500 shrink-0"/> Se "Errar", o aprendizado reseta e você revisa ainda hoje.</li>
+                   </ul>
+                </div>
              </div>
           </div>
         )}

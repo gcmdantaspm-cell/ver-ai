@@ -474,12 +474,12 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       // Anki variant logic for SM2
       if (quality < 3) {
         repetition = 0;
-        interval = 1;
+        interval = 0; // 0 for today (re-learning)
       } else {
         if (repetition === 0) {
-          interval = 1;
+          interval = quality === 5 ? 4 : 1;
         } else if (repetition === 1) {
-          interval = 6;
+          interval = quality === 5 ? 8 : 6;
         } else {
           interval = Math.round(interval * easeFactor);
         }
@@ -490,7 +490,11 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       if (easeFactor < 1.3) easeFactor = 1.3;
 
       const nextDate = new Date();
-      nextDate.setDate(nextDate.getDate() + interval);
+      if (interval === 0) {
+        nextDate.setMinutes(nextDate.getMinutes() + 10);
+      } else {
+        nextDate.setDate(nextDate.getDate() + interval);
+      }
 
       cartao.repetition = repetition;
       cartao.interval = interval;
