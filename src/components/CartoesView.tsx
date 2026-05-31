@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from "react";
 import { useEdital } from "../store";
-import { Sparkles, Trash2, Layers, Info, Plus, Play, CheckCircle2, XCircle, FileText, FilePlus } from "lucide-react";
+import { Sparkles, Trash2, Layers, Info, Plus, Play, CheckCircle2, XCircle, FileText, FilePlus, ChevronRight, ChevronDown, BookOpen, GraduationCap, CornerDownRight, Search } from "lucide-react";
 import { isPast, isToday, parseISO } from "date-fns";
 
 export function CartoesView() {
   const { editais, updateCartoes, updateCartaoSM2 } = useEdital();
-  const [activeTab, setActiveTab] = useState<'painel'|'importar'|'manual'>('painel');
+  const [activeTab, setActiveTab ] = useState<'painel'|'importar'|'manual'>('painel');
 
   // Para o Dashboard
   const [studySession, setStudySession] = useState<{ cards: any[], currentIndex: number, showAnswer: boolean } | null>(null);
@@ -26,6 +26,11 @@ export function CartoesView() {
   const [respostaManual, setRespostaManual] = useState("");
   const [newAssunto, setNewAssunto] = useState("");
 
+  // Search & Accordion expansions
+  const [deckSearch, setDeckSearch] = useState("");
+  const [expandedMaterias, setExpandedMaterias] = useState<Record<string, boolean>>({});
+  const [expandedTopicos, setExpandedTopicos] = useState<Record<string, boolean>>({});
+
   // Aggregated Cards Logic
   const allCards = useMemo(() => {
     let cards: any[] = [];
@@ -44,47 +49,86 @@ export function CartoesView() {
     return cards;
   }, [editais]);
 
-  const decks = useMemo(() => {
-    const map = new Map<string, {
-      key: string;
+  // Card count helper to emulate Anki colors (Blue=New, Amber=To Review, Gray=Total)
+  const getCardsStats = (cardsList: any[]) => {
+    let novos = 0;
+    let revisoes = 0;
+    cardsList.forEach(c => {
+      if (!c.nextReview) {
+        novos++;
+      } else {
+        const d = parseISO(c.nextReview);
+        if (isPast(d) || isToday(d)) {
+          revisoes++;
+        }
+      }
+    });
+    return { novos, revisoes, total: cardsList.length };
+  };
+
+  // Group cards hierarchically: Materia -> Topico -> Subtopico (de-duplicated by name)
+  const hierarchicalDecks = useMemo(() => {
+    const materiaMap = new Map<string, {
+      id: string;
+      nome: string;
       editalTitulo: string;
-      materiaNome: string;
-      topicoTitulo: string;
-      subtopicoTitulo?: string;
-      total: number;
-      toReview: number;
       cards: any[];
+      topicos: {
+        [topicoId: string]: {
+          id: string;
+          titulo: string;
+          cards: any[];
+          subtopicos: {
+            [subtopicoKey: string]: {
+              id?: string;
+              titulo: string;
+              cards: any[];
+            }
+          }
+        }
+      }
     }>();
 
     allCards.forEach(c => {
-      const subTitleKey = c.subtopicoTitulo ? c.subtopicoTitulo.toLowerCase().trim() : 'root';
-      const key = `${c.editalId}-${c.materiaId}-${c.topicoId}-${subTitleKey}`;
-      if (!map.has(key)) {
-        map.set(key, {
-          key,
+      const matKey = `${c.editalId}-${c.materiaId}`;
+      if (!materiaMap.has(matKey)) {
+        materiaMap.set(matKey, {
+          id: matKey,
+          nome: c.materiaNome,
           editalTitulo: c.editalTitulo,
-          materiaNome: c.materiaNome,
-          topicoTitulo: c.topicoTitulo,
-          subtopicoTitulo: c.subtopicoTitulo,
-          total: 0,
-          toReview: 0,
-          cards: []
+          cards: [],
+          topicos: {}
         });
       }
-      const deck = map.get(key)!;
-      deck.total++;
-      
-      let isReview = true;
-      if (c.nextReview) {
-        const d = parseISO(c.nextReview);
-        isReview = isPast(d) || isToday(d);
+      const mDeck = materiaMap.get(matKey)!;
+      mDeck.cards.push(c);
+
+      const topId = c.topicoId;
+      if (!mDeck.topicos[topId]) {
+        mDeck.topicos[topId] = {
+          id: topId,
+          titulo: c.topicoTitulo,
+          cards: [],
+          subtopicos: {}
+        };
       }
-      
-      if (isReview) deck.toReview++;
-      deck.cards.push(c);
+      const tDeck = mDeck.topicos[topId];
+      tDeck.cards.push(c);
+
+      // If card belongs to a subtopic, key by trimmed lowercase to deduplicate they
+      const subTitle = c.subtopicoTitulo ? c.subtopicoTitulo.trim() : "Geral (Sem assunto)";
+      const subKey = subTitle.toLowerCase();
+      if (!tDeck.subtopicos[subKey]) {
+        tDeck.subtopicos[subKey] = {
+          id: c.subtopicoId,
+          titulo: subTitle,
+          cards: []
+        };
+      }
+      tDeck.subtopicos[subKey].cards.push(c);
     });
 
-    return Array.from(map.values()).sort((a, b) => b.toReview - a.toReview);
+    return Array.from(materiaMap.values());
   }, [allCards]);
 
   const cardsToReview = useMemo(() => {
@@ -314,43 +358,258 @@ export function CartoesView() {
 
       <div className="flex-1 min-h-0 overflow-y-auto">
         {activeTab === 'painel' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-             <div className="md:col-span-2 flex flex-col gap-4">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex justify-between items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+             <div className="lg:col-span-2 flex flex-col gap-4">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                    <div>
-                      <h3 className="font-bold text-slate-900 text-lg">Tópicos (Decks)</h3>
-                      <p className="text-xs text-slate-500 font-semibold">{decks.length} tópicos com cartões</p>
+                      <h3 className="font-bold text-slate-900 text-lg">Seus Baralhos Inteligentes</h3>
+                      <p className="text-xs text-slate-500 font-semibold">Estrutura organizada por Matéria › Tópico › Assunto</p>
+                   </div>
+                   {/* Search input to easily find topics/subjects */}
+                   <div className="relative w-full sm:w-64">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                         type="text"
+                         value={deckSearch}
+                         onChange={(e) => setDeckSearch(e.target.value)}
+                         placeholder="Buscar baralho..."
+                         className="w-full text-xs font-semibold pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300 focus:bg-white transition-all placeholder:text-slate-400"
+                      />
                    </div>
                 </div>
 
-                {decks.length === 0 ? (
-                   <div className="text-center p-8 bg-slate-100 rounded-3xl border border-slate-200 border-dashed text-slate-500">
-                      Nenhum cartão cadastrado. Vá em "Criar Manual" ou "Importar" para começar.
-                   </div>
-                ) : (
-                   <div className="grid grid-cols-1 gap-3">
-                      {decks.map(d => (
-                         <div key={d.key} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
-                            <div>
-                               <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{d.editalTitulo} › {d.materiaNome}</div>
-                               <h4 className="font-bold text-slate-800 text-sm">{d.topicoTitulo} {d.subtopicoTitulo ? `› ${d.subtopicoTitulo}` : ''}</h4>
-                            </div>
-                            <div className="flex items-center gap-3 shrink-0">
-                               <div className="text-right mr-2 hidden sm:block">
-                                  <div className="text-xs font-bold text-amber-600">{d.toReview} pendentes</div>
-                                  <div className="text-[10px] text-slate-400 font-semibold">{d.total} no total</div>
-                               </div>
-                               <button onClick={() => startStudy(d.cards, false)} disabled={d.toReview === 0} className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 disabled:opacity-50 disabled:bg-slate-100 disabled:text-slate-400 font-bold rounded-lg text-xs transition-all tracking-widest uppercase cursor-pointer">
-                                  Revisar
-                               </button>
-                               <button onClick={() => startStudy(d.cards, true)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-lg text-xs transition-all tracking-widest uppercase">
-                                  Forçar
-                               </button>
-                            </div>
+                {(() => {
+                   // Search Filter Logic
+                   const filteredDecks = !deckSearch.trim() ? hierarchicalDecks : hierarchicalDecks.map(m => {
+                      const matchedTopicos: typeof m.topicos = {};
+                      Object.keys(m.topicos).forEach(topId => {
+                        const t = m.topicos[topId];
+                        const matchTitle = t.titulo.toLowerCase().includes(deckSearch.toLowerCase().trim());
+                        
+                        const matchedSubtopicos: typeof t.subtopicos = {};
+                        Object.keys(t.subtopicos).forEach(subKey => {
+                          const s = t.subtopicos[subKey];
+                          if (matchTitle || s.titulo.toLowerCase().includes(deckSearch.toLowerCase().trim())) {
+                            matchedSubtopicos[subKey] = s;
+                          }
+                        });
+
+                        if (matchTitle || Object.keys(matchedSubtopicos).length > 0 || m.nome.toLowerCase().includes(deckSearch.toLowerCase().trim())) {
+                          matchedTopicos[topId] = {
+                            ...t,
+                            subtopicos: matchedSubtopicos
+                          };
+                        }
+                      });
+
+                      if (m.nome.toLowerCase().includes(deckSearch.toLowerCase().trim()) || Object.keys(matchedTopicos).length > 0) {
+                        return { ...m, topicos: matchedTopicos };
+                      }
+                      return null;
+                   }).filter(Boolean);
+
+                   if (filteredDecks.length === 0) {
+                      return (
+                         <div className="text-center p-12 bg-white rounded-3xl border border-slate-200 border-dashed text-slate-500 flex flex-col items-center justify-center gap-2">
+                            <Layers className="w-12 h-12 text-slate-300" />
+                            <p className="font-bold text-sm text-slate-700">Nenhum baralho encontrado</p>
+                            <p className="text-xs text-slate-400 max-w-sm">Use as guias "Criar Manual" ou "Importar em Lote" no topo para criar cartões associando a um Edital e Matéria.</p>
                          </div>
-                      ))}
-                   </div>
-                )}
+                      );
+                   }
+
+                   return (
+                      <div className="space-y-4">
+                         {filteredDecks.map(m => {
+                            if (!m) return null;
+                            const mStats = getCardsStats(m.cards);
+                            const isMatExpanded = expandedMaterias[m.id] || !!deckSearch;
+                            return (
+                               <div key={m.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300 hover:border-slate-300 animate-in fade-in duration-200">
+                                  {/* Matéria Root Row */}
+                                  <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 border-b border-slate-150">
+                                     <div className="flex items-center gap-3">
+                                        <button 
+                                           onClick={() => setExpandedMaterias(prev => ({ ...prev, [m.id]: !prev[m.id] }))}
+                                           className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-500 transition-all cursor-pointer"
+                                        >
+                                           {isMatExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                        </button>
+                                        <div className="bg-indigo-100 p-2 rounded-xl text-indigo-700 shrink-0">
+                                           <BookOpen className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                           <div className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">{m.editalTitulo}</div>
+                                           <h4 className="font-bold text-slate-800 text-sm leading-tight">{m.nome}</h4>
+                                        </div>
+                                     </div>
+
+                                     <div className="flex items-center gap-4 justify-between sm:justify-end shrink-0 ml-10 sm:ml-0">
+                                        <div className="flex items-center gap-2">
+                                           {mStats.novos > 0 && (
+                                              <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md border border-blue-100" title="Novos cartões">
+                                                 {mStats.novos} N
+                                              </span>
+                                           )}
+                                           {mStats.revisoes > 0 ? (
+                                              <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-50 text-amber-600 rounded-md border border-amber-100" title="Para revisar hoje">
+                                                 {mStats.revisoes} R
+                                              </span>
+                                           ) : (
+                                              <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-400 rounded-md" title="Revisado">
+                                                 Ok
+                                              </span>
+                                           )}
+                                           <span className="text-[10px] font-semibold text-slate-400">({mStats.total})</span>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5">
+                                           <button 
+                                              onClick={() => startStudy(m.cards, false)} 
+                                              disabled={mStats.revisoes === 0}
+                                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-lg text-[10px] uppercase tracking-widest transition-all cursor-pointer"
+                                           >
+                                              Revisar
+                                           </button>
+                                           <button 
+                                              onClick={() => startStudy(m.cards, true)}
+                                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-lg text-[10px] uppercase tracking-widest transition-all cursor-pointer"
+                                           >
+                                              Forçar
+                                           </button>
+                                        </div>
+                                     </div>
+                                  </div>
+
+                                  {/* Tópicos Expandable Container */}
+                                  {isMatExpanded && (
+                                     <div className="divide-y divide-slate-100 bg-white">
+                                        {(() => {
+                                           const topicoKeys = Object.keys(m.topicos);
+                                           if (topicoKeys.length === 0) {
+                                              return (
+                                                 <div className="p-4 text-xs text-slate-400 italic text-center">Nenhum tópico cadastrado ainda nesse baralho.</div>
+                                              );
+                                           }
+                                           return topicoKeys.map(topId => {
+                                              const t = m.topicos[topId];
+                                              const tStats = getCardsStats(t.cards);
+                                              const subKeys = Object.keys(t.subtopicos);
+                                              const hasSubDecks = subKeys.length > 0;
+                                              const isTopExpanded = expandedTopicos[t.id] || !!deckSearch;
+
+                                              return (
+                                                 <div key={t.id} className="transition-all hover:bg-slate-50/20">
+                                                    {/* Tópico Header */}
+                                                    <div className="p-3.5 pl-6 sm:pl-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-l-4 border-indigo-500/20 hover:border-indigo-500 transition-all">
+                                                       <div className="flex items-center gap-2">
+                                                          {hasSubDecks ? (
+                                                             <button 
+                                                                onClick={() => setExpandedTopicos(prev => ({ ...prev, [t.id]: !prev[t.id] }))}
+                                                                className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-slate-200 text-slate-500 transition-all cursor-pointer"
+                                                             >
+                                                                {isTopExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                                             </button>
+                                                          ) : (
+                                                             <span className="w-6 h-6 flex items-center justify-center text-slate-300">
+                                                                •
+                                                             </span>
+                                                          )}
+                                                          
+                                                          <div className="bg-indigo-50 p-1.5 rounded-lg text-indigo-600 shrink-0">
+                                                             <GraduationCap className="w-3.5 h-3.5" />
+                                                          </div>
+                                                          
+                                                          <h5 className="font-bold text-slate-705 text-xs pr-2 leading-snug">{t.titulo}</h5>
+                                                       </div>
+
+                                                       <div className="flex items-center gap-3 justify-between sm:justify-end shrink-0 ml-8 sm:ml-0">
+                                                          <div className="flex items-center gap-1.5">
+                                                             {tStats.novos > 0 && <span className="text-[9px] font-bold text-blue-600 bg-blue-50/80 px-1.5 py-0.5 rounded border border-blue-100">{tStats.novos} N</span>}
+                                                             {tStats.revisoes > 0 ? (
+                                                                <span className="text-[9px] font-bold text-amber-600 bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-100">{tStats.revisoes} R</span>
+                                                             ) : (
+                                                                <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">Ok</span>
+                                                             )}
+                                                             <span className="text-[9px] text-slate-400">({tStats.total})</span>
+                                                          </div>
+
+                                                          <div className="flex items-center gap-1">
+                                                             <button 
+                                                                onClick={() => startStudy(t.cards, false)} 
+                                                                disabled={tStats.revisoes === 0}
+                                                                className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-850 disabled:opacity-45 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed text-indigo-700 font-bold rounded text-[9px] uppercase tracking-widest transition-all cursor-pointer"
+                                                             >
+                                                                Revisar
+                                                             </button>
+                                                             <button 
+                                                                onClick={() => startStudy(t.cards, true)}
+                                                                className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded text-[9px] uppercase tracking-widest transition-all cursor-pointer"
+                                                             >
+                                                                Forçar
+                                                             </button>
+                                                          </div>
+                                                       </div>
+                                                    </div>
+
+                                                    {/* Assunto / Subtopicos list (Level 3 Deck) */}
+                                                    {hasSubDecks && isTopExpanded && (
+                                                       <div className="divide-y divide-slate-100/50 bg-slate-50 border-t border-slate-150 pl-10 sm:pl-12">
+                                                          {subKeys.map(subKey => {
+                                                             const s = t.subtopicos[subKey];
+                                                             const sStats = getCardsStats(s.cards);
+
+                                                             return (
+                                                                <div key={subKey} className="p-3 pl-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group transition-all hover:bg-indigo-50/20">
+                                                                   <div className="flex items-center gap-2">
+                                                                      <CornerDownRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                                                      <span className="text-xs font-semibold text-slate-600">{s.titulo}</span>
+                                                                   </div>
+
+                                                                   <div className="flex items-center gap-3 justify-between sm:justify-end shrink-0 ml-5 sm:ml-0">
+                                                                      <div className="flex items-center gap-1.5">
+                                                                         {sStats.novos > 0 && <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-1 py-0.5 rounded border border-blue-100/30">{sStats.novos} N</span>}
+                                                                         {sStats.revisoes > 0 ? (
+                                                                            <span className="text-[9px] font-bold text-amber-500 bg-amber-50 px-1 py-0.5 rounded border border-amber-100/30">{sStats.revisoes} R</span>
+                                                                         ) : (
+                                                                            <span className="text-[9px] font-semibold text-slate-400 bg-slate-100/60 px-1 py-0.5 rounded">Ok</span>
+                                                                         )}
+                                                                         <span className="text-[9px] text-slate-400">({sStats.total})</span>
+                                                                      </div>
+
+                                                                      <div className="flex items-center gap-1">
+                                                                         <button 
+                                                                            onClick={() => startStudy(s.cards, false)} 
+                                                                            disabled={sStats.revisoes === 0}
+                                                                            className="px-2 py-1 bg-white hover:bg-indigo-50 disabled:opacity-40 disabled:bg-slate-50 disabled:text-slate-400 text-indigo-650 border border-slate-200 hover:border-indigo-200 font-bold rounded text-[9px] uppercase tracking-widest transition-all cursor-pointer"
+                                                                         >
+                                                                            Revisar
+                                                                         </button>
+                                                                         <button 
+                                                                            onClick={() => startStudy(s.cards, true)}
+                                                                            className="px-1.5 py-1 bg-slate-100/60 hover:bg-slate-150 text-slate-500 font-semibold rounded text-[9px] uppercase tracking-widest transition-all cursor-pointer"
+                                                                         >
+                                                                            Forçar
+                                                                         </button>
+                                                                      </div>
+                                                                   </div>
+                                                                </div>
+                                                             );
+                                                          })}
+                                                       </div>
+                                                    )}
+                                                 </div>
+                                              );
+                                           });
+                                        })()}
+                                     </div>
+                                  )}
+                               </div>
+                            );
+                         })}
+                      </div>
+                   );
+                })()}
              </div>
              
              <div className="flex flex-col gap-6">
