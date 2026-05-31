@@ -219,6 +219,10 @@ export function CartoesView() {
     });
   }, [allCards]);
 
+  const newCardsToStudy = useMemo(() => {
+    return allCards.filter(c => !c.nextReview);
+  }, [allCards]);
+
   const forecast = useMemo(() => {
     let tomorrow = 0;
     let next7Days = 0;
@@ -248,9 +252,12 @@ export function CartoesView() {
     return { tomorrow, next7Days, next30Days };
   }, [allCards]);
 
-  const startStudy = (cardsList: any[], force: boolean = false) => {
+  const startStudy = (cardsList: any[], force: boolean = false, onlyNew: boolean = false) => {
     let toStudy = [...cardsList];
-    if (!force) {
+    
+    if (onlyNew) {
+      toStudy = toStudy.filter(c => !c.nextReview);
+    } else if (!force) {
       toStudy = toStudy.filter(c => {
         if (!c.nextReview) return true;
         const d = parseISO(c.nextReview);
@@ -259,7 +266,7 @@ export function CartoesView() {
     }
     
     if (toStudy.length === 0) {
-       alert("Nenhum cartão para revisar agora! Você pode fazer a revisão forçada.");
+       alert(onlyNew ? "Não há cartões novos para revisar nesta seleção." : "Nenhum cartão para revisar agora! Você pode fazer a revisão forçada.");
        return;
     }
 
@@ -750,11 +757,20 @@ export function CartoesView() {
                                            <button onClick={() => handleDeleteDeck('materia', m)} className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-lg transition-all cursor-pointer mr-0.5" title="Apagar todos cartões desta matéria"><Trash2 className="w-3.5 h-3.5" /></button>
                                            <button 
                                               onClick={() => startStudy(m.cards, false)} 
-                                              disabled={mStats.revisoes === 0}
+                                              disabled={mStats.revisoes + mStats.novos === 0}
                                               className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-lg text-[10px] uppercase tracking-widest transition-all cursor-pointer"
                                            >
                                               Revisar
                                            </button>
+                                           {mStats.novos > 0 && (
+                                               <button 
+                                                  onClick={() => startStudy(m.cards, false, true)} 
+                                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-sm flex items-center gap-1"
+                                                  title="Revisar apenas os cartões que nunca foram vistos"
+                                               >
+                                                  <Sparkles className="w-3 h-3"/> Novos
+                                               </button>
+                                           )}
                                            <button 
                                               onClick={() => startStudy(m.cards, true)}
                                               className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-lg text-[10px] uppercase tracking-widest transition-all cursor-pointer"
@@ -823,11 +839,19 @@ export function CartoesView() {
                                                              <button onClick={() => handleDeleteDeck('topico', t)} className="px-1.5 py-1 bg-white hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded transition-all cursor-pointer mr-0.5" title="Apagar todos cartões deste tópico"><Trash2 className="w-3 h-3" /></button>
                                                              <button 
                                                                 onClick={() => startStudy(t.cards, false)} 
-                                                                disabled={tStats.revisoes === 0}
+                                                                disabled={tStats.revisoes + tStats.novos === 0}
                                                                 className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-850 disabled:opacity-45 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed text-indigo-700 font-bold rounded text-[9px] uppercase tracking-widest transition-all cursor-pointer"
                                                              >
                                                                 Revisar
                                                              </button>
+                                                             {tStats.novos > 0 && (
+                                                                <button 
+                                                                   onClick={() => startStudy(t.cards, false, true)} 
+                                                                   className="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold rounded text-[9px] uppercase tracking-widest transition-all cursor-pointer flex items-center gap-1"
+                                                                >
+                                                                   <Sparkles className="w-2.5 h-2.5"/> Novos
+                                                                </button>
+                                                             )}
                                                              <button 
                                                                 onClick={() => startStudy(t.cards, true)}
                                                                 className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded text-[9px] uppercase tracking-widest transition-all cursor-pointer"
@@ -868,11 +892,19 @@ export function CartoesView() {
                                                                          <button onClick={() => handleDeleteDeck('subtopico', s)} className="px-1.5 py-1 bg-transparent hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded transition-all cursor-pointer mr-0.5" title="Apagar todos cartões deste assunto"><Trash2 className="w-3 h-3" /></button>
                                                                          <button 
                                                                             onClick={() => startStudy(s.cards, false)} 
-                                                                            disabled={sStats.revisoes === 0}
+                                                                            disabled={sStats.revisoes + sStats.novos === 0}
                                                                             className="px-2 py-1 bg-white hover:bg-indigo-50 disabled:opacity-40 disabled:bg-slate-50 disabled:text-slate-400 text-indigo-650 border border-slate-200 hover:border-indigo-200 font-bold rounded text-[9px] uppercase tracking-widest transition-all cursor-pointer"
                                                                          >
                                                                             Revisar
                                                                          </button>
+                                                                         {sStats.novos > 0 && (
+                                                                            <button 
+                                                                               onClick={() => startStudy(s.cards, false, true)} 
+                                                                               className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-bold rounded text-[9px] uppercase tracking-widest transition-all cursor-pointer flex items-center gap-1"
+                                                                            >
+                                                                               <Sparkles className="w-2.5 h-2.5"/> Novos
+                                                                            </button>
+                                                                         )}
                                                                          <button 
                                                                             onClick={() => startStudy(s.cards, true)}
                                                                             className="px-1.5 py-1 bg-slate-100/60 hover:bg-slate-150 text-slate-500 font-semibold rounded text-[9px] uppercase tracking-widest transition-all cursor-pointer"
@@ -908,11 +940,15 @@ export function CartoesView() {
                    
                    <div className="bg-amber-50 border border-amber-100 text-amber-800 p-4 rounded-xl w-full flex flex-col items-center">
                       <p className="text-[10px] uppercase tracking-widest opacity-80 font-bold mb-1">Para Revisar Hoje</p>
-                      <h4 className="font-bold text-2xl mb-4">{cardsToReview.length}</h4>
+                      <h4 className="font-bold text-2xl mb-2">{cardsToReview.length}</h4>
+                      {newCardsToStudy.length > 0 && <span className="text-[10px] font-bold text-amber-600 bg-amber-100/50 px-2 py-0.5 rounded-full mb-2">+{newCardsToStudy.length} novos aguardando</span>}
                       
                       <div className="flex flex-col w-full gap-2 mt-2 border-t border-amber-200/50 pt-4">
                          <button onClick={() => startStudy(allCards, false)} disabled={cardsToReview.length === 0} className="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-lg text-xs transition-all uppercase tracking-widest shadow-md">
                             Revisar Tudo
+                         </button>
+                         <button onClick={() => startStudy(allCards, false, true)} disabled={newCardsToStudy.length === 0} className="w-full px-4 py-2 bg-emerald-600/90 hover:bg-emerald-600 disabled:bg-slate-300 disabled:text-slate-400 disabled:cursor-not-allowed text-white shadow-md font-bold rounded-lg text-[10px] transition-all uppercase tracking-widest flex items-center justify-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5"/> Revisar Apenas Novos
                          </button>
                          <button onClick={() => startStudy(allCards, true)} className="w-full px-4 py-2 bg-amber-200/50 hover:bg-amber-200 text-amber-900 font-bold rounded-lg text-[10px] transition-all uppercase tracking-widest">
                             Forçar Revisão (Tudo)
