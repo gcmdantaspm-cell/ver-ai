@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useEdital } from "../store";
-import { Sparkles, Trash2, Layers, Info, Plus, Play, CheckCircle2, XCircle, FileText, FilePlus, ChevronRight, ChevronDown, BookOpen, GraduationCap, CornerDownRight, Search } from "lucide-react";
+import { Sparkles, Trash2, Layers, Info, Plus, Play, CheckCircle2, XCircle, FileText, FilePlus, ChevronRight, ChevronDown, BookOpen, GraduationCap, CornerDownRight, Search, Download } from "lucide-react";
 import { isPast, isToday, parseISO } from "date-fns";
 
 export function CartoesView() {
@@ -346,6 +346,51 @@ export function CartoesView() {
      }
   };
 
+  const handleExportAnki = (target: any, defaultName: string) => {
+     if (!target || !target.cards || target.cards.length === 0) {
+        alert("Não há cartões para exportar.");
+        return;
+     }
+     
+     let csvContent = "";
+     
+     target.cards.forEach((card: any) => {
+        const sanitize = (text: string | undefined) => {
+           if (!text) return '""';
+           let t = text.replace(/"/g, '""');
+           // Retain newlines, but wrap entirely in quotes
+           return `"${t}"`;
+        };
+        
+        // Front
+        let frente = card.pergunta || "";
+        if (card.imagemPergunta) {
+           frente += `<br><img src='${card.imagemPergunta}'>`;
+        }
+        
+        // Back
+        let verso = card.resposta || "";
+        if (card.imagemResposta) {
+           verso += `<br><img src='${card.imagemResposta}'>`;
+        }
+        
+        csvContent += `${sanitize(frente)};${sanitize(verso)}\n`;
+     });
+     
+     // BOM for UTF-8
+     const blob = new Blob(["\uFEFF"+csvContent], { type: 'text/csv;charset=utf-8;' });
+     const link = document.createElement("a");
+     const url = URL.createObjectURL(blob);
+     link.setAttribute("href", url);
+     
+     const fileName = `${defaultName.replace(/\s+/g, '_')}_anki.csv`;
+     link.setAttribute("download", fileName);
+     link.style.visibility = 'hidden';
+     document.body.appendChild(link);
+     link.click();
+     document.body.removeChild(link);
+  };
+
   const handleImagePaste = (e: React.ClipboardEvent, setImageState: (val: string) => void) => {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -663,6 +708,7 @@ export function CartoesView() {
                                         </div>
 
                                         <div className="flex items-center gap-1.5">
+                                           <button onClick={() => handleExportAnki(m, m.materiaNome)} className="px-2 py-1.5 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-all cursor-pointer mr-0.5" title="Exportar para Anki (.csv)"><Download className="w-3.5 h-3.5" /></button>
                                            <button onClick={() => handleDeleteDeck('materia', m)} className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-lg transition-all cursor-pointer mr-0.5" title="Apagar todos cartões desta matéria"><Trash2 className="w-3.5 h-3.5" /></button>
                                            <button 
                                               onClick={() => startStudy(m.cards, false)} 
@@ -735,6 +781,7 @@ export function CartoesView() {
                                                           </div>
 
                                                           <div className="flex items-center gap-1">
+                                                             <button onClick={() => handleExportAnki(t, t.topicoTitulo)} className="px-1.5 py-1 bg-white hover:bg-indigo-50 text-slate-300 hover:text-indigo-600 rounded transition-all cursor-pointer mr-0.5" title="Exportar para Anki (.csv)"><Download className="w-3 h-3" /></button>
                                                              <button onClick={() => handleDeleteDeck('topico', t)} className="px-1.5 py-1 bg-white hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded transition-all cursor-pointer mr-0.5" title="Apagar todos cartões deste tópico"><Trash2 className="w-3 h-3" /></button>
                                                              <button 
                                                                 onClick={() => startStudy(t.cards, false)} 
@@ -779,6 +826,7 @@ export function CartoesView() {
                                                                       </div>
 
                                                                       <div className="flex items-center gap-1">
+                                                                         <button onClick={() => handleExportAnki(s, s.subtopicoTitulo)} className="px-1.5 py-1 bg-transparent hover:bg-indigo-50 text-slate-300 hover:text-indigo-600 rounded transition-all cursor-pointer mr-0.5" title="Exportar para Anki (.csv)"><Download className="w-3 h-3" /></button>
                                                                          <button onClick={() => handleDeleteDeck('subtopico', s)} className="px-1.5 py-1 bg-transparent hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded transition-all cursor-pointer mr-0.5" title="Apagar todos cartões deste assunto"><Trash2 className="w-3 h-3" /></button>
                                                                          <button 
                                                                             onClick={() => startStudy(s.cards, false)} 
