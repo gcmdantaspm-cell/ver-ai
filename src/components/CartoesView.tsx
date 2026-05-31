@@ -285,7 +285,6 @@ export function CartoesView() {
     });
 
     const conflicts: typeof importConflicts = [];
-    const clearToImport: {pergunta: string, resposta: string}[] = [];
 
     parsedCards.forEach(pc => {
        const pq = pc.pergunta.trim().toLowerCase();
@@ -297,17 +296,15 @@ export function CartoesView() {
              existingLocation: ex.location,
              resolution: null
           });
-       } else {
-          clearToImport.push(pc);
        }
     });
 
+    saveToDestination(parsedCards);
+
     if (conflicts.length > 0) {
        setImportConflicts(conflicts);
-       setSafeToImport(clearToImport);
        setConflictMode(true);
     } else {
-       saveToDestination(parsedCards);
        finishImport();
     }
   };
@@ -319,32 +316,6 @@ export function CartoesView() {
      setImportConflicts([]);
      setSafeToImport([]);
      alert("Importação concluída!");
-  };
-
-  const resolveConflictsAndImport = () => {
-     // First, separate those marked as 'sobrescrever', 'manter', 'ignorar'
-     const toAdd = [...safeToImport];
-     importConflicts.forEach(c => {
-        if (c.resolution === 'manter') {
-           toAdd.push(c.imported);
-        } else if (c.resolution === 'sobrescrever') {
-           editCartao(
-             c.existingLocation.editalId,
-             c.existingLocation.areaId,
-             c.existingLocation.materiaId,
-             c.existingLocation.topicoId,
-             c.existingLocation.subtopicoId,
-             c.existingId,
-             c.imported.pergunta,
-             c.imported.resposta
-           );
-        }
-     });
-
-     if (toAdd.length > 0) {
-        saveToDestination(toAdd);
-     }
-     finishImport();
   };
 
   const handleImagePaste = (e: React.ClipboardEvent, setImageState: (val: string) => void) => {
@@ -963,33 +934,31 @@ export function CartoesView() {
               {activeTab === 'importar' && (
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
                     {conflictMode && (
-                        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 p-6 flex flex-col rounded-3xl border border-slate-200 shadow-2xl">
-                           <h2 className="text-xl font-bold text-slate-900 mb-2">Conflitos de Importação Detectados</h2>
-                           <p className="text-slate-600 mb-6 text-sm">Algumas perguntas importadas já existem no seu banco. Como deseja prosseguir para cada uma?</p>
+                        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 p-8 flex flex-col rounded-[2rem] border border-slate-100 shadow-2xl">
+                           <div className="flex items-center gap-3 mb-2">
+                             <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 shrink-0">
+                                <Info className="w-5 h-5"/>
+                             </div>
+                             <h2 className="text-2xl font-bold text-slate-800">Importação Concluída</h2>
+                           </div>
+                           <p className="text-slate-600 mt-2 mb-6 text-sm ml-13">Os cartões foram importados com sucesso. Notamos que as seguintes perguntas já existiam e foram inseridas novamente no seu banco:</p>
                            
-                           <div className="flex-1 overflow-y-auto mb-6 pr-2">
-                              <div className="flex flex-col gap-4">
+                           <div className="flex-1 overflow-y-auto mb-6 pr-2 ml-13">
+                              <div className="flex flex-col gap-3">
                                  {importConflicts.map((c, idx) => (
-                                    <div key={idx} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col gap-3 shadow-sm">
-                                       <div>
-                                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Cartão Conflitante</span>
-                                          <p className="text-sm font-semibold text-slate-800">{c.imported.pergunta}</p>
-                                          <p className="text-xs text-slate-500 mt-1 line-clamp-1">{c.imported.resposta}</p>
-                                       </div>
-                                       
-                                       <div className="flex gap-2">
-                                          <button onClick={() => { const nc = [...importConflicts]; nc[idx].resolution = 'sobrescrever'; setImportConflicts(nc); }} className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all border ${c.resolution === 'sobrescrever' ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'}`}>Sobrescrever</button>
-                                          <button onClick={() => { const nc = [...importConflicts]; nc[idx].resolution = 'manter'; setImportConflicts(nc); }} className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all border ${c.resolution === 'manter' ? 'bg-emerald-100 border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'}`}>Manter Nova (Duplicar)</button>
-                                          <button onClick={() => { const nc = [...importConflicts]; nc[idx].resolution = 'ignorar'; setImportConflicts(nc); }} className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all border ${c.resolution === 'ignorar' ? 'bg-rose-100 border-rose-300 text-rose-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'}`}>Ignorar Importação</button>
-                                       </div>
+                                    <div key={idx} className="p-4 bg-amber-50/50 border border-amber-200/60 rounded-2xl flex flex-col gap-1.5 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
+                                       <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
+                                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                                          Frente Repetida
+                                       </span>
+                                       <p className="text-sm font-medium text-slate-800 pl-3 border-l-2 border-amber-200">{c.imported.pergunta}</p>
                                     </div>
                                  ))}
                               </div>
                            </div>
 
-                           <div className="flex justify-end gap-3 shrink-0 pt-4 border-t border-slate-100">
-                              <button onClick={() => setConflictMode(false)} className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-all uppercase tracking-widest">Cancelar</button>
-                              <button onClick={resolveConflictsAndImport} disabled={importConflicts.some(c => !c.resolution)} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-indigo-200">Confirmar e Importar</button>
+                           <div className="flex justify-end shrink-0 pt-6 border-t border-slate-100">
+                              <button onClick={finishImport} className="px-8 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl transition-all uppercase tracking-widest shadow-lg hover:shadow-xl hover:-translate-y-0.5">Ok, Entendi</button>
                            </div>
                         </div>
                     )}
