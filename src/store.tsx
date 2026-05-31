@@ -23,9 +23,9 @@ interface EditalContextType {
   setNextRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   setStudyDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   updateNota: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, nota: string) => void;
-  updateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartao: { id: string, pergunta: string, resposta: string }[], newSubtopicoTitle?: string) => void;
+  updateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartao: { id: string, pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string }[], newSubtopicoTitle?: string) => void;
   clearCartoes: (editalId: string, areaId: string, materiaId: string, topicoId?: string, subtopicoId?: string) => void;
-  editCartao: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, newPergunta: string, newResposta: string, novaImagemPergunta?: string, novaImagemResposta?: string) => void;
+  editCartao: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, newPergunta: string, newResposta: string, novaImagemPergunta?: string, novaImagemResposta?: string, novaOrigem?: string) => void;
   updateCartaoSM2: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, quality: number) => void;
   updateMetricas: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, acertos: number, erros: number) => void;
   revisions: RevisaoAgendada[];
@@ -465,7 +465,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const updateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string, repetition?: number, interval?: number, easeFactor?: number, nextReview?: string }[], newSubtopicoTitle?: string) => {
+  const updateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string, repetition?: number, interval?: number, easeFactor?: number, nextReview?: string }[], newSubtopicoTitle?: string) => {
     handleUpdate(editalId, (edital) => {
       const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
@@ -495,7 +495,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const editCartao = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, newPergunta: string, newResposta: string, novaImagemPergunta?: string, novaImagemResposta?: string) => {
+  const editCartao = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, newPergunta: string, newResposta: string, novaImagemPergunta?: string, novaImagemResposta?: string, novaOrigem?: string) => {
     handleUpdate(editalId, (edital) => {
       const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
@@ -512,6 +512,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       cartao.resposta = newResposta;
       if (novaImagemPergunta !== undefined) cartao.imagemPergunta = novaImagemPergunta;
       if (novaImagemResposta !== undefined) cartao.imagemResposta = novaImagemResposta;
+      if (novaOrigem !== undefined) cartao.origem = novaOrigem;
     });
   };
 

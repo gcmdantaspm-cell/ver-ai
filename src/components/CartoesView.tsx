@@ -14,6 +14,7 @@ export function CartoesView() {
   const [editResposta, setEditResposta] = useState("");
   const [editImagemPergunta, setEditImagemPergunta] = useState("");
   const [editImagemResposta, setEditImagemResposta] = useState("");
+  const [editOrigem, setEditOrigem] = useState("");
 
   // States GERAIS de Destino
   const [selectedEdital, setSelectedEdital] = useState("");
@@ -85,6 +86,25 @@ export function CartoesView() {
   const [imagemPerguntaManual, setImagemPerguntaManual] = useState("");
   const [imagemRespostaManual, setImagemRespostaManual] = useState("");
   const [newAssunto, setNewAssunto] = useState("");
+  const [importOrigem, setImportOrigem] = useState("");
+  const [manualOrigem, setManualOrigem] = useState("");
+
+  const uniqueOrigens = useMemo(() => {
+     const origens = new Set<string>();
+     editais.forEach(ed => {
+        ed.areas.forEach(ar => {
+           ar.materias.forEach(mat => {
+              mat.topicos.forEach(top => {
+                 if (top.cartoes) top.cartoes.forEach(c => c.origem && origens.add(c.origem));
+                 top.subtopicos?.forEach(sub => {
+                    if (sub.cartoes) sub.cartoes.forEach(c => c.origem && origens.add(c.origem));
+                 });
+              });
+           });
+        });
+     });
+     return Array.from(origens).sort();
+  }, [editais]);
 
   // Search & Accordion expansions
   const [deckSearch, setDeckSearch] = useState("");
@@ -317,7 +337,12 @@ export function CartoesView() {
        }
     });
 
-    saveToDestination(parsedCards);
+    const cardsToSave = parsedCards.map(c => ({
+       ...c,
+       origem: importOrigem.trim() || undefined
+    }));
+
+    saveToDestination(cardsToSave);
 
     if (conflicts.length > 0) {
        setImportConflicts(conflicts);
@@ -333,6 +358,7 @@ export function CartoesView() {
      setConflictMode(false);
      setImportConflicts([]);
      setSafeToImport([]);
+     setImportOrigem("");
      alert("Importação concluída!");
   };
 
@@ -441,16 +467,18 @@ export function CartoesView() {
        pergunta: perguntaManual, 
        resposta: respostaManual, 
        imagemPergunta: imagemPerguntaManual, 
-       imagemResposta: imagemRespostaManual 
+       imagemResposta: imagemRespostaManual,
+       origem: manualOrigem.trim() || undefined
     }]);
     setPerguntaManual("");
     setRespostaManual("");
     setImagemPerguntaManual("");
     setImagemRespostaManual("");
+    setManualOrigem("");
     alert("Cartão salvo com sucesso!");
   };
 
-  const saveToDestination = (newCardsData: {pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string}[]) => {
+  const saveToDestination = (newCardsData: {pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string}[]) => {
     const edital = editais.find(e => e.id === selectedEdital);
     const area = edital?.areas.find(a => a.id === selectedArea);
     const materia = area?.materias.find(m => m.id === selectedMateria);
@@ -503,6 +531,7 @@ export function CartoesView() {
                     setEditResposta(card.resposta);
                     setEditImagemPergunta(card.imagemPergunta || "");
                     setEditImagemResposta(card.imagemResposta || "");
+                    setEditOrigem(card.origem || "");
                     setIsEditingCartao(true);
                  }} className="absolute top-6 right-6 text-[10px] uppercase font-bold text-slate-300 hover:text-indigo-600 px-3 py-1.5 bg-slate-50 hover:bg-indigo-50 rounded-lg border border-transparent hover:border-indigo-100 transition-all overflow-hidden flex items-center justify-center opacity-0 group-hover/card:opacity-100 focus:opacity-100 cursor-pointer shadow-sm">
                     <span>Editar Cartão</span>
@@ -511,6 +540,7 @@ export function CartoesView() {
 
                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-10 pb-4 border-b border-slate-100/60 inline-block w-fit mx-auto px-6">
                   {card.editalTitulo} <span className="text-slate-300 mx-1">&bull;</span> {card.materiaNome} <span className="text-slate-300 mx-1">&bull;</span> {card.topicoTitulo} {card.subtopicoTitulo ? ( <><span className="text-slate-300 mx-1">&bull;</span> {card.subtopicoTitulo}</>) : ''}
+                  {card.origem && <><span className="text-slate-300 mx-1">&bull;</span> <span className="text-amber-500">{card.origem}</span></>}
                </div>
                
                {isEditingCartao ? (
@@ -525,15 +555,18 @@ export function CartoesView() {
                     <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest -mb-2">Imagem da Resposta (URL)</span>
                     <input value={editImagemResposta} onChange={e => setEditImagemResposta(e.target.value)} className="w-full p-3 text-xs border-2 border-slate-100 bg-slate-50 rounded-xl focus:border-emerald-300 focus:bg-white transition-all outline-none" placeholder="Opcional. Ex: https://.../img.jpg" />
                     
+                    <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mt-6 -mb-2">Origem (Prova/Concurso)</span>
+                    <input value={editOrigem} onChange={e => setEditOrigem(e.target.value)} list="unique-origens" className="w-full p-3 text-xs border-2 border-slate-100 bg-slate-50 rounded-xl focus:border-amber-300 focus:bg-white transition-all outline-none" placeholder="Opcional." />
+                    
                     <div className="flex gap-3 justify-end mt-6">
                        <button onClick={() => setIsEditingCartao(false)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition-all uppercase tracking-widest">Cancelar</button>
                        <button onClick={() => {
-                          editCartao(card.editalId, card.areaId, card.materiaId, card.topicoId, card.subtopicoId, card.id, editPergunta, editResposta, editImagemPergunta.trim() || undefined, editImagemResposta.trim() || undefined);
+                          editCartao(card.editalId, card.areaId, card.materiaId, card.topicoId, card.subtopicoId, card.id, editPergunta, editResposta, editImagemPergunta.trim() || undefined, editImagemResposta.trim() || undefined, editOrigem.trim() || undefined);
                           setIsEditingCartao(false);
                           
                           // Update studySession inline for visual preview
                           const newCards = [...studySession.cards];
-                          newCards[studySession.currentIndex] = { ...card, pergunta: editPergunta, resposta: editResposta, imagemPergunta: editImagemPergunta.trim() || undefined, imagemResposta: editImagemResposta.trim() || undefined };
+                          newCards[studySession.currentIndex] = { ...card, pergunta: editPergunta, resposta: editResposta, imagemPergunta: editImagemPergunta.trim() || undefined, imagemResposta: editImagemResposta.trim() || undefined, origem: editOrigem.trim() || undefined };
                           setStudySession({ ...studySession, cards: newCards });
                        }} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 text-white text-xs font-bold rounded-xl transition-all uppercase tracking-widest">Salvar Modificações</button>
                     </div>
@@ -588,6 +621,11 @@ export function CartoesView() {
 
   return (
     <div className="flex-1 overflow-y-auto w-full max-w-5xl mx-auto p-4 sm:p-6 bg-slate-50 relative pb-24 h-full flex flex-col">
+      <datalist id="unique-origens">
+         {uniqueOrigens.map((origem, idx) => (
+             <option key={idx} value={origem} />
+         ))}
+      </datalist>
       <div className="flex flex-col mb-8 pt-4 shrink-0">
          <h2 className="text-2xl font-display font-bold text-slate-900 mb-1">Cartões Inteligentes</h2>
          <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold">Crie e revise flashcards com repetição espaçada</p>
@@ -1020,6 +1058,16 @@ export function CartoesView() {
                          placeholder="Cole a URL da imagem aqui..."
                       />
                     </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1 block">Origem (Concurso/Prova opcional)</span>
+                      <input
+                         list="unique-origens"
+                         value={manualOrigem}
+                         onChange={(e) => setManualOrigem(e.target.value)}
+                         className="w-full text-xs font-medium text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200 focus:border-amber-300 focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                         placeholder="Ex: FCC 2023, CESPE..."
+                      />
+                    </div>
                     <button onClick={handleSaveManual} className="mt-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl transition-all uppercase tracking-widest self-end">Adicionar Cartão</button>
                  </div>
               )}
@@ -1095,6 +1143,16 @@ export function CartoesView() {
                                 ))}
                              </div>
                           )}
+                       </div>
+                       <div className="mb-4 text-left">
+                          <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest block mb-1">Origem (Concurso/Prova opcional para o lote)</span>
+                          <input
+                             list="unique-origens"
+                             value={importOrigem}
+                             onChange={(e) => setImportOrigem(e.target.value)}
+                             className="w-full text-xs font-medium text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none focus:border-amber-300 transition-all placeholder:text-slate-400"
+                             placeholder="Ex: FCC 2023, VUNESP..."
+                          />
                        </div>
                        <button onClick={handleSaveImport} disabled={parsedCards.length === 0 || !selectedTopico} className="w-full px-6 py-3 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-blue-900/20 uppercase tracking-widest shrink-0">Salvar Cartões</button>
                     </div>
