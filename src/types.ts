@@ -2,6 +2,8 @@ export interface Cartao {
   id: string;
   pergunta: string;
   resposta: string;
+  imagemPergunta?: string;
+  imagemResposta?: string;
   acertos?: number;
   erros?: number;
   repetition?: number; // SM-2

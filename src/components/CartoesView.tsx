@@ -4,11 +4,16 @@ import { Sparkles, Trash2, Layers, Info, Plus, Play, CheckCircle2, XCircle, File
 import { isPast, isToday, parseISO } from "date-fns";
 
 export function CartoesView() {
-  const { editais, updateCartoes, updateCartaoSM2 } = useEdital();
+  const { editais, updateCartoes, editCartao, updateCartaoSM2 } = useEdital();
   const [activeTab, setActiveTab ] = useState<'painel'|'importar'|'manual'>('painel');
 
   // Para o Dashboard
   const [studySession, setStudySession] = useState<{ cards: any[], currentIndex: number, showAnswer: boolean } | null>(null);
+  const [isEditingCartao, setIsEditingCartao] = useState(false);
+  const [editPergunta, setEditPergunta] = useState("");
+  const [editResposta, setEditResposta] = useState("");
+  const [editImagemPergunta, setEditImagemPergunta] = useState("");
+  const [editImagemResposta, setEditImagemResposta] = useState("");
 
   // States GERAIS de Destino
   const [selectedEdital, setSelectedEdital] = useState("");
@@ -24,6 +29,8 @@ export function CartoesView() {
   // States Manual
   const [perguntaManual, setPerguntaManual] = useState("");
   const [respostaManual, setRespostaManual] = useState("");
+  const [imagemPerguntaManual, setImagemPerguntaManual] = useState("");
+  const [imagemRespostaManual, setImagemRespostaManual] = useState("");
   const [newAssunto, setNewAssunto] = useState("");
 
   // Search & Accordion expansions
@@ -241,13 +248,20 @@ export function CartoesView() {
        alert("Preencha a pergunta e a resposta!"); return;
     }
 
-    saveToDestination([{ pergunta: perguntaManual, resposta: respostaManual }]);
+    saveToDestination([{ 
+       pergunta: perguntaManual, 
+       resposta: respostaManual, 
+       imagemPergunta: imagemPerguntaManual, 
+       imagemResposta: imagemRespostaManual 
+    }]);
     setPerguntaManual("");
     setRespostaManual("");
+    setImagemPerguntaManual("");
+    setImagemRespostaManual("");
     alert("Cartão salvo com sucesso!");
   };
 
-  const saveToDestination = (newCardsData: {pergunta: string, resposta: string}[]) => {
+  const saveToDestination = (newCardsData: {pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string}[]) => {
     const edital = editais.find(e => e.id === selectedEdital);
     const area = edital?.areas.find(a => a.id === selectedArea);
     const materia = area?.materias.find(m => m.id === selectedMateria);
@@ -292,33 +306,74 @@ export function CartoesView() {
             </div>
          </div>
 
-         <div className="flex-1 flex flex-col items-center justify-center">
-            <div className="w-full bg-white p-8 sm:p-12 rounded-3xl shadow-lg border border-slate-200 min-h-[50vh] flex flex-col text-center transition-all">
-               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">
-                  {card.editalTitulo} &rsaquo; {card.materiaNome} &rsaquo; {card.topicoTitulo} {card.subtopicoTitulo ? `› ${card.subtopicoTitulo}` : ''}
+         <div className="flex-1 flex flex-col items-center justify-center py-4">
+            <div className="w-full bg-white p-8 sm:p-12 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 min-h-[55vh] flex flex-col text-center transition-all relative group/card">
+               {!isEditingCartao && (
+                 <button onClick={() => {
+                    setEditPergunta(card.pergunta);
+                    setEditResposta(card.resposta);
+                    setEditImagemPergunta(card.imagemPergunta || "");
+                    setEditImagemResposta(card.imagemResposta || "");
+                    setIsEditingCartao(true);
+                 }} className="absolute top-6 right-6 text-[10px] uppercase font-bold text-slate-300 hover:text-indigo-600 px-3 py-1.5 bg-slate-50 hover:bg-indigo-50 rounded-lg border border-transparent hover:border-indigo-100 transition-all overflow-hidden flex items-center justify-center opacity-0 group-hover/card:opacity-100 focus:opacity-100 cursor-pointer shadow-sm">
+                    <span>Editar Cartão</span>
+                 </button>
+               )}
+
+               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-10 pb-4 border-b border-slate-100/60 inline-block w-fit mx-auto px-6">
+                  {card.editalTitulo} <span className="text-slate-300 mx-1">&bull;</span> {card.materiaNome} <span className="text-slate-300 mx-1">&bull;</span> {card.topicoTitulo} {card.subtopicoTitulo ? ( <><span className="text-slate-300 mx-1">&bull;</span> {card.subtopicoTitulo}</>) : ''}
                </div>
                
-               <div className="flex-1 flex flex-col justify-center gap-12">
-                  <div>
-                    <h3 className="text-2xl font-bold text-slate-900 leading-tight whitespace-pre-wrap">{card.pergunta}</h3>
-                  </div>
+               {isEditingCartao ? (
+                 <div className="flex-1 flex flex-col justify-center gap-4 text-left max-w-2xl mx-auto w-full">
+                    <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest -mb-2">Editar Frente (Pergunta)</span>
+                    <textarea value={editPergunta} onChange={e => setEditPergunta(e.target.value)} className="w-full p-4 text-sm border-2 border-slate-100 bg-slate-50 rounded-2xl focus:border-indigo-300 focus:bg-white transition-all outline-none" rows={3}/>
+                    <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest -mb-2">Imagem da Pergunta (URL)</span>
+                    <input value={editImagemPergunta} onChange={e => setEditImagemPergunta(e.target.value)} className="w-full p-3 text-xs border-2 border-slate-100 bg-slate-50 rounded-xl focus:border-indigo-300 focus:bg-white transition-all outline-none" placeholder="Opcional. Ex: https://.../img.jpg" />
 
-                  {studySession.showAnswer ? (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 border-t border-slate-100 pt-8 mt-4">
-                      <p className="text-lg text-emerald-700 font-medium whitespace-pre-wrap">{card.resposta}</p>
+                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-6 -mb-2">Editar Verso (Resposta)</span>
+                    <textarea value={editResposta} onChange={e => setEditResposta(e.target.value)} className="w-full p-4 text-sm border-2 border-slate-100 bg-slate-50 rounded-2xl focus:border-emerald-300 focus:bg-white transition-all outline-none" rows={5}/>
+                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest -mb-2">Imagem da Resposta (URL)</span>
+                    <input value={editImagemResposta} onChange={e => setEditImagemResposta(e.target.value)} className="w-full p-3 text-xs border-2 border-slate-100 bg-slate-50 rounded-xl focus:border-emerald-300 focus:bg-white transition-all outline-none" placeholder="Opcional. Ex: https://.../img.jpg" />
+                    
+                    <div className="flex gap-3 justify-end mt-6">
+                       <button onClick={() => setIsEditingCartao(false)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition-all uppercase tracking-widest">Cancelar</button>
+                       <button onClick={() => {
+                          editCartao(card.editalId, card.areaId, card.materiaId, card.topicoId, card.subtopicoId, card.id, editPergunta, editResposta, editImagemPergunta.trim() || undefined, editImagemResposta.trim() || undefined);
+                          setIsEditingCartao(false);
+                          
+                          // Update studySession inline for visual preview
+                          const newCards = [...studySession.cards];
+                          newCards[studySession.currentIndex] = { ...card, pergunta: editPergunta, resposta: editResposta, imagemPergunta: editImagemPergunta.trim() || undefined, imagemResposta: editImagemResposta.trim() || undefined };
+                          setStudySession({ ...studySession, cards: newCards });
+                       }} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 text-white text-xs font-bold rounded-xl transition-all uppercase tracking-widest">Salvar Modificações</button>
                     </div>
-                  ) : (
-                    <div className="mt-8">
-                       <button onClick={() => setStudySession({ ...studySession, showAnswer: true })} className="px-8 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg hover:bg-slate-800 transition-all uppercase tracking-widest text-sm">
-                          Mostrar Resposta
-                       </button>
+                 </div>
+               ) : (
+                 <div className="flex-1 flex flex-col justify-center gap-10">
+                    <div>
+                      {card.imagemPergunta && <img src={card.imagemPergunta} alt="Pergunta" className="max-h-72 object-contain mx-auto mb-8 rounded-2xl shadow-sm border border-slate-100" />}
+                      <h3 className="text-3xl font-bold text-slate-800 leading-tight whitespace-pre-wrap max-w-4xl mx-auto">{card.pergunta}</h3>
                     </div>
-                  )}
-               </div>
+
+                    {studySession.showAnswer ? (
+                      <div className="animate-in fade-in slide-in-from-bottom-6 duration-500 border-t-2 border-dashed border-slate-200 pt-10 mt-6 relative before:absolute before:top-[-10px] before:left-1/2 before:-translate-x-1/2 before:w-16 before:h-2 before:bg-white">
+                        {card.imagemResposta && <img src={card.imagemResposta} alt="Resposta" className="max-h-72 object-contain mx-auto mb-8 rounded-2xl shadow-sm border border-slate-100" />}
+                        <p className="text-xl text-slate-700 font-medium whitespace-pre-wrap max-w-4xl mx-auto leading-relaxed">{card.resposta}</p>
+                      </div>
+                    ) : (
+                      <div className="mt-12">
+                         <button onClick={() => setStudySession({ ...studySession, showAnswer: true })} className="px-10 py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-[0_8px_15px_rgb(0,0,0,0.1)] hover:shadow-[0_15px_25px_rgb(0,0,0,0.15)] hover:-translate-y-1 transition-all uppercase tracking-[0.2em] text-xs">
+                            Mostrar Resposta
+                         </button>
+                      </div>
+                    )}
+                 </div>
+               )}
             </div>
          </div>
 
-         {studySession.showAnswer && (
+         {studySession.showAnswer && !isEditingCartao && (
            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
              <button onClick={() => answerCard(0)} className="p-4 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-2xl transition-all flex flex-col items-center gap-1 border border-rose-200 shadow-sm">
                 <span className="text-sm">Errei</span>
@@ -709,12 +764,30 @@ export function CartoesView() {
                       />
                     </div>
                     <div>
+                      <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1 block">Imagem da Pergunta (URL opcional)</span>
+                      <input
+                         value={imagemPerguntaManual}
+                         onChange={(e) => setImagemPerguntaManual(e.target.value)}
+                         className="w-full text-xs font-medium text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200 focus:border-indigo-300 focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                         placeholder="Cole a URL da imagem aqui..."
+                      />
+                    </div>
+                    <div>
                       <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 block">Verso (Resposta)</span>
                       <textarea
                          value={respostaManual}
                          onChange={(e) => setRespostaManual(e.target.value)}
                          className="w-full text-sm text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200 focus:border-emerald-300 focus:bg-white outline-none resize-none transition-all focus:ring-4 focus:ring-emerald-500/10"
                          rows={4} placeholder="Escreva a resposta ou definição aqui..."
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 block">Imagem da Resposta (URL opcional)</span>
+                      <input
+                         value={imagemRespostaManual}
+                         onChange={(e) => setImagemRespostaManual(e.target.value)}
+                         className="w-full text-xs font-medium text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200 focus:border-emerald-300 focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                         placeholder="Cole a URL da imagem aqui..."
                       />
                     </div>
                     <button onClick={handleSaveManual} className="mt-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl transition-all uppercase tracking-widest self-end">Adicionar Cartão</button>
