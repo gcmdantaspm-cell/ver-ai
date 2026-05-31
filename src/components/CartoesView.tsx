@@ -4,7 +4,7 @@ import { Sparkles, Trash2, Layers, Info, Plus, Play, CheckCircle2, XCircle, File
 import { isPast, isToday, parseISO } from "date-fns";
 
 export function CartoesView() {
-  const { editais, updateCartoes, editCartao, updateCartaoSM2 } = useEdital();
+  const { editais, updateCartoes, editCartao, clearCartoes, updateCartaoSM2 } = useEdital();
   const [activeTab, setActiveTab ] = useState<'painel'|'importar'|'manual'>('painel');
 
   // Para o Dashboard
@@ -38,27 +38,45 @@ export function CartoesView() {
 
   // Analytics
   const cartoesFrequencies = useMemo(() => {
-     const all: any[] = [];
+     const frequenciesBySubject: Record<string, Record<string, number>> = {};
+
      editais.forEach(ed => {
         ed.areas.forEach(ar => {
            ar.materias.forEach(mat => {
+              const subjectName = mat.nome;
+              if (!frequenciesBySubject[subjectName]) frequenciesBySubject[subjectName] = {};
+
               mat.topicos.forEach(top => {
-                 if (top.cartoes) all.push(...top.cartoes);
+                 if (top.cartoes) {
+                     top.cartoes.forEach(c => {
+                        const q = c.pergunta.trim().toLowerCase();
+                        if (q) frequenciesBySubject[subjectName][q] = (frequenciesBySubject[subjectName][q] || 0) + 1;
+                     });
+                 }
                  top.subtopicos?.forEach(sub => {
-                    if (sub.cartoes) all.push(...sub.cartoes);
+                    const subName = sub.titulo ? `${mat.nome} > ${sub.titulo}` : subjectName;
+                    if (!frequenciesBySubject[subName]) frequenciesBySubject[subName] = {};
+                    if (sub.cartoes) {
+                        sub.cartoes.forEach(c => {
+                           const q = c.pergunta.trim().toLowerCase();
+                           if (q) frequenciesBySubject[subName][q] = (frequenciesBySubject[subName][q] || 0) + 1;
+                        });
+                    }
                  });
               });
            });
         });
      });
      
-     const freq: Record<string, number> = {};
-     all.forEach(c => {
-        const q = c.pergunta.trim().toLowerCase();
-        if (q) freq[q] = (freq[q] || 0) + 1;
-     });
+     const result: { assunto: string; ranking: [string, number][] }[] = [];
+     for (const [assunto, freq] of Object.entries(frequenciesBySubject)) {
+         const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]).filter(x => x[1] > 1);
+         if (sorted.length > 0) {
+             result.push({ assunto, ranking: sorted });
+         }
+     }
      
-     return Object.entries(freq).sort((a, b) => b[1] - a[1]).filter(x => x[1] > 1);
+     return result.sort((a,b) => b.ranking.length - a.ranking.length);
   }, [editais]);
 
   // States Manual
@@ -316,6 +334,16 @@ export function CartoesView() {
      setImportConflicts([]);
      setSafeToImport([]);
      alert("Importação concluída!");
+  };
+
+  const handleDeleteDeck = (level: 'materia' | 'topico' | 'subtopico', target: any) => {
+     if (target.cards.length === 0) return;
+     const sample = target.cards[0];
+     if (confirm(`Tem certeza que deseja apagar TODOS os ${target.cards.length} cartões deste ${level}?`)) {
+        if (level === 'materia') clearCartoes(sample.editalId, sample.areaId, sample.materiaId);
+        if (level === 'topico') clearCartoes(sample.editalId, sample.areaId, sample.materiaId, sample.topicoId);
+        if (level === 'subtopico') clearCartoes(sample.editalId, sample.areaId, sample.materiaId, sample.topicoId, sample.subtopicoId);
+     }
   };
 
   const handleImagePaste = (e: React.ClipboardEvent, setImageState: (val: string) => void) => {
@@ -635,6 +663,7 @@ export function CartoesView() {
                                         </div>
 
                                         <div className="flex items-center gap-1.5">
+                                           <button onClick={() => handleDeleteDeck('materia', m)} className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-lg transition-all cursor-pointer mr-0.5" title="Apagar todos cartões desta matéria"><Trash2 className="w-3.5 h-3.5" /></button>
                                            <button 
                                               onClick={() => startStudy(m.cards, false)} 
                                               disabled={mStats.revisoes === 0}
@@ -706,6 +735,7 @@ export function CartoesView() {
                                                           </div>
 
                                                           <div className="flex items-center gap-1">
+                                                             <button onClick={() => handleDeleteDeck('topico', t)} className="px-1.5 py-1 bg-white hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded transition-all cursor-pointer mr-0.5" title="Apagar todos cartões deste tópico"><Trash2 className="w-3 h-3" /></button>
                                                              <button 
                                                                 onClick={() => startStudy(t.cards, false)} 
                                                                 disabled={tStats.revisoes === 0}
@@ -749,6 +779,7 @@ export function CartoesView() {
                                                                       </div>
 
                                                                       <div className="flex items-center gap-1">
+                                                                         <button onClick={() => handleDeleteDeck('subtopico', s)} className="px-1.5 py-1 bg-transparent hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded transition-all cursor-pointer mr-0.5" title="Apagar todos cartões deste assunto"><Trash2 className="w-3 h-3" /></button>
                                                                          <button 
                                                                             onClick={() => startStudy(s.cards, false)} 
                                                                             disabled={sStats.revisoes === 0}
@@ -812,11 +843,25 @@ export function CartoesView() {
                    {cartoesFrequencies.length === 0 ? (
                       <p className="text-[11px] font-medium text-slate-400 text-center py-4 bg-slate-50 rounded-xl border border-slate-100 border-dashed">Nenhuma pergunta repetida.</p>
                    ) : (
-                      <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1 hide-scrollbar">
-                         {cartoesFrequencies.slice(0, 10).map(([q, count], i) => (
-                            <div key={i} className="flex justify-between items-center text-xs p-2.5 bg-slate-50 hover:bg-indigo-50/50 rounded-xl border border-slate-100 hover:border-indigo-100 transition-all">
-                              <span className="font-medium text-slate-600 truncate mr-3 flex-1" title={q}>{q}</span>
-                              <span className="px-2 py-1 bg-white border border-slate-200 text-slate-600 font-bold text-[10px] rounded-lg shrink-0 shadow-sm">{count}x</span>
+                      <div className="flex flex-col gap-4 max-h-64 overflow-y-auto pr-2 hide-scrollbar">
+                         {cartoesFrequencies.map((group, gIdx) => (
+                            <div key={gIdx} className="bg-slate-50 rounded-2xl border border-slate-100 p-3 shadow-sm">
+                               <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-3 pb-2 border-b border-indigo-100/50 flex flex-wrap gap-1">
+                                  {group.assunto.split(' > ').map((part, pIdx, arr) => (
+                                     <span key={pIdx}>
+                                        {part}
+                                        {pIdx < arr.length - 1 && <span className="mx-1.5 text-indigo-200">›</span>}
+                                     </span>
+                                  ))}
+                               </div>
+                               <div className="flex flex-col gap-2">
+                                  {group.ranking.slice(0, 5).map(([q, count], i) => (
+                                     <div key={i} className="flex justify-between items-center text-xs p-2.5 bg-white rounded-xl border border-slate-100 hover:border-indigo-200 transition-all shadow-[0_2px_5px_rgb(0,0,0,0.01)] hover:shadow-[0_2px_10px_rgb(0,0,0,0.04)]">
+                                       <span className="font-medium text-slate-700 line-clamp-1 mr-3 flex-1" title={q}>{q}</span>
+                                       <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-[10px] rounded-lg shrink-0 shadow-sm">{count}x</span>
+                                     </div>
+                                  ))}
+                               </div>
                             </div>
                          ))}
                       </div>

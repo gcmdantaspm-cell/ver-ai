@@ -24,6 +24,7 @@ interface EditalContextType {
   setStudyDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   updateNota: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, nota: string) => void;
   updateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartao: { id: string, pergunta: string, resposta: string }[], newSubtopicoTitle?: string) => void;
+  clearCartoes: (editalId: string, areaId: string, materiaId: string, topicoId?: string, subtopicoId?: string) => void;
   editCartao: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, newPergunta: string, newResposta: string, novaImagemPergunta?: string, novaImagemResposta?: string) => void;
   updateCartaoSM2: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, quality: number) => void;
   updateMetricas: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, acertos: number, erros: number) => void;
@@ -438,6 +439,32 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const clearCartoes = (editalId: string, areaId: string, materiaId: string, topicoId?: string, subtopicoId?: string) => {
+    handleUpdate(editalId, (edital) => {
+       const area = edital.areas.find(a => a.id === areaId);
+       const materia = area?.materias.find(m => m.id === materiaId);
+       if (!materia) return;
+       
+       if (topicoId) {
+          const topico = materia.topicos.find(t => t.id === topicoId);
+          if (!topico) return;
+          if (subtopicoId) {
+             const sub = topico.subtopicos.find(s => s.id === subtopicoId);
+             if (sub) sub.cartoes = [];
+          } else {
+             topico.cartoes = [];
+             topico.subtopicos.forEach(s => s.cartoes = []);
+          }
+       } else {
+          // Clear everything in materia
+          materia.topicos.forEach(t => {
+             t.cartoes = [];
+             t.subtopicos.forEach(s => s.cartoes = []);
+          });
+       }
+    });
+  };
+
   const updateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string, repetition?: number, interval?: number, easeFactor?: number, nextReview?: string }[], newSubtopicoTitle?: string) => {
     handleUpdate(editalId, (edital) => {
       const area = edital.areas.find(a => a.id === areaId);
@@ -687,7 +714,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     <EditalContext.Provider value={{
       editais, managedEditais, addEdital, deleteEdital, toggleVisto, updateItemTitle,
       deleteItem, addItem, addMaterias, addCustomRevisionDate,
-      removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, updateCartoes, editCartao, updateCartaoSM2,
+      removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, updateCartoes, clearCartoes, editCartao, updateCartaoSM2,
       updateMetricas, revisions, completeRevision, getPublicEdital, setEditalPublic,
       ciclos, managedCiclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem, getPublicCiclos
     }}>
