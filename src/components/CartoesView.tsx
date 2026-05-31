@@ -240,6 +240,44 @@ export function CartoesView() {
     alert("Cartões importados com sucesso!");
   };
 
+  const handleImagePaste = (e: React.ClipboardEvent, setImageState: (val: string) => void) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+            e.preventDefault();
+            const file = items[i].getAsFile();
+            if (!file) continue;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    let width = img.width;
+                    let height = img.height;
+                    const MAX_WIDTH = 800;
+                    
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext("2d");
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+                    setImageState(dataUrl);
+                };
+                img.src = event.target?.result as string;
+            };
+            reader.readAsDataURL(file);
+            break; 
+        }
+    }
+  };
+
   const handleSaveManual = () => {
     if (!selectedEdital || !selectedArea || !selectedMateria || !selectedTopico) {
        alert("Selecione onde salvar (Edital, Área, Matéria e Tópico)!"); return;
@@ -327,12 +365,12 @@ export function CartoesView() {
                {isEditingCartao ? (
                  <div className="flex-1 flex flex-col justify-center gap-4 text-left max-w-2xl mx-auto w-full">
                     <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest -mb-2">Editar Frente (Pergunta)</span>
-                    <textarea value={editPergunta} onChange={e => setEditPergunta(e.target.value)} className="w-full p-4 text-sm border-2 border-slate-100 bg-slate-50 rounded-2xl focus:border-indigo-300 focus:bg-white transition-all outline-none" rows={3}/>
+                    <textarea value={editPergunta} onChange={e => setEditPergunta(e.target.value)} onPaste={(e) => handleImagePaste(e, setEditImagemPergunta)} className="w-full p-4 text-sm border-2 border-slate-100 bg-slate-50 rounded-2xl focus:border-indigo-300 focus:bg-white transition-all outline-none" rows={3}/>
                     <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest -mb-2">Imagem da Pergunta (URL)</span>
                     <input value={editImagemPergunta} onChange={e => setEditImagemPergunta(e.target.value)} className="w-full p-3 text-xs border-2 border-slate-100 bg-slate-50 rounded-xl focus:border-indigo-300 focus:bg-white transition-all outline-none" placeholder="Opcional. Ex: https://.../img.jpg" />
 
                     <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-6 -mb-2">Editar Verso (Resposta)</span>
-                    <textarea value={editResposta} onChange={e => setEditResposta(e.target.value)} className="w-full p-4 text-sm border-2 border-slate-100 bg-slate-50 rounded-2xl focus:border-emerald-300 focus:bg-white transition-all outline-none" rows={5}/>
+                    <textarea value={editResposta} onChange={e => setEditResposta(e.target.value)} onPaste={(e) => handleImagePaste(e, setEditImagemResposta)} className="w-full p-4 text-sm border-2 border-slate-100 bg-slate-50 rounded-2xl focus:border-emerald-300 focus:bg-white transition-all outline-none" rows={5}/>
                     <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest -mb-2">Imagem da Resposta (URL)</span>
                     <input value={editImagemResposta} onChange={e => setEditImagemResposta(e.target.value)} className="w-full p-3 text-xs border-2 border-slate-100 bg-slate-50 rounded-xl focus:border-emerald-300 focus:bg-white transition-all outline-none" placeholder="Opcional. Ex: https://.../img.jpg" />
                     
@@ -759,8 +797,9 @@ export function CartoesView() {
                       <textarea
                          value={perguntaManual}
                          onChange={(e) => setPerguntaManual(e.target.value)}
+                         onPaste={(e) => handleImagePaste(e, setImagemPerguntaManual)}
                          className="w-full text-sm font-medium text-slate-900 bg-slate-50 p-4 rounded-xl border border-slate-200 focus:border-indigo-300 focus:bg-white outline-none resize-none transition-all focus:ring-4 focus:ring-indigo-500/10"
-                         rows={3} placeholder="Escreva a pergunta ou conceito aqui..."
+                         rows={3} placeholder="Escreva a pergunta ou conceito aqui... (Você pode colar uma imagem com Ctrl+V)"
                       />
                     </div>
                     <div>
@@ -777,8 +816,9 @@ export function CartoesView() {
                       <textarea
                          value={respostaManual}
                          onChange={(e) => setRespostaManual(e.target.value)}
+                         onPaste={(e) => handleImagePaste(e, setImagemRespostaManual)}
                          className="w-full text-sm text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200 focus:border-emerald-300 focus:bg-white outline-none resize-none transition-all focus:ring-4 focus:ring-emerald-500/10"
-                         rows={4} placeholder="Escreva a resposta ou definição aqui..."
+                         rows={4} placeholder="Escreva a resposta ou definição aqui... (Você pode colar uma imagem com Ctrl+V)"
                       />
                     </div>
                     <div>
