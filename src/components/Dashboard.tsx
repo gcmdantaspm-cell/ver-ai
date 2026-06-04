@@ -1,10 +1,10 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useEdital } from "../store";
 import { format, isToday } from "date-fns";
-import { AlertCircle, CheckCircle2, TrendingUp, BookOpen, Clock, Target, Calendar } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { AlertCircle, CheckCircle2, TrendingUp, BookOpen, Clock, Target, Calendar, ChevronLeft } from "lucide-react";
 
 export function Dashboard() {
+  const [selectedMateriaId, setSelectedMateriaId] = useState<string | null>(null);
   const { editais, revisions, completeRevision } = useEdital();
 
   const totalAtrasadas = revisions.filter(r => r.atrasada).length;
@@ -176,7 +176,7 @@ export function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
            
            {/* Recent Tasks */}
-           <div className="lg:col-span-8 bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden flex flex-col min-h-[500px]">
+           <div className="lg:col-span-12 bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden flex flex-col min-h-[500px]">
               <div className="px-8 py-6 border-b border-slate-200 flex items-center justify-between bg-white">
                  <h3 className="font-display font-bold text-lg text-slate-900">Tarefas de Revisão</h3>
                  <div className="flex items-center gap-2">
@@ -185,115 +185,90 @@ export function Dashboard() {
                  </div>
               </div>
 
-              <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 custom-scrollbar lg:min-h-[500px]">
+              <div className="flex-1 p-6 lg:min-h-[500px]">
                  {revisions.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center p-12 text-center">
+                    <div className="h-full flex flex-col items-center justify-center py-12 text-center">
                        <div className="w-16 h-16 rounded-[2rem] bg-blue-900/5 border border-blue-900/10 flex items-center justify-center mb-6">
                           <CheckCircle2 className="w-8 h-8 text-blue-900/40" />
                        </div>
                        <p className="text-sm font-bold text-slate-900 tracking-tight">Zero Pendências!</p>
                        <p className="text-xs text-slate-500 mt-2 max-w-xs leading-relaxed uppercase tracking-widest font-semibold">Toda sua pauta de revisão está em dia. Continue avançando em novos tópicos.</p>
                     </div>
+                 ) : selectedMateriaId && groupedRevisions.some(g => g.materiaId === selectedMateriaId) ? (
+                    <div className="flex flex-col h-full max-h-[500px]">
+                       <div className="flex items-center gap-3 mb-6 shrink-0">
+                          <button onClick={() => setSelectedMateriaId(null)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors text-slate-600">
+                             <ChevronLeft className="w-4 h-4"/>
+                          </button>
+                          <h4 className="font-bold text-slate-800 text-sm uppercase tracking-widest">{groupedRevisions.find(g => g.materiaId === selectedMateriaId)?.materiaNome}</h4>
+                       </div>
+                       <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
+                          {groupedRevisions.find(g => g.materiaId === selectedMateriaId)?.items.map((rev, idx) => (
+                             <div key={`${rev.topicoOuSubId}-${idx}`} className={`group flex flex-col p-4 rounded-2xl border ${rev.atrasada ? 'bg-rose-50/50 border-rose-100 shadow-sm' : 'bg-slate-50 border-slate-100 shadow-sm'} transition-all hover:border-slate-300`}>
+                                <div className="flex items-start gap-4 w-full">
+                                   <label className="relative flex items-center justify-center cursor-pointer shrink-0 mt-0.5">
+                                      <input type="checkbox" className="peer sr-only" onChange={() => completeRevision(rev.topicoOuSubId, rev.dataRevisao)} />
+                                      <div className="w-5 h-5 border-2 border-slate-300 rounded-lg peer-checked:bg-blue-900 peer-checked:border-blue-900 transition-all flex items-center justify-center group-hover:border-blue-900/50 bg-white">
+                                         <CheckCircle2 className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                      </div>
+                                   </label>
+                                   <div className="min-w-0 flex-1">
+                                      <div className="text-[13px] leading-snug font-bold text-slate-800 line-clamp-2 group-hover:text-slate-900 transition-colors" title={rev.tituloItem}>{rev.tituloItem}</div>
+                                      <div className="flex items-center gap-2 mt-1.5 opacity-60">
+                                         <span className="text-[10px] font-bold text-slate-500 tracking-widest uppercase truncate">{rev.editalTitulo}</span>
+                                      </div>
+                                   </div>
+                                </div>
+                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200/60">
+                                   <div className={`text-[11px] font-mono font-bold tracking-tight ${rev.atrasada ? 'text-rose-500' : 'text-slate-500'}`}>
+                                      {rev.atrasada ? format(new Date(rev.dataRevisao), "dd/MM") : "HOJE"}
+                                   </div>
+                                   <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider border ${rev.atrasada ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-slate-200/50 text-slate-500 border-slate-200'}`}>
+                                     {rev.atrasada ? 'Atrasado' : 'Prioridade'}
+                                   </span>
+                                </div>
+                             </div>
+                          ))}
+                       </div>
+                    </div>
                  ) : (
-                    <div className="flex gap-4 pb-2 h-full items-start snap-x">
-                       {groupedRevisions.map((group) => (
-                         <div key={group.materiaId} className="w-[300px] shrink-0 snap-start bg-slate-50/50 p-2 rounded-3xl border border-slate-100 flex flex-col max-h-full">
-                            <h4 className="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-between shrink-0">
-                              <span className="truncate mr-2">{group.materiaNome}</span>
-                              <span className="text-[9px] text-slate-400 bg-slate-200/50 px-2 flex items-center h-5 rounded-full shrink-0">{group.items.length}</span>
-                            </h4>
-                            <div className="space-y-2 mt-2 overflow-y-auto custom-scrollbar flex-1 pr-1">
-                               {group.items.map((rev, idx) => (
-                                 <div key={`${rev.topicoOuSubId}-${idx}`} className={`group flex flex-col p-3 rounded-2xl border border-transparent shadow-sm hover:border-slate-200 transition-all ${rev.atrasada ? 'bg-rose-50 hover:bg-rose-100/50' : 'bg-white hover:bg-slate-50'}`}>
-                                    <div className="flex items-start gap-3 w-full">
-                                       <label className="relative flex items-center justify-center cursor-pointer shrink-0 mt-0.5">
-                                          <input type="checkbox" className="peer sr-only" onChange={() => completeRevision(rev.topicoOuSubId, rev.dataRevisao)} />
-                                          <div className="w-4 h-4 border-2 border-slate-300 rounded peer-checked:bg-blue-900 peer-checked:border-blue-900 transition-all flex items-center justify-center group-hover:border-blue-900/50 bg-white">
-                                             <CheckCircle2 className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                          </div>
-                                       </label>
-                                       <div className="min-w-0 flex-1">
-                                          <div className="text-[12px] leading-snug font-bold text-slate-800 line-clamp-2 group-hover:text-slate-900 transition-colors" title={rev.tituloItem}>{rev.tituloItem}</div>
-                                          <div className="flex items-center gap-2 mt-1.5 opacity-60">
-                                             <span className="text-[9px] font-bold text-slate-500 tracking-widest uppercase truncate">{rev.editalTitulo}</span>
-                                          </div>
-                                       </div>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100/50">
-                                       <div className={`text-[10px] font-mono font-bold tracking-tight ${rev.atrasada ? 'text-rose-400/80' : 'text-slate-500'}`}>
-                                          {rev.atrasada ? format(new Date(rev.dataRevisao), "dd/MM") : "HOJE"}
-                                       </div>
-                                       <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border ${rev.atrasada ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
-                                         {rev.atrasada ? 'Atrasado' : 'Prioridade'}
-                                       </span>
-                                    </div>
-                                 </div>
-                               ))}
-                            </div>
-                         </div>
-                       ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pb-2">
+                       {groupedRevisions.map((group) => {
+                          const atrasadosCount = group.items.filter(r => r.atrasada).length;
+                          return (
+                             <div 
+                                key={group.materiaId} 
+                                onClick={() => setSelectedMateriaId(group.materiaId)}
+                                className="bg-slate-50 border border-slate-200 rounded-3xl p-5 cursor-pointer hover:border-blue-900/30 hover:shadow-md transition-all flex flex-col justify-between aspect-square group"
+                             >
+                                <div className="flex justify-between items-start">
+                                   <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-colors">
+                                      <BookOpen className="w-5 h-5"/>
+                                   </div>
+                                   <span className="text-[9px] font-bold text-slate-500 bg-white border border-slate-200 px-2 py-1 rounded-lg uppercase tracking-wider">
+                                      {group.items.length} tópicos
+                                   </span>
+                                </div>
+                                <div className="mt-4">
+                                   {atrasadosCount > 0 && (
+                                      <div className="mb-3">
+                                         <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-rose-50 text-rose-600 text-[9px] font-bold uppercase tracking-wider rounded border border-rose-100">
+                                            <AlertCircle className="w-3 h-3" />
+                                            {atrasadosCount} atrasados
+                                         </span>
+                                      </div>
+                                   )}
+                                   <h4 className="font-bold text-slate-800 text-sm leading-snug line-clamp-3">{group.materiaNome}</h4>
+                                </div>
+                             </div>
+                          );
+                       })}
                     </div>
                  )}
               </div>
            </div>
 
-           {/* Chart */}
-           <div className="lg:col-span-4 bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden flex flex-col h-full min-h-[500px]">
-              <div className="px-8 py-6 border-b border-slate-200 bg-white">
-                 <h3 className="font-display font-bold text-lg text-slate-900">Desempenho</h3>
-              </div>
-              <div className="flex-1 p-8 flex flex-col">
-                 {totalQuestions === 0 ? (
-                    <div className="flex-1 flex flex-col items-center justify-center opacity-30">
-                       <Target className="w-16 h-16 mb-6 stroke-1" />
-                       <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Sem dados</p>
-                    </div>
-                 ) : (
-                    <>
-                       <div className="flex-1 min-h-[250px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                             <PieChart>
-                                <Pie
-                                   data={pieData}
-                                   cx="50%"
-                                   cy="50%"
-                                   innerRadius={80}
-                                   outerRadius={110}
-                                   paddingAngle={8}
-                                   dataKey="value"
-                                   stroke="none"
-                                >
-                                   {pieData.map((entry, index) => (
-                                      <Cell key={`cell-${index}`} fill={entry.color} />
-                                   ))}
-                                </Pie>
-                                <Tooltip 
-                                   contentStyle={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '16px', color: '#1e293b', fontSize: '12px' }}
-                                   itemStyle={{ color: '#1e293b', fontWeight: 'bold' }}
-                                />
-                             </PieChart>
-                          </ResponsiveContainer>
-                       </div>
-                       <div className="mt-8 space-y-3">
-                          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 transition-all hover:bg-emerald-500/10">
-                             <div className="flex items-center gap-3">
-                                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                                <span className="text-[11px] font-bold text-slate-800 uppercase tracking-widest">Acertos</span>
-                             </div>
-                             <span className="text-sm font-mono font-bold text-emerald-400">{totalAcertos}</span>
-                          </div>
-                          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-rose-500/5 border border-rose-500/10 transition-all hover:bg-rose-500/10">
-                             <div className="flex items-center gap-3">
-                                <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]"></div>
-                                <span className="text-[11px] font-bold text-slate-800 uppercase tracking-widest">Erros</span>
-                             </div>
-                             <span className="text-sm font-mono font-bold text-rose-400">{totalErros}</span>
-                          </div>
-                       </div>
-                    </>
-                 )}
-              </div>
-           </div>
+
 
         </div>
       </div>
