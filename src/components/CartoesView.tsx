@@ -25,7 +25,7 @@ export function CartoesView() {
 
   // States de Importação
   const [textoColado, setTextoColado] = useState("");
-  const [parsedCards, setParsedCards] = useState<{pergunta: string, resposta: string}[]>([]);
+  const [parsedCards, setParsedCards] = useState<{pergunta: string, resposta: string, subtopicoTitulo?: string}[]>([]);
   
   // States de Conflito
   const [conflictMode, setConflictMode] = useState(false);
@@ -294,15 +294,24 @@ export function CartoesView() {
   const handleParse = () => {
     if (!textoColado.trim()) return;
     const lines = textoColado.split('\n');
-    const cards: {pergunta: string, resposta: string}[] = [];
+    const cards: {pergunta: string, resposta: string, subtopicoTitulo?: string}[] = [];
+    let currentSubtopico = "";
+
     lines.forEach(l => {
-      if (l.trim()) {
-        const parts = l.split(';');
-        if (parts.length >= 2) {
-          cards.push({ pergunta: parts[0].trim(), resposta: parts.slice(1).join(';').trim() });
-        } else {
-           cards.push({ pergunta: l.trim(), resposta: "-" });
-        }
+      const trimmed = l.trim();
+      if (!trimmed) return;
+
+      const parts = trimmed.split(';');
+      if (parts.length >= 2) {
+        cards.push({ 
+          pergunta: parts[0].trim(), 
+          resposta: parts.slice(1).join(';').trim(),
+          subtopicoTitulo: currentSubtopico || undefined
+        });
+      } else {
+        // Line does not contain a semicolon and is not empty.
+        // It represents a header / topic / subtopic name.
+        currentSubtopico = trimmed;
       }
     });
     setParsedCards(cards);
@@ -485,14 +494,21 @@ export function CartoesView() {
     alert("Cartão salvo com sucesso!");
   };
 
-  const saveToDestination = (newCardsData: {pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string}[]) => {
+  const saveToDestination = (newCardsData: {pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string, subtopicoTitulo?: string}[]) => {
     const edital = editais.find(e => e.id === selectedEdital);
     const area = edital?.areas.find(a => a.id === selectedArea);
     const materia = area?.materias.find(m => m.id === selectedMateria);
     const topico = materia?.topicos.find(t => t.id === selectedTopico);
-    
+    if (!topico) return;
+
+    // Filter cards by presence of subtopicoTitulo
+    const cardsWithSub = newCardsData.filter(c => c.subtopicoTitulo);
+    const cardsWithoutSub = newCardsData.filter(c => !c.subtopicoTitulo);
+
+    const novosCartoesWithSub = cardsWithSub.map(c => ({ id: Math.random().toString(36).substring(7), ...c }));
+
     let currentCartoes: any[] = [];
-    if (topico && !newAssunto.trim()) {
+    if (!newAssunto.trim()) {
        if (selectedSubtopico) {
           const s = topico.subtopicos.find(sub => sub.id === selectedSubtopico);
           if (s) currentCartoes = s.cartoes || [];
@@ -501,8 +517,24 @@ export function CartoesView() {
        }
     }
 
-    const novosCartoes = newCardsData.map(c => ({ id: Math.random().toString(36).substring(7), ...c }));
-    updateCartoes(selectedEdital, selectedArea, selectedMateria, selectedTopico, selectedSubtopico || undefined, [...currentCartoes, ...novosCartoes], newAssunto.trim() ? newAssunto.trim() : undefined);
+    const novosCartoesWithoutSub = cardsWithoutSub.map(c => ({ id: Math.random().toString(36).substring(7), ...c }));
+
+    // Assemble final list to send to updateCartoes
+    const totalCartoesParaEnviar = [
+       ...novosCartoesWithSub,
+       ...currentCartoes,
+       ...novosCartoesWithoutSub
+    ];
+
+    updateCartoes(
+       selectedEdital, 
+       selectedArea, 
+       selectedMateria, 
+       selectedTopico, 
+       selectedSubtopico || undefined, 
+       totalCartoesParaEnviar, 
+       newAssunto.trim() ? newAssunto.trim() : undefined
+    );
     
     if (newAssunto.trim()) {
        setNewAssunto(""); // Reset for next entries
@@ -1167,9 +1199,15 @@ export function CartoesView() {
                                 {parsedCards.map((c, idx) => (
                                    <div key={idx} className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 relative group">
                                       <button onClick={() => setParsedCards(parsedCards.filter((_, i) => i !== idx))} className="absolute top-2 right-2 p-1 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4"/></button>
-                                      <div className="mb-2">
-                                        <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest block mb-0.5">Pergunta</span>
-                                        <input value={c.pergunta} onChange={(e) => { const nc = [...parsedCards]; nc[idx].pergunta = e.target.value; setParsedCards(nc); }} className="w-full text-xs font-medium text-slate-900 outline-none border-b border-transparent focus:border-indigo-200"/>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+                                         <div>
+                                            <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest block mb-0.5">Pergunta</span>
+                                            <input value={c.pergunta} onChange={(e) => { const nc = [...parsedCards]; nc[idx].pergunta = e.target.value; setParsedCards(nc); }} className="w-full text-xs font-medium text-slate-900 outline-none border-b border-transparent focus:border-indigo-200"/>
+                                         </div>
+                                         <div>
+                                            <span className="text-[9px] font-bold text-purple-500 uppercase tracking-widest block mb-0.5">Assunto / Tema</span>
+                                            <input value={c.subtopicoTitulo || ""} onChange={(e) => { const nc = [...parsedCards]; nc[idx].subtopicoTitulo = e.target.value || undefined; setParsedCards(nc); }} className="w-full text-xs font-medium text-slate-600 outline-none border-b border-transparent focus:border-purple-200" placeholder="Sem assunto (Geral)"/>
+                                         </div>
                                       </div>
                                       <div>
                                         <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest block mb-0.5">Resposta</span>

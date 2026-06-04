@@ -23,7 +23,7 @@ interface EditalContextType {
   setNextRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   setStudyDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   updateNota: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, nota: string) => void;
-  updateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartao: { id: string, pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string }[], newSubtopicoTitle?: string) => void;
+  updateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartao: { id: string, pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string, subtopicoTitulo?: string }[], newSubtopicoTitle?: string) => void;
   clearCartoes: (editalId: string, areaId: string, materiaId: string, topicoId?: string, subtopicoId?: string) => void;
   editCartao: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, newPergunta: string, newResposta: string, novaImagemPergunta?: string, novaImagemResposta?: string, novaOrigem?: string) => void;
   updateCartaoSM2: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, quality: number) => void;
@@ -465,32 +465,67 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const updateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string, repetition?: number, interval?: number, easeFactor?: number, nextReview?: string }[], newSubtopicoTitle?: string) => {
+  const updateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string, repetition?: number, interval?: number, easeFactor?: number, nextReview?: string, subtopicoTitulo?: string }[], newSubtopicoTitle?: string) => {
     handleUpdate(editalId, (edital) => {
       const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
       const topico = materia?.topicos.find(t => t.id === topicoId);
       if (!topico) return;
 
-      if (newSubtopicoTitle) {
-        const existingSub = topico.subtopicos.find(s => s.titulo.toLowerCase().trim() === newSubtopicoTitle.toLowerCase().trim());
+      const groupedBySubSub: { [title: string]: typeof cartoes } = {};
+      const defaultCards: typeof cartoes = [];
+
+      cartoes.forEach(c => {
+        if (c.subtopicoTitulo) {
+          const t = c.subtopicoTitulo.trim();
+          if (!groupedBySubSub[t]) groupedBySubSub[t] = [];
+          groupedBySubSub[t].push(c);
+        } else {
+          defaultCards.push(c);
+        }
+      });
+
+      // 1. Process grouped cards (by subtopic titles)
+      Object.entries(groupedBySubSub).forEach(([title, cards]) => {
+        const existingSub = topico.subtopicos.find(
+          s => s.titulo.toLowerCase().trim() === title.toLowerCase().trim()
+        );
         if (existingSub) {
-          existingSub.cartoes = [...(existingSub.cartoes || []), ...(cartoes as any)];
+          existingSub.cartoes = [...(existingSub.cartoes || []), ...(cards as any)];
         } else {
           topico.subtopicos.push({
             id: uuidv4(),
-            titulo: newSubtopicoTitle.trim(),
+            titulo: title,
             visto: false,
             data_estudo: null,
             revisoes_agendadas: [],
-            cartoes: cartoes as any
+            cartoes: cards as any
           });
         }
-      } else if (subtopicoId) {
-        const sub = topico.subtopicos.find(s => s.id === subtopicoId);
-        if (sub) sub.cartoes = cartoes as any;
-      } else {
-        topico.cartoes = cartoes as any;
+      });
+
+      // 2. Process default cards as normal
+      if (defaultCards.length > 0) {
+        if (newSubtopicoTitle) {
+          const existingSub = topico.subtopicos.find(s => s.titulo.toLowerCase().trim() === newSubtopicoTitle.toLowerCase().trim());
+          if (existingSub) {
+            existingSub.cartoes = [...(existingSub.cartoes || []), ...(defaultCards as any)];
+          } else {
+            topico.subtopicos.push({
+              id: uuidv4(),
+              titulo: newSubtopicoTitle.trim(),
+              visto: false,
+              data_estudo: null,
+              revisoes_agendadas: [],
+              cartoes: defaultCards as any
+            });
+          }
+        } else if (subtopicoId) {
+          const sub = topico.subtopicos.find(s => s.id === subtopicoId);
+          if (sub) sub.cartoes = defaultCards as any;
+        } else {
+          topico.cartoes = defaultCards as any;
+        }
       }
     });
   };
