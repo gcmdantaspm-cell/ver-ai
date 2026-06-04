@@ -25,6 +25,7 @@ interface EditalContextType {
   updateNota: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, nota: string) => void;
   updateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartao: { id: string, pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string, subtopicoTitulo?: string }[], newSubtopicoTitle?: string) => void;
   clearCartoes: (editalId: string, areaId: string, materiaId: string, topicoId?: string, subtopicoId?: string) => void;
+  removeDuplicateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string) => void;
   editCartao: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, newPergunta: string, newResposta: string, novaImagemPergunta?: string, novaImagemResposta?: string, novaOrigem?: string) => void;
   updateCartaoSM2: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, quality: number) => void;
   updateMetricas: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, acertos: number, erros: number) => void;
@@ -465,6 +466,41 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const removeDuplicateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string) => {
+    handleUpdate(editalId, (edital) => {
+      const area = edital.areas.find(a => a.id === areaId);
+      const materia = area?.materias.find(m => m.id === materiaId);
+      const topico = materia?.topicos.find(t => t.id === topicoId);
+      if (!topico) return;
+
+      const deduplicateArray = (cartoes: any[] | undefined) => {
+        if (!cartoes) return [];
+        const unique = new Map<string, any>();
+        for (const c of cartoes) {
+          const key = c.pergunta.toLowerCase().trim();
+          if (unique.has(key)) {
+             const existing = unique.get(key);
+             if (c.resposta && !existing.resposta.includes(c.resposta)) {
+                 existing.resposta += ` | ${c.resposta}`;
+             }
+          } else {
+             unique.set(key, { ...c });
+          }
+        }
+        return Array.from(unique.values());
+      };
+
+      if (subtopicoId) {
+        const sub = topico.subtopicos.find(s => s.id === subtopicoId);
+        if (sub) {
+          sub.cartoes = deduplicateArray(sub.cartoes);
+        }
+      } else {
+        topico.cartoes = deduplicateArray(topico.cartoes);
+      }
+    });
+  };
+
   const updateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string, repetition?: number, interval?: number, easeFactor?: number, nextReview?: string, subtopicoTitulo?: string }[], newSubtopicoTitle?: string) => {
     handleUpdate(editalId, (edital) => {
       const area = edital.areas.find(a => a.id === areaId);
@@ -750,7 +786,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     <EditalContext.Provider value={{
       editais, managedEditais, addEdital, deleteEdital, toggleVisto, updateItemTitle,
       deleteItem, addItem, addMaterias, addCustomRevisionDate,
-      removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, updateCartoes, clearCartoes, editCartao, updateCartaoSM2,
+      removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, updateCartoes, clearCartoes, removeDuplicateCartoes, editCartao, updateCartaoSM2,
       updateMetricas, revisions, completeRevision, getPublicEdital, setEditalPublic,
       ciclos, managedCiclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem, getPublicCiclos
     }}>

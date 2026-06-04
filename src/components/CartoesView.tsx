@@ -4,7 +4,7 @@ import { Sparkles, Trash2, Layers, Info, Plus, Play, CheckCircle2, XCircle, File
 import { isPast, isToday, parseISO } from "date-fns";
 
 export function CartoesView() {
-  const { editais, updateCartoes, editCartao, clearCartoes, updateCartaoSM2 } = useEdital();
+  const { editais, updateCartoes, editCartao, clearCartoes, updateCartaoSM2, removeDuplicateCartoes } = useEdital();
   const [activeTab, setActiveTab ] = useState<'painel'|'importar'|'manual'>('painel');
 
   // Para o Dashboard
@@ -294,7 +294,7 @@ export function CartoesView() {
   const handleParse = () => {
     if (!textoColado.trim()) return;
     const lines = textoColado.split('\n');
-    const cards: {pergunta: string, resposta: string, subtopicoTitulo?: string}[] = [];
+    const cards: {pergunta: string, resposta: string, subtopicoTitulo?: string, count?: number}[] = [];
     let currentSubtopico = "";
 
     lines.forEach(l => {
@@ -303,18 +303,46 @@ export function CartoesView() {
 
       const parts = trimmed.split(';');
       if (parts.length >= 2) {
-        cards.push({ 
-          pergunta: parts[0].trim(), 
-          resposta: parts.slice(1).join(';').trim(),
-          subtopicoTitulo: currentSubtopico || undefined
-        });
+        const pergunta = parts[0].trim();
+        const resposta = parts.slice(1).join(';').trim();
+        
+        const existing = cards.find(c => c.pergunta.toLowerCase() === pergunta.toLowerCase());
+        
+        if (existing) {
+           existing.count = (existing.count || 1) + 1;
+           if (!existing.resposta.includes(resposta)) {
+              existing.resposta += ` | ${resposta}`;
+           }
+        } else {
+           cards.push({ 
+             pergunta, 
+             resposta,
+             subtopicoTitulo: currentSubtopico || undefined,
+             count: 1
+           });
+        }
       } else {
-        // Line does not contain a semicolon and is not empty.
-        // It represents a header / topic / subtopic name.
         currentSubtopico = trimmed;
       }
     });
-    setParsedCards(cards);
+
+    // Append counts before setting
+    const finalCards = cards.map(c => {
+       if (c.count && c.count > 1) {
+           return {
+               pergunta: c.pergunta,
+               resposta: `${c.resposta} (Apareceu ${c.count}x)`,
+               subtopicoTitulo: c.subtopicoTitulo
+           };
+       }
+       return {
+           pergunta: c.pergunta,
+           resposta: c.resposta,
+           subtopicoTitulo: c.subtopicoTitulo
+       };
+    });
+
+    setParsedCards(finalCards);
   };
 
   const handleSaveImport = () => {
@@ -385,6 +413,18 @@ export function CartoesView() {
         if (level === 'materia') clearCartoes(sample.editalId, sample.areaId, sample.materiaId);
         if (level === 'topico') clearCartoes(sample.editalId, sample.areaId, sample.materiaId, sample.topicoId);
         if (level === 'subtopico') clearCartoes(sample.editalId, sample.areaId, sample.materiaId, sample.topicoId, sample.subtopicoId);
+     }
+  };
+
+  const handleOptimizeDeck = (level: 'materia' | 'topico' | 'subtopico', target: any) => {
+     if (target.cards.length === 0) return;
+     const sample = target.cards[0];
+     if (confirm(`Atenção: Esta ação juntará cartões que tenham a MESMA pergunta (frente) no nível de assunto selecionado (${level}). Seus devidos versos serão combinados e quaisquer duplicatas removidas. Deseja prosseguir?`)) {
+        if (level === 'materia') { // Not safely granular, we only optimized per-topico in store. Wait, is it supported?
+           alert("A otimização em massa por matéria não é recomendada por aqui. Otimize por Tópico ou Assunto.");
+        }
+        if (level === 'topico') removeDuplicateCartoes(sample.editalId, sample.areaId, sample.materiaId, sample.topicoId);
+        if (level === 'subtopico') removeDuplicateCartoes(sample.editalId, sample.areaId, sample.materiaId, sample.topicoId, sample.subtopicoId);
      }
   };
 
@@ -867,6 +907,7 @@ export function CartoesView() {
                                                           </div>
 
                                                           <div className="flex items-center gap-1">
+                                                             <button onClick={() => handleOptimizeDeck('topico', t)} className="px-1.5 py-1 bg-white hover:bg-amber-50 text-slate-300 hover:text-amber-500 rounded transition-all cursor-pointer mr-0.5" title="Otimizar Baralho (Unir frentes iguais)"><Sparkles className="w-3 h-3" /></button>
                                                              <button onClick={() => handleExportAnki(t, t.topicoTitulo)} className="px-1.5 py-1 bg-white hover:bg-indigo-50 text-slate-300 hover:text-indigo-600 rounded transition-all cursor-pointer mr-0.5" title="Exportar para Anki (.csv)"><Download className="w-3 h-3" /></button>
                                                              <button onClick={() => handleDeleteDeck('topico', t)} className="px-1.5 py-1 bg-white hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded transition-all cursor-pointer mr-0.5" title="Apagar todos cartões deste tópico"><Trash2 className="w-3 h-3" /></button>
                                                              <button 
@@ -920,6 +961,7 @@ export function CartoesView() {
                                                                       </div>
 
                                                                       <div className="flex items-center gap-1">
+                                                                         <button onClick={() => handleOptimizeDeck('subtopico', s)} className="px-1.5 py-1 bg-transparent hover:bg-amber-50 text-slate-300 hover:text-amber-500 rounded transition-all cursor-pointer mr-0.5" title="Otimizar Baralho (Unir frentes iguais)"><Sparkles className="w-3 h-3" /></button>
                                                                          <button onClick={() => handleExportAnki(s, s.subtopicoTitulo)} className="px-1.5 py-1 bg-transparent hover:bg-indigo-50 text-slate-300 hover:text-indigo-600 rounded transition-all cursor-pointer mr-0.5" title="Exportar para Anki (.csv)"><Download className="w-3 h-3" /></button>
                                                                          <button onClick={() => handleDeleteDeck('subtopico', s)} className="px-1.5 py-1 bg-transparent hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded transition-all cursor-pointer mr-0.5" title="Apagar todos cartões deste assunto"><Trash2 className="w-3 h-3" /></button>
                                                                          <button 
