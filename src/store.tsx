@@ -117,7 +117,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     if (ciclos.some(c => c.id === ciclo.id || (c.originalCycleId && c.originalCycleId === ciclo.originalCycleId))) return;
     
     const cycleUserId = ciclo.userId || user.uid;
-    setDoc(doc(db, "ciclos", ciclo.id), { ...ciclo, userId: cycleUserId }).catch(err => {
+    setDoc(doc(db, "ciclos", ciclo.id), JSON.parse(JSON.stringify({ ...ciclo, userId: cycleUserId }))).catch(err => {
       handleFirestoreError(err, OperationType.CREATE, `ciclos/${ciclo.id}`);
     });
   };
@@ -132,7 +132,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   const updateCiclo = (ciclo: StudyCycle) => {
     if (!user) return;
     const cycleUserId = ciclo.userId || user.uid;
-    setDoc(doc(db, "ciclos", ciclo.id), { ...ciclo, userId: cycleUserId }).catch(err => {
+    setDoc(doc(db, "ciclos", ciclo.id), JSON.parse(JSON.stringify({ ...ciclo, userId: cycleUserId }))).catch(err => {
       handleFirestoreError(err, OperationType.UPDATE, `ciclos/${ciclo.id}`);
     });
   };
