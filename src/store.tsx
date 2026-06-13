@@ -408,20 +408,24 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const deleteItem = (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area'|'materia'|'topico'|'subtopico') => {
+  const deleteItem = (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area'|'materia'|'topico'|'subtopico', parentTopicoId?: string) => {
     handleUpdate(editalId, (edital) => {
       if(type === 'area') {
-        edital.areas = edital.areas.filter(a => a.id !== itemId);
+        const targetId = itemId || areaId;
+        edital.areas = edital.areas.filter(a => a.id !== targetId);
       } else if (type === 'materia') {
+        const targetId = itemId || materiaId;
         const area = edital.areas.find(a => a.id === areaId);
-        if(area) area.materias = area.materias.filter(m => m.id !== itemId);
+        if(area) area.materias = area.materias.filter(m => m.id !== targetId);
       } else if (type === 'topico') {
         const m = edital.areas.find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
         if(m) m.topicos = m.topicos.filter(t => t.id !== itemId);
       } else if (type === 'subtopico') {
         const m = edital.areas.find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
         if(m) {
-          const t = m.topicos.find(t => t.subtopicos.some(s => s.id === itemId));
+          const t = parentTopicoId 
+            ? m.topicos.find(t => t.id === parentTopicoId)
+            : m.topicos.find(t => t.subtopicos.some(s => s.id === itemId));
           if(t) t.subtopicos = t.subtopicos.filter(s => s.id !== itemId);
         }
       }

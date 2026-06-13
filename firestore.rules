@@ -43,12 +43,11 @@ service cloud.firestore {
                       && (incoming().userId == request.auth.uid || (('managedBy' in incoming()) && incoming().managedBy == request.auth.uid));
                       
         allow update: if isSignedIn() 
-                      && (existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid)) 
+                      && (existing() == null || existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid)) 
                       && isValidEdital(incoming())
-                      && incoming().userId == existing().userId
-                      && (incoming().diff(existing()).affectedKeys().hasOnly(['titulo', 'areas', 'isPublic', 'ownerName', 'importedFrom', 'managedBy', 'copiedByEmail', 'copiedByName', 'originalEditalId']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
+                      && (existing() == null || incoming().userId == existing().userId);
                       
-        allow delete: if isSignedIn() && (existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid));
+        allow delete: if isSignedIn() && (existing() == null || existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid));
     }
 
     function isValidCiclo(data) {
@@ -80,12 +79,11 @@ service cloud.firestore {
                       && (incoming().userId == request.auth.uid || (('managedBy' in incoming()) && incoming().managedBy == request.auth.uid));
                       
         allow update: if isSignedIn() 
-                      && (existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid)) 
+                      && (existing() == null || existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid)) 
                       && isValidCiclo(incoming())
-                      && incoming().userId == existing().userId
-                      && (incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'items', 'targetMinutes', 'ordem', 'isPublic', 'ownerName', 'managedBy', 'copiedByEmail', 'copiedByName', 'originalCycleId']) || incoming().diff(existing()).affectedKeys().hasOnly([]));
+                      && (existing() == null || incoming().userId == existing().userId);
                       
-        allow delete: if isSignedIn() && (existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid));
+        allow delete: if isSignedIn() && (existing() == null || existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid));
     }
   }
 }
