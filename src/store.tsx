@@ -418,15 +418,17 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         const area = edital.areas.find(a => a.id === areaId);
         if(area) area.materias = area.materias.filter(m => m.id !== targetId);
       } else if (type === 'topico') {
+        const targetId = itemId;
         const m = edital.areas.find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
-        if(m) m.topicos = m.topicos.filter(t => t.id !== itemId);
+        if(m) m.topicos = m.topicos.filter(t => t.id !== targetId);
       } else if (type === 'subtopico') {
+        const targetId = itemId;
         const m = edital.areas.find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
         if(m) {
           const t = parentTopicoId 
             ? m.topicos.find(t => t.id === parentTopicoId)
-            : m.topicos.find(t => t.subtopicos.some(s => s.id === itemId));
-          if(t) t.subtopicos = t.subtopicos.filter(s => s.id !== itemId);
+            : m.topicos.find(t => t.subtopicos.some(s => s.id === targetId));
+          if(t) t.subtopicos = t.subtopicos.filter(s => s.id !== targetId);
         }
       }
     });

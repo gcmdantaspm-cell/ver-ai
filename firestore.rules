@@ -18,7 +18,6 @@ service cloud.firestore {
     
     function isValidEdital(data) {
         return data.keys().hasAll(['userId', 'titulo', 'areas'])
-            && data.keys().size() <= 12
             && data.userId is string
             && data.titulo is string
             && data.titulo.size() <= 200
@@ -52,7 +51,6 @@ service cloud.firestore {
 
     function isValidCiclo(data) {
         return data.keys().hasAll(['userId', 'editalId', 'nome', 'items', 'created_at'])
-            && data.keys().size() <= 15
             && data.userId is string
             && data.editalId is string
             && data.nome is string
