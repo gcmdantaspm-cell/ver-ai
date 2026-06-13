@@ -7,6 +7,13 @@ export function CartoesView() {
   const { editais, updateCartoes, editCartao, clearCartoes, updateCartaoSM2, removeDuplicateCartoes } = useEdital();
   const [activeTab, setActiveTab ] = useState<'painel'|'importar'|'manual'>('painel');
 
+  const safeConfirm = (msg: string) => {
+    try {
+      if (window.self !== window.top) return true;
+      return window.confirm(msg);
+    } catch (e) { return true; }
+  };
+
   // Para o Dashboard
   const [studySession, setStudySession] = useState<{ cards: any[], currentIndex: number, showAnswer: boolean } | null>(null);
   const [isEditingCartao, setIsEditingCartao] = useState(false);
@@ -409,7 +416,7 @@ export function CartoesView() {
   const handleDeleteDeck = (level: 'materia' | 'topico' | 'subtopico', target: any) => {
      if (target.cards.length === 0) return;
      const sample = target.cards[0];
-     if (confirm(`Tem certeza que deseja apagar TODOS os ${target.cards.length} cartões deste ${level}?`)) {
+     if (safeConfirm(`Tem certeza que deseja apagar TODOS os ${target.cards.length} cartões deste ${level}?`)) {
         if (level === 'materia') clearCartoes(sample.editalId, sample.areaId, sample.materiaId);
         if (level === 'topico') clearCartoes(sample.editalId, sample.areaId, sample.materiaId, sample.topicoId);
         if (level === 'subtopico') clearCartoes(sample.editalId, sample.areaId, sample.materiaId, sample.topicoId, sample.subtopicoId);
@@ -419,7 +426,7 @@ export function CartoesView() {
   const handleOptimizeDeck = (level: 'materia' | 'topico' | 'subtopico', target: any) => {
      if (target.cards.length === 0) return;
      const sample = target.cards[0];
-     if (confirm(`Atenção: Esta ação juntará cartões que tenham a MESMA pergunta (frente) no nível de assunto selecionado (${level}). Seus devidos versos serão combinados e quaisquer duplicatas removidas. Deseja prosseguir?`)) {
+     if (safeConfirm(`Atenção: Esta ação juntará cartões que tenham a MESMA pergunta (frente) no nível de assunto selecionado (${level}). Seus devidos versos serão combinados e quaisquer duplicatas removidas. Deseja prosseguir?`)) {
         if (level === 'materia') { // Not safely granular, we only optimized per-topico in store. Wait, is it supported?
            alert("A otimização em massa por matéria não é recomendada por aqui. Otimize por Tópico ou Assunto.");
         }
@@ -713,7 +720,7 @@ export function CartoesView() {
          {editais.length > 0 && (
            <button 
              onClick={() => {
-               if (confirm("ATENÇÃO EXTREMA: Você está prestes a apagar TODOS os cartões de TODOS os editais e matérias na sua conta. Esta ação não pode ser desfeita. Tem certeza absoluta?")) {
+               if (safeConfirm("ATENÇÃO EXTREMA: Você está prestes a apagar TODOS os cartões de TODOS os editais e matérias na sua conta. Esta ação não pode ser desfeita. Tem certeza absoluta?")) {
                  editais.forEach(e => clearCartoes(e.id));
                }
              }}

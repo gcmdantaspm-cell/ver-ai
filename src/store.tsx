@@ -124,7 +124,11 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const deleteCiclo = (id: string) => {
     if (!user) return;
+    // Optimistic delete
+    setCiclos(prev => prev.filter(c => c.id !== id));
+    setManagedCiclos(prev => prev.filter(c => c.id !== id));
     deleteDoc(doc(db, "ciclos", id)).catch(err => {
+      alert(`Erro ao excluir ciclo da nuvem: ${err.message}`);
       handleFirestoreError(err, OperationType.DELETE, `ciclos/${id}`);
     });
   };
@@ -200,7 +204,9 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   const deleteEdital = (id: string) => {
     if (!user) return;
     setEditais((prev) => prev.filter((e) => e.id !== id));
+    setManagedEditais((prev) => prev.filter((e) => e.id !== id));
     deleteDoc(doc(db, "editais", id)).catch(err => {
+       alert(`Erro ao excluir edital da nuvem: ${err.message}`);
        handleFirestoreError(err, OperationType.DELETE, `editais/${id}`);
     });
   };

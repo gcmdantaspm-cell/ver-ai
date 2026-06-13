@@ -75,6 +75,12 @@ export function StudyCycles({
 
   const safeConfirm = (msg: string) => {
     try {
+      // Check if we're in an iframe (like AI Studio preview)
+      if (window.self !== window.top) {
+         // Some iframes block window.confirm and return false. 
+         // Since we can't reliably use native confirm, just return true.
+         return true; 
+      }
       return window.confirm(msg);
     } catch (e) {
       return true;

@@ -53,6 +53,13 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   const editalCiclos = ciclos.filter(c => c.editalId === edital.id);
   const [shareModal, setShareModal] = useState<{ isOpen: boolean, selectedCiclos: string[] } | null>(null);
 
+  const safeConfirm = (msg: string) => {
+    try {
+      if (window.self !== window.top) return true;
+      return window.confirm(msg);
+    } catch (e) { return true; }
+  };
+
   const [expandedMaterias, setExpandedMaterias] = useState<string[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [activeTab, setActiveTab] = useState<'topicos' | 'revisoes' | 'notas' | 'cartoes'>('topicos');
@@ -379,7 +386,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
              Área
            </button>
            <button 
-              onClick={() => confirm("Excluir edital completo?") && deleteEdital(edital.id)} 
+              onClick={() => safeConfirm("Excluir edital completo?") && deleteEdital(edital.id)} 
               className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/5 rounded-xl transition-all border border-slate-200 ml-1 shrink-0"
             >
              <Trash2 className="w-3.5 h-3.5" />
@@ -444,7 +451,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => setAiModal({isOpen: true, editalId: edital.id, areaId: area.id})} className="p-1 text-slate-400 hover:text-amber-500" title="Gerar Matéria com IA"><Sparkles className="w-3 h-3" /></button>
                             <button onClick={() => addItem(edital.id, area.id)} className="p-1 text-slate-400 hover:text-blue-800" title="Add Matéria"><Plus className="w-3 h-3" /></button>
-                            <button onClick={() => confirm("Excluir área?") && deleteItem(edital.id, area.id, '', '', 'area')} className="p-1 text-slate-400 hover:text-rose-400" title="Delete Área"><Trash2 className="w-3 h-3" /></button>
+                            <button onClick={() => safeConfirm("Excluir área?") && deleteItem(edital.id, area.id, '', '', 'area')} className="p-1 text-slate-400 hover:text-rose-400" title="Delete Área"><Trash2 className="w-3 h-3" /></button>
                          </div>
                       </div>
                       <div className="h-px bg-slate-200 flex-1"></div>
@@ -496,7 +503,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                 </div>
                                 <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover/mat:opacity-100 transition-opacity">
                                    <button onClick={() => addItem(edital.id, area.id, materia.id)} className="p-1 text-slate-400 hover:text-blue-800 bg-slate-100 rounded-md border border-slate-200" title="Add Tópico"><Plus className="w-3 h-3" /></button>
-                                   <button onClick={() => confirm("Excluir matéria?") && deleteItem(edital.id, area.id, materia.id, materia.id, 'materia')} className="p-1 text-slate-400 hover:text-rose-400 bg-slate-100 rounded-md border border-slate-200" title="Delete Matéria"><Trash2 className="w-3 h-3" /></button>
+                                   <button onClick={() => safeConfirm("Excluir matéria?") && deleteItem(edital.id, area.id, materia.id, materia.id, 'materia')} className="p-1 text-slate-400 hover:text-rose-400 bg-slate-100 rounded-md border border-slate-200" title="Delete Matéria"><Trash2 className="w-3 h-3" /></button>
                                 </div>
                              </div>
                           </div>
@@ -566,7 +573,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                 <button onClick={() => setCartoesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, cartoes: topico.cartoes || [], title: topico.titulo })} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-indigo-500'}`}><Sparkles className="w-3 h-3" /></button>
                                                 <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, currentNote: topico.notas || '', title: topico.titulo })} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-amber-500'}`}><StickyNote className="w-3 h-3" /></button>
                                                 <button onClick={() => addItem(edital.id, area.id, materia.id, topico.id)} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-blue-800'}`}><Plus className="w-3 h-3" /></button>
-                                                <button onClick={() => confirm("Excluir tópico?") && deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-500 hover:text-rose-500'}`}><Trash2 className="w-3 h-3" /></button>
+                                                <button onClick={() => safeConfirm("Excluir tópico?") && deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-500 hover:text-rose-500'}`}><Trash2 className="w-3 h-3" /></button>
                                              </div>
                                            </div>
                                         </div>
@@ -624,7 +631,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                      <div className="lg:col-span-1 flex justify-end gap-0.5 opacity-100 lg:opacity-0 group-hover/sub:opacity-100 transition-opacity">
                                                         <button onClick={() => setCartoesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, cartoes: sub.cartoes || [], title: sub.titulo })} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-indigo-500'}`}><Sparkles className="w-2.5 h-2.5" /></button>
                                                         <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, currentNote: sub.notas || '', title: sub.titulo })} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-amber-500'}`}><StickyNote className="w-2.5 h-2.5" /></button>
-                                                        <button onClick={() => confirm("Excluir subtópico?") && deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico', topico.id)} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-500'}`}><Trash2 className="w-2.5 h-2.5" /></button>
+                                                        <button onClick={() => safeConfirm("Excluir subtópico?") && deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico', topico.id)} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-500'}`}><Trash2 className="w-2.5 h-2.5" /></button>
                                                      </div>
                                                    </div>
                                                 </div>
