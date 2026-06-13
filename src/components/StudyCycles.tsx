@@ -407,36 +407,47 @@ export function StudyCycles({
             >
               <div className="flex justify-between items-start mb-2">
                 {editingCycleId === ciclo.id ? (
-                  <input 
-                    autoFocus
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    onBlur={() => saveCycleTitle(ciclo.id)}
-                    onKeyDown={(e) => e.key === 'Enter' && saveCycleTitle(ciclo.id)}
-                    className="font-bold text-slate-900 bg-white border border-indigo-200 rounded px-2 py-1 flex-1 outline-none"
-                  />
+                  <div className="flex items-center gap-1 w-full">
+                    <input 
+                      autoFocus
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && saveCycleTitle(ciclo.id)}
+                      className="font-bold text-slate-900 bg-white border border-indigo-200 focus:border-indigo-500 rounded px-2 py-1 w-full outline-none text-sm"
+                    />
+                    <button onClick={() => saveCycleTitle(ciclo.id)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded" title="Salvar">
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => setEditingCycleId(null)} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded" title="Cancelar">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 ) : (
-                  <h2 
-                    onDoubleClick={() => { setEditingCycleId(ciclo.id); setEditValue(ciclo.nome); }}
-                    className="font-bold text-slate-900 line-clamp-1 cursor-text flex-1"
-                  >
-                    {ciclo.nome}
-                  </h2>
+                  <div className="flex justify-between items-start w-full">
+                    <h2 
+                      onDoubleClick={() => { setEditingCycleId(ciclo.id); setEditValue(ciclo.nome); }}
+                      className="font-bold text-slate-900 line-clamp-1 cursor-text flex-1"
+                    >
+                      {ciclo.nome}
+                    </h2>
+                    <div className="flex items-center ml-2">
+                      <button 
+                        onClick={() => { setEditingCycleId(ciclo.id); setEditValue(ciclo.nome); }}
+                        className="text-slate-400 hover:text-indigo-600 p-1.5 hover:bg-indigo-50 rounded transition-all mr-0.5"
+                        title="Editar nome do ciclo"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => confirm("Remover este ciclo completamente?") && deleteCiclo(ciclo.id)}
+                        className="text-slate-400 hover:text-rose-500 p-1.5 hover:bg-rose-50 rounded transition-colors"
+                        title="Excluir ciclo"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 )}
-                <div className="flex items-center">
-                  <button 
-                    onClick={() => { setEditingCycleId(ciclo.id); setEditValue(ciclo.nome); }}
-                    className="text-slate-400 hover:text-indigo-600 p-1 opacity-0 group-hover/card:opacity-100 transition-opacity"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button 
-                    onClick={() => confirm("Remover ciclo?") && deleteCiclo(ciclo.id)}
-                    className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 mb-2">
                 <div className="flex items-center gap-1">

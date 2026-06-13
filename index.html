@@ -10,6 +10,19 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Prevent polyfills from crashing the app due to window.fetch getter-only properties in strict iframes
+      const originalFetch = window.fetch;
+      try {
+        Object.defineProperty(window, 'fetch', {
+          get: () => originalFetch,
+          set: () => { /* safely ignore polyfill overrides */ },
+          configurable: true
+        });
+      } catch (e) {
+        // ignore if already defined
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
