@@ -73,6 +73,14 @@ export function StudyCycles({
   
   const [isUploadingDrive, setIsUploadingDrive] = useState(false);
 
+  const safeConfirm = (msg: string) => {
+    try {
+      return window.confirm(msg);
+    } catch (e) {
+      return true;
+    }
+  };
+
   const handleEditalSelect = (editalId: string) => {
     setSelectedEditalId(editalId);
     if (!editalId) {
@@ -453,7 +461,7 @@ export function StudyCycles({
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button 
-                        onClick={() => confirm("Remover este ciclo completamente?") && deleteCiclo(ciclo.id)}
+                        onClick={() => safeConfirm("Remover este ciclo completamente?") && deleteCiclo(ciclo.id)}
                         className="text-slate-400 hover:text-rose-500 p-1.5 hover:bg-rose-50 rounded transition-colors"
                         title="Excluir ciclo"
                       >
@@ -681,7 +689,7 @@ export function StudyCycles({
                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded">Total do Edital: {Math.floor(totalMins/60)}h {totalMins%60}m</span>
                        <button
                          onClick={() => {
-                           if (confirm(`Tem certeza que deseja apagar TODOS os ciclos do edital ${group.edital.titulo}?`)) {
+                           if (safeConfirm(`Tem certeza que deseja apagar TODOS os ciclos do edital ${group.edital.titulo}?`)) {
                              group.ciclosFromEdital.forEach(c => deleteCiclo(c.id));
                            }
                          }}
@@ -737,7 +745,7 @@ export function StudyCycles({
                   <div className="ml-auto flex items-center gap-2">
                     <button
                       onClick={() => {
-                        if (confirm(`Tem certeza que deseja apagar TODOS os outros ciclos avulsos?`)) {
+                        if (safeConfirm(`Tem certeza que deseja apagar TODOS os outros ciclos avulsos?`)) {
                           standaloneCiclos.forEach(c => deleteCiclo(c.id));
                         }
                       }}
