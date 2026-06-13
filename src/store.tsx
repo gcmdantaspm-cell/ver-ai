@@ -158,36 +158,34 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   const handleUpdate = (editalId: string, updater: (edital: Edital) => void) => {
     if (!user) return;
     
-    // Check if it's in the user's own editais
-    const isOwner = editais.some(e => e.id === editalId);
-    
-    if (isOwner) {
-      setEditais(prev => {
+    setEditais(prev => {
+      const editalIndex = prev.findIndex(e => e.id === editalId);
+      if (editalIndex !== -1) {
         const newArray = JSON.parse(JSON.stringify(prev)) as Edital[];
-        const edital = newArray.find(e => e.id === editalId);
-        if (edital) {
-          updater(edital);
-          setDoc(doc(db, "editais", edital.id), JSON.parse(JSON.stringify({ ...edital, userId: user.uid }))).catch(err => {
-             handleFirestoreError(err, OperationType.UPDATE, `editais/${edital.id}`);
-          });
-        }
+        const edital = newArray[editalIndex];
+        updater(edital);
+        setDoc(doc(db, "editais", edital.id), JSON.parse(JSON.stringify({ ...edital, userId: user.uid }))).catch(err => {
+           handleFirestoreError(err, OperationType.UPDATE, `editais/${edital.id}`);
+        });
         return newArray;
-      });
-    } else {
-      // Must be in managed
-      setManagedEditais(prev => {
+      }
+      return prev;
+    });
+
+    setManagedEditais(prev => {
+      const editalIndex = prev.findIndex(e => e.id === editalId);
+      if (editalIndex !== -1) {
         const newArray = JSON.parse(JSON.stringify(prev)) as Edital[];
-        const edital = newArray.find(e => e.id === editalId);
-        if (edital) {
-          updater(edital);
-          // Preserve the original userId of the student!
-          setDoc(doc(db, "editais", edital.id), JSON.parse(JSON.stringify(edital))).catch(err => {
-             handleFirestoreError(err, OperationType.UPDATE, `editais/${edital.id}`);
-          });
-        }
+        const edital = newArray[editalIndex];
+        updater(edital);
+        // Preserve the original userId of the student!
+        setDoc(doc(db, "editais", edital.id), JSON.parse(JSON.stringify(edital))).catch(err => {
+           handleFirestoreError(err, OperationType.UPDATE, `editais/${edital.id}`);
+        });
         return newArray;
-      });
-    }
+      }
+      return prev;
+    });
   };
 
   const addEdital = (edital: Edital) => {
