@@ -24,7 +24,7 @@ interface EditalContextType {
   setStudyDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
   updateNota: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, nota: string) => void;
   updateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartao: { id: string, pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string, subtopicoTitulo?: string }[], newSubtopicoTitle?: string) => void;
-  clearCartoes: (editalId: string, areaId: string, materiaId: string, topicoId?: string, subtopicoId?: string) => void;
+  clearCartoes: (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, subtopicoId?: string) => void;
   removeDuplicateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string) => void;
   editCartao: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, newPergunta: string, newResposta: string, novaImagemPergunta?: string, novaImagemResposta?: string, novaOrigem?: string) => void;
   updateCartaoSM2: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, quality: number) => void;
@@ -440,8 +440,21 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const clearCartoes = (editalId: string, areaId: string, materiaId: string, topicoId?: string, subtopicoId?: string) => {
+  const clearCartoes = (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, subtopicoId?: string) => {
     handleUpdate(editalId, (edital) => {
+       if (!areaId || !materiaId) {
+         edital.areas.forEach(area => {
+           area.materias.forEach(materia => {
+             materia.topicos.forEach(topico => {
+               topico.cartoes = [];
+               topico.subtopicos.forEach(sub => {
+                 sub.cartoes = [];
+               });
+             });
+           });
+         });
+         return;
+       }
        const area = edital.areas.find(a => a.id === areaId);
        const materia = area?.materias.find(m => m.id === materiaId);
        if (!materia) return;
