@@ -679,6 +679,17 @@ export function StudyCycles({
                     <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">{group.edital.titulo}</h2>
                     <div className="ml-auto flex items-center gap-2">
                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded">Total do Edital: {Math.floor(totalMins/60)}h {totalMins%60}m</span>
+                       <button
+                         onClick={() => {
+                           if (confirm(`Tem certeza que deseja apagar TODOS os ciclos do edital ${group.edital.titulo}?`)) {
+                             group.ciclosFromEdital.forEach(c => deleteCiclo(c.id));
+                           }
+                         }}
+                         className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded transition-colors ml-2"
+                         title="Excluir todos os ciclos deste edital"
+                       >
+                         <Trash2 className="w-4 h-4" />
+                       </button>
                     </div>
                   </div>
 
@@ -723,6 +734,19 @@ export function StudyCycles({
                 <div className="flex items-center gap-3 pb-2 border-b-2 border-slate-200">
                   <Layers className="w-5 h-5 text-slate-400" />
                   <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Outros Ciclos</h2>
+                  <div className="ml-auto flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (confirm(`Tem certeza que deseja apagar TODOS os outros ciclos avulsos?`)) {
+                          standaloneCiclos.forEach(c => deleteCiclo(c.id));
+                        }
+                      }}
+                      className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded transition-colors"
+                      title="Excluir todos os ciclos avulsos"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 <Droppable droppableId="ciclos-standalone" direction="horizontal" type="CICLO">
                   {(provided) => (
