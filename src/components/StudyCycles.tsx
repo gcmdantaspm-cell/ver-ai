@@ -344,8 +344,10 @@ export function StudyCycles({
   const [draggedCycleId, setDraggedCycleId] = useState<string | null>(null);
 
   const sortedCiclos = [...ciclos].sort((a, b) => {
-    if (a.ordem !== undefined && b.ordem !== undefined) {
-      return a.ordem - b.ordem;
+    const aOrdem = a.ordem ?? Number.MAX_SAFE_INTEGER;
+    const bOrdem = b.ordem ?? Number.MAX_SAFE_INTEGER;
+    if (aOrdem !== bOrdem) {
+      return aOrdem - bOrdem;
     }
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   });
@@ -354,14 +356,26 @@ export function StudyCycles({
     if (!result.destination) return;
     const sourceIndex = result.source.index;
     const targetIndex = result.destination.index;
+    
+    if (result.source.droppableId !== result.destination.droppableId) return;
     if (sourceIndex === targetIndex) return;
 
-    const newCiclos = [...sortedCiclos];
-    const [removed] = newCiclos.splice(sourceIndex, 1);
-    newCiclos.splice(targetIndex, 0, removed);
+    let targetGroupCiclos: StudyCycle[] = [];
+    if (result.source.droppableId === 'ciclos-standalone') {
+      targetGroupCiclos = sortedCiclos.filter(c => !c.editalId || !editais.find(e => e.id === c.editalId));
+    } else {
+      const editalId = result.source.droppableId.replace('ciclos-', '');
+      targetGroupCiclos = sortedCiclos.filter(c => c.editalId === editalId);
+    }
 
-    // Update 'ordem' for all to persist sorting
-    newCiclos.forEach((ciclo, idx) => {
+    if (!targetGroupCiclos.length) return;
+
+    const newGroup = Array.from(targetGroupCiclos);
+    const [removed] = newGroup.splice(sourceIndex, 1);
+    newGroup.splice(targetIndex, 0, removed);
+
+    // Update 'ordem' based on their new exact mapped order
+    newGroup.forEach((ciclo, idx) => {
       if (ciclo.ordem !== idx) {
         updateCiclo({ ...ciclo, ordem: idx });
       }
