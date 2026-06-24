@@ -13,15 +13,15 @@ interface EditalContextType {
   managedCiclos: StudyCycle[];
   addEdital: (edital: Edital) => void;
   deleteEdital: (id: string) => void;
-  toggleVisto: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string) => void;
+  toggleVisto: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string, cascade?: boolean) => void;
   updateItemTitle: (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'edital' | 'area' | 'materia' | 'topico' | 'subtopico') => void;
   deleteItem: (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area' | 'materia' | 'topico' | 'subtopico') => void;
   addItem: (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title?: string) => void;
   addMaterias: (editalId: string, areaId: string, materias: Materia[]) => void;
-  addCustomRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => void;
-  removeRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => void;
+  addCustomRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string, cascade?: boolean) => void;
+  removeRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string, cascade?: boolean) => void;
   setNextRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
-  setStudyDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => void;
+  setStudyDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null, cascade?: boolean) => void;
   updateNota: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, nota: string) => void;
   updateCartoes: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartao: { id: string, pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string, subtopicoTitulo?: string }[], newSubtopicoTitle?: string) => void;
   clearCartoes: (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, subtopicoId?: string) => void;
@@ -209,7 +209,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const toggleVisto = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string) => {
+  const toggleVisto = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string, cascade?: boolean) => {
     handleUpdate(editalId, (edital) => {
       const now = new Date().toISOString();
       const area = edital.areas.find(a => a.id === areaId);
@@ -238,6 +238,14 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         } else {
           topico.data_estudo = null;
           topico.revisoes_agendadas = [];
+        }
+        
+        if (cascade && topico.subtopicos.length > 0) {
+           topico.subtopicos.forEach(sub => {
+              sub.visto = topico.visto;
+              sub.data_estudo = topico.data_estudo;
+              sub.revisoes_agendadas = [...topico.revisoes_agendadas];
+           });
         }
       }
     });
@@ -311,7 +319,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const addCustomRevisionDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => {
+  const addCustomRevisionDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string, cascade?: boolean) => {
     handleUpdate(editalId, (edital) => {
       const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
@@ -323,11 +331,16 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         if (sub && !sub.revisoes_agendadas.includes(dateStr)) sub.revisoes_agendadas.push(dateStr);
       } else {
         if (!topico.revisoes_agendadas.includes(dateStr)) topico.revisoes_agendadas.push(dateStr);
+        if (cascade && topico.subtopicos.length > 0) {
+          topico.subtopicos.forEach(sub => {
+             if (!sub.revisoes_agendadas.includes(dateStr)) sub.revisoes_agendadas.push(dateStr);
+          });
+        }
       }
     });
   };
 
-  const removeRevisionDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string) => {
+  const removeRevisionDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string, cascade?: boolean) => {
     handleUpdate(editalId, (edital) => {
       const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
@@ -341,6 +354,11 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         }
       } else {
         topico.revisoes_agendadas = topico.revisoes_agendadas.filter(d => d !== dateStr);
+        if (cascade && topico.subtopicos.length > 0) {
+          topico.subtopicos.forEach(sub => {
+             sub.revisoes_agendadas = sub.revisoes_agendadas.filter(d => d !== dateStr);
+          });
+        }
       }
     });
   };
@@ -362,7 +380,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const setStudyDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => {
+  const setStudyDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null, cascade?: boolean) => {
     handleUpdate(editalId, (edital) => {
       const area = edital.areas.find(a => a.id === areaId);
       const materia = area?.materias.find(m => m.id === materiaId);
@@ -380,6 +398,14 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         topico.data_estudo = dateStr;
         topico.visto = !!dateStr;
         if (!dateStr) topico.revisoes_agendadas = [];
+        
+        if (cascade && topico.subtopicos.length > 0) {
+           topico.subtopicos.forEach(sub => {
+              sub.data_estudo = dateStr;
+              sub.visto = !!dateStr;
+              if (!dateStr) sub.revisoes_agendadas = [];
+           });
+        }
       }
     });
   };

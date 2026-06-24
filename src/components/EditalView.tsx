@@ -529,7 +529,13 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                         <div className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-2 lg:gap-y-0 border-b border-slate-200 py-1.5 sm:py-2 px-3 sm:px-4 items-start lg:items-center group/item transition-colors ${topico.visto ? 'bg-blue-900' : 'hover:bg-slate-50'}`}>
                                            <div className="lg:col-span-6 flex items-center gap-2 sm:gap-3 w-full">
                                               <label className="relative flex items-center justify-center cursor-pointer shrink-0">
-                                                <input type="checkbox" checked={topico.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id)} />
+                                                <input type="checkbox" checked={topico.visto} className="peer sr-only" onChange={() => {
+                                                   let cascade = false;
+                                                   if (topico.subtopicos.length > 0) {
+                                                      cascade = safeConfirm("Deseja aplicar esta alteração a todos os subtópicos?");
+                                                   }
+                                                   toggleVisto(edital.id, area.id, materia.id, topico.id, undefined, cascade);
+                                                }} />
                                                 <div className={`w-3.5 h-3.5 border rounded transition-all flex items-center justify-center ${topico.visto ? 'bg-blue-500 border-blue-500' : 'border-slate-300 peer-checked:bg-blue-500 peer-checked:border-blue-500'}`}>
                                                    <Check className={`w-2.5 h-2.5 transition-opacity ${topico.visto ? 'opacity-100 text-white' : 'opacity-0 peer-checked:opacity-100 text-white'}`} strokeWidth={3} />
                                                 </div>
@@ -945,7 +951,11 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                             value={historyItemInfo.data_estudo ? historyItemInfo.data_estudo.split('T')[0] : ''}
                             onChange={(e) => {
                                const dateStr = e.target.value ? new Date(e.target.value + 'T12:00:00').toISOString() : null;
-                               setStudyDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, dateStr);
+                               let cascade = false;
+                               if (dateStr && !historyModal.subtopicoId && historyItemInfo?.subtopicos?.length > 0) {
+                                  cascade = safeConfirm("Deseja aplicar esta data de estudo a todos os subtópicos?");
+                               }
+                               setStudyDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, dateStr, cascade);
                             }}
                          />
                          <div className="text-[10px] text-slate-500 mt-1 font-bold uppercase tracking-widest">{historyItemInfo.data_estudo ? 'Estudo Concluído' : 'Adicionar Data de Estudo'}</div>
@@ -960,7 +970,12 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                         <Plus className="w-3 h-3" /> Add Data
                         <input type="date" className="hidden" onChange={(e) => {
                           if(e.target.value) {
-                             addCustomRevisionDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, new Date(e.target.value + 'T12:00:00').toISOString());
+                             const dateStr = new Date(e.target.value + 'T12:00:00').toISOString();
+                             let cascade = false;
+                             if (!historyModal.subtopicoId && historyItemInfo?.subtopicos?.length > 0) {
+                                cascade = safeConfirm("Deseja aplicar esta data de revisão a todos os subtópicos?");
+                             }
+                             addCustomRevisionDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, dateStr, cascade);
                           }
                         }} />
                      </label>
@@ -989,8 +1004,12 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                              onChange={(e) => {
                                                 if(e.target.value) {
                                                    const newDateStr = new Date(e.target.value + 'T12:00:00').toISOString();
-                                                   removeRevisionDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, dateItem.raw);
-                                                   addCustomRevisionDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, newDateStr);
+                                                   let cascade = false;
+                                                   if (!historyModal.subtopicoId && historyItemInfo?.subtopicos?.length > 0) {
+                                                      cascade = safeConfirm("Deseja aplicar esta alteração de data a todos os subtópicos?");
+                                                   }
+                                                   removeRevisionDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, dateItem.raw, cascade);
+                                                   addCustomRevisionDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, newDateStr, cascade);
                                                 }
                                              }}
                                           />
@@ -998,7 +1017,13 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                       </div>
                                    </div>
                                    <button 
-                                     onClick={() => removeRevisionDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, dateItem.raw)} 
+                                     onClick={() => {
+                                        let cascade = false;
+                                        if (!historyModal.subtopicoId && historyItemInfo?.subtopicos?.length > 0) {
+                                           cascade = safeConfirm("Deseja remover esta data de todos os subtópicos também?");
+                                        }
+                                        removeRevisionDate(edital.id, historyModal.areaId, historyModal.materiaId, historyModal.topicoId, historyModal.subtopicoId, dateItem.raw, cascade);
+                                     }} 
                                      className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-400 p-2.5 transition-all bg-slate-100 rounded-xl border border-slate-200" title="Remover">
                                       <Trash2 className="w-4 h-4" />
                                    </button>
