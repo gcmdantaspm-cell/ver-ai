@@ -22,6 +22,7 @@ export interface Subtopico {
   revisoes_concluidas?: number;
   notas?: string;
   cartoes?: Cartao[];
+  cartoes_erros?: Cartao[];
   acertos?: number;
   erros?: number;
 }
@@ -35,6 +36,7 @@ export interface Topico {
   revisoes_concluidas?: number;
   notas?: string;
   cartoes?: Cartao[];
+  cartoes_erros?: Cartao[];
   acertos?: number;
   erros?: number;
   subtopicos: Subtopico[];

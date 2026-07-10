@@ -6,7 +6,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Edital, Cartao } from "../types";
 import { 
-  ChevronDown, 
+  ChevronDown, ChevronUp, GripVertical, ArrowUp, ArrowDown, 
   ChevronRight, 
   Plus, 
   Edit2, 
@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 
 import { parseEditalText, generateStudyNotes, generateFlashcards } from "../services/ai";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 export function EditalView({ edital }: { edital: Edital, key?: string | number }) {
   const { 
@@ -47,7 +48,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     updateMetricas, 
     revisions,
     setEditalPublic,
-    ciclos
+    ciclos,
+    reorderMaterias,
+    reorderTopicos,
+    reorderSubtopicos
   } = useEdital();
   
   const editalCiclos = ciclos.filter(c => c.editalId === edital.id);
@@ -239,6 +243,24 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     }
   }
 
+  const onDragEnd = (result: any) => {
+    if (!result.destination) return;
+    
+    const { source, destination } = result;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+    
+    const parts = destination.droppableId.split('|');
+    const itemType = parts[0];
+    
+    if (itemType === 'materia') {
+      reorderMaterias(edital.id, parts[1], source.index, destination.index);
+    } else if (itemType === 'topico') {
+      reorderTopicos(edital.id, parts[1], parts[2], source.index, destination.index);
+    } else if (itemType === 'subtopico') {
+      reorderSubtopicos(edital.id, parts[1], parts[2], parts[3], source.index, destination.index);
+    }
+  };
+
   const downloadExcel = () => {
     const rows: any[] = [];
     
@@ -339,8 +361,9 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 selection:bg-blue-900/30 font-sans text-slate-800">
-      {/* Header */}
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="flex-1 flex flex-col h-full bg-slate-50 selection:bg-blue-900/30 font-sans text-slate-800">
+        {/* Header */}
       <header className="min-h-[3.5rem] px-3 sm:px-6 py-2 sm:py-0 flex flex-col sm:flex-row items-start sm:items-center justify-between shrink-0 border-b border-slate-200 bg-slate-50/50 backdrop-blur-xl sticky top-0 z-30 gap-2 sm:gap-0">
         <div className="flex flex-col w-full sm:w-auto">
           <h2 className="text-base sm:text-lg font-display font-semibold text-slate-900 leading-tight flex items-center gap-2">
@@ -457,7 +480,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                       <div className="h-px bg-slate-200 flex-1"></div>
                    </div>
 
-                   {area.materias.map(materia => {
+                   <Droppable droppableId={`materia|${area.id}`} isDropDisabled={filter !== 'all'}>
+  {(provided) => (
+    <div ref={provided.innerRef} {...provided.droppableProps}>
+      {area.materias.map((materia, mIndex) => {
                      const isExp = expandedMaterias.includes(materia.id);
                      const visibleTopicos = materia.topicos.filter(t => {
                         const matchT = filter === 'all' || (filter === 'completed' && t.visto) || (filter === 'pending' && !t.visto);
@@ -480,8 +506,20 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                      const matProgress = matTotal === 0 ? 0 : Math.round((matDone / matTotal) * 100);
 
                      return (
-                       <div key={materia.id} className="mb-2 rounded-xl border border-slate-200 bg-white overflow-hidden group/mat transition-all hover:bg-white shadow-sm hover:border-slate-300">
-                          <div className="flex items-center justify-between px-3 py-2">
+                       // @ts-ignore
+                       <Draggable key={materia.id} draggableId={materia.id} index={mIndex} isDragDisabled={filter !== 'all'}>
+                         {(providedDrag) => (
+                           <div 
+                             ref={providedDrag.innerRef} 
+                             {...providedDrag.draggableProps} 
+                             style={{...providedDrag.draggableProps.style, zIndex: 10}}
+                             className="mb-2 rounded-xl border border-slate-200 bg-white overflow-hidden group/mat transition-all hover:bg-white shadow-sm hover:border-slate-300">
+                             <div className="flex items-center justify-between px-3 py-2">
+                               {filter === 'all' && (
+                                 <div {...providedDrag.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing mr-2">
+                                   <GripVertical className="w-4 h-4" />
+                                 </div>
+                               )}
                              <button onClick={() => toggleMateria(materia.id)} className="flex items-center gap-3 flex-1 text-left">
                                 <div className={`flex items-center justify-center w-5 h-5 rounded-md transition-all ${isExp ? 'bg-blue-900 text-white shadow-sm shadow-blue-900/20' : 'bg-slate-100 text-slate-500'}`}>
                                    {isExp ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
@@ -510,7 +548,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
 
                           {isExp && (
                             <div className="bg-slate-50/40 border-t border-slate-200">
-                               {materia.topicos.map(topico => {
+                               <Droppable droppableId={`topico|${area.id}|${materia.id}`} isDropDisabled={filter !== 'all'}>
+  {(providedT) => (
+    <div ref={providedT.innerRef} {...providedT.droppableProps}>
+      {materia.topicos.map((topico, tIndex) => {
                                  const tMatch = filter === 'all' || (filter === 'completed' && topico.visto) || (filter === 'pending' && !topico.visto);
                                  const vSubs = topico.subtopicos.filter(s => filter === 'all' || (filter === 'completed' && s.visto) || (filter === 'pending' && !s.visto));
                                  
@@ -524,10 +565,22 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                     : null;
 
                                  return (
-                                     <div key={topico.id}>
+                                     // @ts-ignore
+                                     <Draggable key={topico.id} draggableId={topico.id} index={tIndex} isDragDisabled={filter !== 'all'}>
+                                       {(providedDragT) => (
+                                         <div 
+                                           ref={providedDragT.innerRef} 
+                                           {...providedDragT.draggableProps} 
+                                           style={{...providedDragT.draggableProps.style, zIndex: 10}}
+                                           key={topico.id}>
                                       {tMatch && (
                                         <div className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-2 lg:gap-y-0 border-b border-slate-200 py-1.5 sm:py-2 px-3 sm:px-4 items-start lg:items-center group/item transition-colors ${topico.visto ? 'bg-blue-900' : 'hover:bg-slate-50'}`}>
                                            <div className="lg:col-span-6 flex items-center gap-2 sm:gap-3 w-full">
+                                              {filter === 'all' && (
+                                                <div {...providedDragT.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing mr-1">
+                                                  <GripVertical className="w-3.5 h-3.5" />
+                                                </div>
+                                              )}
                                               <label className="relative flex items-center justify-center cursor-pointer shrink-0">
                                                 <input type="checkbox" checked={topico.visto} className="peer sr-only" onChange={() => {
                                                    let cascade = false;
@@ -586,75 +639,109 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                       )}
 
                                       {topico.subtopicos.length > 0 && (
-                                        <div className="bg-white">
-                                           {vSubs.map(sub => {
-                                              const nextRSub = getNextRevision(sub.revisoes_agendadas);
-                                              const isDelayedS = nextRSub && isPast(nextRSub) && !isToday(nextRSub);
-                                              const isDueTodayS = nextRSub && isToday(nextRSub);
+                                        <Droppable droppableId={`subtopico|${area.id}|${materia.id}|${topico.id}`} isDropDisabled={filter !== 'all'}>
+                                          {(providedS) => (
+                                            <div ref={providedS.innerRef} {...providedS.droppableProps} className="bg-white">
+                                              {topico.subtopicos.map((sub, sIndex) => {
+                                                const sMatch = filter === 'all' || (filter === 'completed' && sub.visto) || (filter === 'pending' && !sub.visto);
+                                                if (!sMatch) return null;
+                                                
+                                                const nextRSub = getNextRevision(sub.revisoes_agendadas);
+                                                const isDelayedS = nextRSub && isPast(nextRSub) && !isToday(nextRSub);
+                                                const isDueTodayS = nextRSub && isToday(nextRSub);
 
-                                              return (
-                                                <div key={sub.id} className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-2 lg:gap-y-0 border-b border-slate-200 py-1.5 px-3 sm:px-4 items-start lg:items-center group/sub transition-colors ${sub.visto ? 'bg-blue-900 border-blue-800' : 'hover:bg-slate-50'}`}>
-                                                   <div className="lg:col-span-6 flex items-center gap-2 sm:gap-2.5 pl-0 sm:pl-4 w-full">
-                                                      <CornerDownRight className={`w-3 h-3 shrink-0 ml-1 sm:ml-0 ${sub.visto ? 'text-white/40' : 'text-slate-400'}`} />
-                                                      <label className="relative flex items-center justify-center cursor-pointer shrink-0">
-                                                        <input type="checkbox" checked={sub.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id, sub.id)} />
-                                                        <div className={`w-3 h-3 border rounded-sm transition-all flex items-center justify-center ${sub.visto ? 'bg-blue-500 border-blue-500' : 'border-slate-300 peer-checked:bg-blue-500 peer-checked:border-blue-500'}`}>
-                                                           <Check className={`w-2 h-2 transition-opacity ${sub.visto ? 'opacity-100 text-white' : 'opacity-0 peer-checked:opacity-100 text-white'}`} strokeWidth={3} />
+                                                return (
+                                                  // @ts-ignore
+                                                  <Draggable key={sub.id} draggableId={sub.id} index={sIndex} isDragDisabled={filter !== 'all'}>
+                                                    {(providedDragS) => (
+                                                      <div 
+                                                        ref={providedDragS.innerRef} 
+                                                        {...providedDragS.draggableProps} 
+                                                        style={{...providedDragS.draggableProps.style, zIndex: 10}}
+                                                        className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-2 lg:gap-y-0 border-b border-slate-200 py-1.5 px-3 sm:px-4 items-start lg:items-center group/sub transition-colors ${sub.visto ? 'bg-blue-900 border-blue-800' : 'hover:bg-slate-50'}`}>
+                                                        <div className="lg:col-span-6 flex items-center gap-2 sm:gap-2.5 pl-0 sm:pl-4 w-full">
+                                                          <CornerDownRight className={`w-3 h-3 shrink-0 ml-1 sm:ml-0 ${sub.visto ? 'text-white/40' : 'text-slate-400'}`} />
+                                                          {filter === 'all' && (
+                                                            <div {...providedDragS.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing mr-1">
+                                                              <GripVertical className="w-3.5 h-3.5" />
+                                                            </div>
+                                                          )}
+                                                          <label className="relative flex items-center justify-center cursor-pointer shrink-0">
+                                                            <input type="checkbox" checked={sub.visto} className="peer sr-only" onChange={() => toggleVisto(edital.id, area.id, materia.id, topico.id, sub.id)} />
+                                                            <div className={`w-3 h-3 border rounded-sm transition-all flex items-center justify-center ${sub.visto ? 'bg-blue-500 border-blue-500' : 'border-slate-300 peer-checked:bg-blue-500 peer-checked:border-blue-500'}`}>
+                                                              <Check className={`w-2 h-2 transition-opacity ${sub.visto ? 'opacity-100 text-white' : 'opacity-0 peer-checked:opacity-100 text-white'}`} strokeWidth={3} />
+                                                            </div>
+                                                          </label>
+                                                          <div className={`text-[10px] flex-1 break-words w-full ${sub.visto ? 'text-white line-through opacity-80' : 'text-slate-600'}`}>
+                                                            {editingItemId === sub.id ? (
+                                                              <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} className={`bg-transparent w-full outline-none ${sub.visto ? 'text-white' : 'text-slate-900'}`} />
+                                                            ) : (
+                                                              <span onDoubleClick={() => handleEdit(sub.id, sub.titulo)} className="cursor-text line-clamp-1 hover:line-clamp-none">{sub.titulo}</span>
+                                                            )}
+                                                          </div>
                                                         </div>
-                                                      </label>
-                                                      <div className={`text-[10px] flex-1 break-words w-full ${sub.visto ? 'text-white line-through opacity-80' : 'text-slate-600'}`}>
-                                                        {editingItemId === sub.id ? (
-                                                          <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} className={`bg-transparent w-full outline-none ${sub.visto ? 'text-white' : 'text-slate-900'}`} />
-                                                        ) : (
-                                                          <span onDoubleClick={() => handleEdit(sub.id, sub.titulo)} className="cursor-text line-clamp-1 hover:line-clamp-none">{sub.titulo}</span>
-                                                        )}
+                                                        
+                                                        <div className="w-full lg:col-span-6 flex items-center justify-between lg:grid lg:grid-cols-6 gap-2 pl-6 sm:pl-4 lg:pl-0 mt-1 lg:mt-0">
+                                                          <div className="lg:col-span-2 flex justify-center">
+                                                            <div className={`flex border rounded text-[9px] opacity-70 ${sub.visto ? 'bg-white/10 border-white/20' : 'bg-white border-slate-200'}`}>
+                                                               <input type="number" placeholder="Ac" value={sub.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, parseInt(e.target.value)||0, sub.erros||0)} className={`w-6 lg:w-7 text-center bg-transparent py-[1px] outline-none font-mono ${sub.visto ? 'text-emerald-300' : 'text-emerald-500'}`} />
+                                                               <div className={`w-px h-2.5 self-center ${sub.visto ? 'bg-white/20' : 'bg-slate-200'}`}></div>
+                                                               <input type="number" placeholder="Er" value={sub.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, sub.acertos||0, parseInt(e.target.value)||0)} className={`w-6 lg:w-7 text-center bg-transparent py-[1px] outline-none font-mono ${sub.visto ? 'text-rose-300' : 'text-rose-500'}`} />
+                                                            </div>
+                                                          </div>
+      
+                                                          <div className={`lg:col-span-1 text-center font-mono text-[9px] ${sub.visto ? 'text-white/70' : 'text-slate-400'}`}>
+                                                            <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 transition-colors ${sub.visto ? 'hover:text-white' : 'hover:text-blue-800'}`}>
+                                                               {sub.data_estudo ? format(new Date(sub.data_estudo), "dd/MM") : "—"}
+                                                            </button>
+                                                          </div>
+      
+                                                          <div className="lg:col-span-2 text-center font-mono text-[9px]">
+                                                            {nextRSub ? (
+                                                              <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 ${isDelayedS ? (sub.visto ? 'text-rose-200' : 'text-rose-500') : isDueTodayS ? (sub.visto ? 'text-amber-200' : 'text-amber-500') : (sub.visto ? 'text-white' : 'text-blue-800/80')}`}>
+                                                                {format(new Date(nextRSub), "dd/MM")}
+                                                              </button>
+                                                            ) : <span className={sub.visto ? 'text-white/50' : 'text-slate-400'}>—</span>}
+                                                          </div>
+      
+                                                          <div className="lg:col-span-1 flex justify-end gap-0.5 opacity-100 lg:opacity-0 group-hover/sub:opacity-100 transition-opacity">
+                                                            <button onClick={() => setCartoesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, cartoes: sub.cartoes || [], title: sub.titulo })} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-indigo-500'}`}><Sparkles className="w-2.5 h-2.5" /></button>
+                                                            <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, currentNote: sub.notas || '', title: sub.titulo })} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-amber-500'}`}><StickyNote className="w-2.5 h-2.5" /></button>
+                                                            <button onClick={() => safeConfirm("Excluir subtópico?") && deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico', topico.id)} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-500'}`}><Trash2 className="w-2.5 h-2.5" /></button>
+                                                          </div>
+                                                        </div>
                                                       </div>
-                                                   </div>
-                                                   
-                                                   <div className="w-full lg:col-span-6 flex items-center justify-between lg:grid lg:grid-cols-6 gap-2 pl-6 sm:pl-4 lg:pl-0 mt-1 lg:mt-0">
-                                                     <div className="lg:col-span-2 flex justify-center">
-                                                        <div className={`flex border rounded text-[9px] opacity-70 ${sub.visto ? 'bg-white/10 border-white/20' : 'bg-white border-slate-200'}`}>
-                                                           <input type="number" placeholder="Ac" value={sub.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, parseInt(e.target.value)||0, sub.erros||0)} className={`w-6 lg:w-7 text-center bg-transparent py-[1px] outline-none font-mono ${sub.visto ? 'text-emerald-300' : 'text-emerald-500'}`} />
-                                                           <div className={`w-px h-2.5 self-center ${sub.visto ? 'bg-white/20' : 'bg-slate-200'}`}></div>
-                                                           <input type="number" placeholder="Er" value={sub.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, sub.id, sub.acertos||0, parseInt(e.target.value)||0)} className={`w-6 lg:w-7 text-center bg-transparent py-[1px] outline-none font-mono ${sub.visto ? 'text-rose-300' : 'text-rose-500'}`} />
-                                                        </div>
-                                                     </div>
-  
-                                                     <div className={`lg:col-span-1 text-center font-mono text-[9px] ${sub.visto ? 'text-white/70' : 'text-slate-400'}`}>
-                                                        <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 transition-colors ${sub.visto ? 'hover:text-white' : 'hover:text-blue-800'}`}>
-                                                           {sub.data_estudo ? format(new Date(sub.data_estudo), "dd/MM") : "—"}
-                                                        </button>
-                                                     </div>
-  
-                                                     <div className="lg:col-span-2 text-center font-mono text-[9px]">
-                                                        {nextRSub ? (
-                                                          <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id })} className={`hover:opacity-75 ${isDelayedS ? (sub.visto ? 'text-rose-200' : 'text-rose-500') : isDueTodayS ? (sub.visto ? 'text-amber-200' : 'text-amber-500') : (sub.visto ? 'text-white' : 'text-blue-800/80')}`}>
-                                                            {format(new Date(nextRSub), "dd/MM")}
-                                                          </button>
-                                                        ) : <span className={sub.visto ? 'text-white/50' : 'text-slate-400'}>—</span>}
-                                                     </div>
-  
-                                                     <div className="lg:col-span-1 flex justify-end gap-0.5 opacity-100 lg:opacity-0 group-hover/sub:opacity-100 transition-opacity">
-                                                        <button onClick={() => setCartoesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, cartoes: sub.cartoes || [], title: sub.titulo })} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-indigo-500'}`}><Sparkles className="w-2.5 h-2.5" /></button>
-                                                        <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, subtopicoId: sub.id, currentNote: sub.notas || '', title: sub.titulo })} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-amber-500'}`}><StickyNote className="w-2.5 h-2.5" /></button>
-                                                        <button onClick={() => safeConfirm("Excluir subtópico?") && deleteItem(edital.id, area.id, materia.id, sub.id, 'subtopico', topico.id)} className={`p-1 ${sub.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-500'}`}><Trash2 className="w-2.5 h-2.5" /></button>
-                                                     </div>
-                                                   </div>
-                                                </div>
-                                              );
-                                           })}
-                                        </div>
+                                                    )}
+                                                  </Draggable>
+                                                );
+                                              })}
+                                              {providedS.placeholder}
+                                            </div>
+                                          )}
+                                        </Droppable>
                                       )}
-                                   </div>
-                                 );
-                               })}
-                            </div>
-                          )}
-                       </div>
-                     );
-                   })}
+                                    </div>
+                                  )}
+                                </Draggable>
+                               );
+                             })}
+                             {providedT.placeholder}
+                           </div>
+                         )}
+                       </Droppable>
+                     </div>
+                   )}
                  </div>
-               ))}
+               )}
+             </Draggable>
+           );
+         })}
+         {provided.placeholder}
+       </div>
+     )}
+   </Droppable>
+ </div>
+))}
             </div>
           </div>
         )}
@@ -1217,6 +1304,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
            </div>
         </div>
       )}
-    </div>
+      </div>
+    </DragDropContext>
   );
 }

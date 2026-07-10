@@ -8,7 +8,8 @@ import { StudyCycles } from "./components/StudyCycles";
 import { FloatingPomodoro } from "./components/Pomodoro";
 import { SharedHub } from "./components/SharedHub";
 import { CartoesView } from "./components/CartoesView";
-import { LayoutDashboard, FileText, Plus, BookOpen, Menu, X, ChevronDown, LogOut, Loader2, History, Target, Users, Layers } from "lucide-react";
+import { CartoesErrosView } from "./components/CartoesErrosView";
+import { LayoutDashboard, FileText, Plus, BookOpen, Menu, X, ChevronDown, LogOut, Loader2, History, Target, Users, Layers, AlertTriangle } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import { v4 as uuidv4 } from "uuid";
 import { query, collection, where, getDocs } from "firebase/firestore";
@@ -172,6 +173,12 @@ function AppContent() {
               <Layers className="w-4 h-4" /> Cartões Inteligentes
             </button>
             <button
+              onClick={() => navigateTo("cartoes_erros")}
+              className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "cartoes_erros" ? "bg-blue-900 text-white shadow-md shadow-blue-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
+            >
+              <AlertTriangle className="w-4 h-4" /> Flashcards de Erros
+            </button>
+            <button
               onClick={() => navigateTo("import")}
               className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "import" ? "bg-blue-900 text-white shadow-md shadow-blue-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
             >
@@ -254,6 +261,13 @@ function AppContent() {
               <span>Cartões Inteligentes</span>
             </button>
             <button
+              onClick={() => navigateTo("cartoes_erros")}
+              className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-1 border ${currentView === "cartoes_erros" ? "bg-blue-900 text-white shadow-md border-transparent" : "text-slate-500 hover:bg-slate-100 border-transparent"}`}
+            >
+              <AlertTriangle className="w-5 h-5" />
+              <span>Flashcards de Erros</span>
+            </button>
+            <button
                onClick={() => navigateTo("import")}
               className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-6 border ${currentView === "import" ? "bg-blue-900 text-white shadow-md border-transparent" : "text-slate-500 hover:bg-slate-100 border-transparent"}`}
             >
@@ -295,6 +309,7 @@ function AppContent() {
          {currentView === "ciclos" && <StudyCycles />}
          {currentView === "shared" && <SharedHub />}
          {currentView === "cartoes" && <CartoesView />}
+         {currentView === "cartoes_erros" && <CartoesErrosView />}
          {currentView === "import" && <ParseEdital onSuccess={() => navigateTo("dashboard")} />}
          {currentView.startsWith("edital-") && (
             (() => {
