@@ -49,6 +49,7 @@ export function StudyCycles({
   const toggleCicloItem = store.toggleCicloItem;
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedEditalId, setSelectedEditalId] = useState<string>("");
+  const [filterEditalId, setFilterEditalId] = useState<string>("all");
   
   // Auto-select edital if customEditais is exactly 1
   useEffect(() => {
@@ -407,7 +408,9 @@ export function StudyCycles({
     return Object.entries(summary).sort((a, b) => b[1] - a[1]);
   };
 
-  const editalGroups = editais.map(edital => ({
+  const editalGroups = editais
+    .filter(e => filterEditalId === 'all' || e.id === filterEditalId)
+    .map(edital => ({
     edital,
     ciclosFromEdital: sortedCiclos.filter(c => c.editalId === edital.id)
   })).filter(g => g.ciclosFromEdital.length > 0);
@@ -613,7 +616,18 @@ export function StudyCycles({
           <p className="text-slate-500 text-sm">Organize sua rotina de estudos de forma dinâmica e eficiente.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={filterEditalId}
+            onChange={e => setFilterEditalId(e.target.value)}
+            className="px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-700 outline-none hover:border-slate-400 focus:border-indigo-500 transition-colors shadow-sm max-w-[200px] truncate"
+          >
+            <option value="all">Todos os Editais</option>
+            {editais.map(e => (
+              <option key={e.id} value={e.id}>{e.titulo || 'Edital sem título'}</option>
+            ))}
+          </select>
           <button 
+ 
             onClick={() => {
               const code = window.prompt("Cole o código de exportação (Ex: EDT-xxxx...):");
               if (code) {
@@ -743,7 +757,7 @@ export function StudyCycles({
             })}
 
             {/* Standalone Cycles */}
-            {standaloneCiclos.length > 0 && (
+            {standaloneCiclos.length > 0 && filterEditalId === "all" && (
               <div className="space-y-6">
                 <div className="flex items-center gap-3 pb-2 border-b-2 border-slate-200">
                   <Layers className="w-5 h-5 text-slate-400" />
