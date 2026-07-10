@@ -23,9 +23,9 @@ export function RevisaoSugestoes() {
   const sugestoes: Sugestao[] = useMemo(() => {
     let list: Sugestao[] = [];
     editais.forEach(edital => {
-      edital.areas.forEach(area => {
-        area.materias.forEach(materia => {
-          materia.topicos.forEach(topico => {
+      (edital.areas || []).forEach(area => {
+        (area.materias || []).forEach(materia => {
+          (materia.topicos || []).forEach(topico => {
             if (topico.data_estudo) {
               list.push({
                 editalId: edital.id,
@@ -40,7 +40,7 @@ export function RevisaoSugestoes() {
                 revisoes_concluidas: topico.revisoes_concluidas || 0
               });
             }
-            topico.subtopicos.forEach(sub => {
+            (topico.subtopicos || []).forEach(sub => {
               if (sub.data_estudo) {
                 list.push({
                   editalId: edital.id,

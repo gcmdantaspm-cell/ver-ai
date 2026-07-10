@@ -182,10 +182,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     if (!notesModal) return;
     setNotesAiLoading(true);
     try {
-       const area = edital.areas.find(a => a.id === notesModal.areaId);
-       const materia = area?.materias.find(m => m.id === notesModal.materiaId);
-       const topico = materia?.topicos.find(t => t.id === notesModal.topicoId);
-       const subtopico = notesModal.subtopicoId ? topico?.subtopicos.find(s => s.id === notesModal.subtopicoId) : undefined;
+       const area = (edital.areas || []).find(a => a.id === notesModal.areaId);
+       const materia = (area?.materias || []).find(m => m.id === notesModal.materiaId);
+       const topico = (materia?.topicos || []).find(t => t.id === notesModal.topicoId);
+       const subtopico = notesModal.subtopicoId ? (topico?.subtopicos || []).find(s => s.id === notesModal.subtopicoId) : undefined;
        
        if (materia && topico) {
          const generated = await generateStudyNotes(materia.nome, topico.titulo, subtopico?.titulo);
@@ -203,10 +203,10 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     if (!cartoesModal) return;
     setCartoesAiLoading(true);
     try {
-       const area = edital.areas.find(a => a.id === cartoesModal.areaId);
-       const materia = area?.materias.find(m => m.id === cartoesModal.materiaId);
-       const topico = materia?.topicos.find(t => t.id === cartoesModal.topicoId);
-       const subtopico = cartoesModal.subtopicoId ? topico?.subtopicos.find(s => s.id === cartoesModal.subtopicoId) : undefined;
+       const area = (edital.areas || []).find(a => a.id === cartoesModal.areaId);
+       const materia = (area?.materias || []).find(m => m.id === cartoesModal.materiaId);
+       const topico = (materia?.topicos || []).find(t => t.id === cartoesModal.topicoId);
+       const subtopico = cartoesModal.subtopicoId ? (topico?.subtopicos || []).find(s => s.id === cartoesModal.subtopicoId) : undefined;
        
        if (materia && topico) {
          const generated = await generateFlashcards(materia.nome, topico.titulo, subtopico?.titulo, cartoesBaseText);
@@ -281,7 +281,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   const stats = (() => {
     let total = 0;
     let completed = 0;
-    edital.areas.forEach(a => {
+    (edital.areas || []).forEach(a => {
       a.materias.forEach(m => {
         m.topicos.forEach(t => {
           total++;
@@ -297,7 +297,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   })();
 
   const allCartoes: any[] = [];
-  edital.areas.forEach(a => {
+  (edital.areas || []).forEach(a => {
     a.materias.forEach(m => {
       m.topicos.forEach(t => {
         if (t.cartoes && t.cartoes.length > 0) {
@@ -313,7 +313,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   });
 
   const allNotes: any[] = [];
-  edital.areas.forEach(a => {
+  (edital.areas || []).forEach(a => {
     a.materias.forEach(m => {
       m.topicos.forEach(t => {
         if (t.notas) allNotes.push({ area: a.area, materia: m.nome, topico: t.titulo, notas: t.notas, areaId: a.id, materiaId: m.id, topicoId: t.id });
@@ -328,12 +328,12 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   
   let historyItemInfo: any = null;
   if(historyModal?.isOpen) {
-    const area = edital.areas.find(a => a.id === historyModal.areaId);
-    const materia = area?.materias.find(m => m.id === historyModal.materiaId);
-    const topico = materia?.topicos.find(t => t.id === historyModal.topicoId);
+    const area = (edital.areas || []).find(a => a.id === historyModal.areaId);
+    const materia = (area?.materias || []).find(m => m.id === historyModal.materiaId);
+    const topico = (materia?.topicos || []).find(t => t.id === historyModal.topicoId);
     if(topico) {
       if(historyModal.subtopicoId) {
-        historyItemInfo = topico.subtopicos.find(s => s.id === historyModal.subtopicoId);
+        historyItemInfo = (topico.subtopicos || []).find(s => s.id === historyModal.subtopicoId);
       } else {
         historyItemInfo = topico;
       }
@@ -361,9 +361,9 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
   const downloadExcel = () => {
     const rows: any[] = [];
     
-    edital.areas.forEach(area => {
-      area.materias.forEach(materia => {
-        materia.topicos.forEach(topico => {
+    (edital.areas || []).forEach(area => {
+      (area.materias || []).forEach(materia => {
+        (materia.topicos || []).forEach(topico => {
           if (topico.subtopicos.length === 0) {
              rows.push({
                "Área": area.area,
@@ -382,7 +382,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                "Notas": topico.notas || ""
              });
           } else {
-             topico.subtopicos.forEach(sub => {
+             (topico.subtopicos || []).forEach(sub => {
                 rows.push({
                    "Área": area.area,
                    "Matéria": materia.nome,
@@ -430,14 +430,14 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     doc.text(`Edital: ${edital.titulo}`, 14, 20);
 
     const tableData: any[] = [];
-    edital.areas.forEach(area => {
+    (edital.areas || []).forEach(area => {
       tableData.push([{ content: `ÁREA: ${area.area}`, colSpan: 2, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }]);
-      area.materias.forEach(materia => {
+      (area.materias || []).forEach(materia => {
         tableData.push([{ content: `MATÉRIA: ${materia.nome}`, colSpan: 2, styles: { fillColor: [245, 245, 245], fontStyle: 'bold', textColor: [50, 50, 50] } }]);
-        materia.topicos.forEach(topico => {
+        (materia.topicos || []).forEach(topico => {
            let status = topico.visto ? "Concluído" : "Pendente";
            tableData.push([topico.titulo, status]);
-           topico.subtopicos.forEach(sub => {
+           (topico.subtopicos || []).forEach(sub => {
               let subStatus = sub.visto ? "Concluído" : "Pendente";
               tableData.push([`  - ${sub.titulo}`, subStatus]);
            });
@@ -557,7 +557,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
 
             {/* Content List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-               {edital.areas.map(area => (
+               {(edital.areas || []).map(area => (
                  <div key={area.id} className="mb-6 last:mb-16">
                    {/* Area Title */}
                    <div className="flex items-center gap-4 mb-4 group">
@@ -580,9 +580,9 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                    <Droppable droppableId={`materia|${area.id}`} isDropDisabled={filter !== 'all'}>
   {(provided) => (
     <div ref={provided.innerRef} {...provided.droppableProps}>
-      {area.materias.map((materia, mIndex) => {
+      {(area.materias || []).map((materia, mIndex) => {
                      const isExp = expandedMaterias.includes(materia.id);
-                     const visibleTopicos = materia.topicos.filter(t => {
+                     const visibleTopicos = (materia.topicos || []).filter(t => {
                         const matchT = filter === 'all' || (filter === 'completed' && t.visto) || (filter === 'pending' && !t.visto);
                         const matchS = t.subtopicos.some(s => filter === 'all' || (filter === 'completed' && s.visto) || (filter === 'pending' && !s.visto));
                         return matchT || matchS;
@@ -592,7 +592,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
 
                      let matTotal = 0;
                      let matDone = 0;
-                     materia.topicos.forEach(t => {
+                     (materia.topicos || []).forEach(t => {
                         matTotal++;
                         if (t.visto) matDone++;
                         t.subtopicos.forEach(s => {
@@ -648,9 +648,9 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                <Droppable droppableId={`topico|${area.id}|${materia.id}`} isDropDisabled={filter !== 'all'}>
   {(providedT) => (
     <div ref={providedT.innerRef} {...providedT.droppableProps}>
-      {materia.topicos.map((topico, tIndex) => {
+      {(materia.topicos || []).map((topico, tIndex) => {
                                  const tMatch = filter === 'all' || (filter === 'completed' && topico.visto) || (filter === 'pending' && !topico.visto);
-                                 const vSubs = topico.subtopicos.filter(s => filter === 'all' || (filter === 'completed' && s.visto) || (filter === 'pending' && !s.visto));
+                                 const vSubs = (topico.subtopicos || []).filter(s => filter === 'all' || (filter === 'completed' && s.visto) || (filter === 'pending' && !s.visto));
                                  
                                  if (!tMatch && vSubs.length === 0) return null;
                                  const nextRevT = getNextRevision(topico.revisoes_agendadas);
@@ -658,7 +658,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                  const isDueTodayT = nextRevT && isToday(nextRevT);
                                  
                                  const topicoProgress = topico.subtopicos.length > 0 
-                                    ? Math.round((topico.subtopicos.filter(s => s.visto).length / topico.subtopicos.length) * 100) 
+                                    ? Math.round(((topico.subtopicos || []).filter(s => s.visto).length / topico.subtopicos.length) * 100) 
                                     : null;
 
                                  return (
@@ -742,7 +742,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                         <Droppable droppableId={`subtopico|${area.id}|${materia.id}|${topico.id}`} isDropDisabled={filter !== 'all'}>
                                           {(providedS) => (
                                             <div ref={providedS.innerRef} {...providedS.droppableProps} className="bg-white">
-                                              {topico.subtopicos.map((sub, sIndex) => {
+                                              {(topico.subtopicos || []).map((sub, sIndex) => {
                                                 const sMatch = filter === 'all' || (filter === 'completed' && sub.visto) || (filter === 'pending' && !sub.visto);
                                                 if (!sMatch) return null;
                                                 
@@ -954,8 +954,8 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                    <h4 className="font-bold text-slate-700 text-xs truncate max-w-[150px]">{item.subtopico || item.topico}</h4>
                                 </div>
                                 <button className="p-1.5 bg-white border border-slate-200 rounded text-slate-400 hover:text-indigo-500 transition-colors shadow-sm" onClick={() => {
-                                   const t = edital.areas.find(a=>a.id===item.areaId)?.materias.find(m=>m.id===item.materiaId)?.topicos.find(t=>t.id===item.topicoId);
-                                   const c = item.subtopicoId ? t?.subtopicos.find(s=>s.id===item.subtopicoId)?.cartoes : t?.cartoes;
+                                   const t = (edital.areas || []).find(a=>a.id===item.areaId)?.materias.find(m=>m.id===item.materiaId)?.topicos.find(t=>t.id===item.topicoId);
+                                   const c = item.subtopicoId ? (t?.subtopicos || []).find(s=>s.id===item.subtopicoId)?.cartoes : t?.cartoes;
                                    setCartoesModal({ isOpen: true, areaId: item.areaId, materiaId: item.materiaId, topicoId: item.topicoId, subtopicoId: item.subtopicoId, cartoes: c || [], title: item.subtopico || item.topico });
                                 }}>
                                    <Edit2 className="w-3 h-3"/>

@@ -544,8 +544,8 @@ export function CartoesErrosView() {
   const saveToDestination = (newCardsData: {pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string, subtopicoTitulo?: string}[]) => {
     const edital = editais.find(e => e.id === selectedEdital);
     const area = edital?.areas.find(a => a.id === selectedArea);
-    const materia = area?.materias.find(m => m.id === selectedMateria);
-    const topico = materia?.topicos.find(t => t.id === selectedTopico);
+    const materia = (area?.materias || []).find(m => m.id === selectedMateria);
+    const topico = (materia?.topicos || []).find(t => t.id === selectedTopico);
     if (!topico) return;
 
     // Filter cards by presence of subtopicoTitulo
@@ -557,7 +557,7 @@ export function CartoesErrosView() {
     let currentCartoes: any[] = [];
     if (!newAssunto.trim()) {
        if (selectedSubtopico) {
-          const s = topico.subtopicos.find(sub => sub.id === selectedSubtopico);
+          const s = (topico.subtopicos || []).find(sub => sub.id === selectedSubtopico);
           if (s) currentCartoes = s.cartoes_erros || [];
        } else {
           currentCartoes = topico.cartoes_erros || [];

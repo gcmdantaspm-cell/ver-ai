@@ -110,10 +110,10 @@ ${text}`,
     return parsed.map((area: any): AreaConhecimento => ({
       id: uuidv4(),
       area: area.area,
-      materias: area.materias.map((materia: any): Materia => ({
+      materias: (area.materias || []).map((materia: any): Materia => ({
         id: uuidv4(),
         nome: materia.nome,
-        topicos: materia.topicos.map((topico: any): Topico => ({
+        topicos: (materia.topicos || []).map((topico: any): Topico => ({
           id: uuidv4(),
           titulo: topico.titulo,
           visto: false,

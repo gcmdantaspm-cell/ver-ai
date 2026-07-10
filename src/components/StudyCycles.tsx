@@ -96,7 +96,7 @@ export function StudyCycles({
     }
     const edital = editais.find(e => e.id === editalId);
     if (edital) {
-      const allMaterias = edital.areas.flatMap(a => a.materias.map(m => m.nome));
+      const allMaterias = (edital.areas || []).flatMap(a => a.materias.map(m => m.nome));
       const uniqueMaterias = Array.from(new Set(allMaterias));
       setSubjectsParams(uniqueMaterias.map(m => ({ nome: m, questoes: 10, peso: 1 })));
     }
@@ -115,7 +115,7 @@ export function StudyCycles({
 
     setIsGenerating(true);
     try {
-      const allMaterias = edital.areas.flatMap(a => a.materias.map(m => m.nome));
+      const allMaterias = (edital.areas || []).flatMap(a => a.materias.map(m => m.nome));
       const result = await generateStudyCycleAI(edital.titulo, allMaterias, {
         weeklyHours: weeklyHours,
         cycleHours: cycleHours,
