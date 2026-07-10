@@ -54,7 +54,7 @@ export function CartoesErrosView() {
               const subjectName = mat.nome;
               if (!frequenciesBySubject[subjectName]) frequenciesBySubject[subjectName] = {};
 
-              mat.topicos.forEach(top => {
+              (mat.topicos || []).forEach(top => {
                  if (top.cartoes_erros) {
                      top.cartoes_erros.forEach(c => {
                         const q = c.pergunta.trim().toLowerCase();
@@ -101,7 +101,7 @@ export function CartoesErrosView() {
      editais.forEach(ed => {
         ed.areas.forEach(ar => {
            ar.materias.forEach(mat => {
-              mat.topicos.forEach(top => {
+              (mat.topicos || []).forEach(top => {
                  if (top.cartoes_erros) top.cartoes_erros.forEach(c => c.origem && origens.add(c.origem));
                  top.subtopicos?.forEach(sub => {
                     if (sub.cartoes_erros) sub.cartoes_erros.forEach(c => c.origem && origens.add(c.origem));
@@ -124,7 +124,7 @@ export function CartoesErrosView() {
     editais.forEach(e => {
       e.areas.forEach(a => {
         a.materias.forEach(m => {
-          m.topicos.forEach(t => {
+          (m?.topicos || []).forEach(t => {
             if (t.cartoes_erros) t.cartoes_erros.forEach(c => cards.push({ ...c, editalId: e.id, areaId: a.id, materiaId: m.id, topicoId: t.id, editalTitulo: e.titulo, materiaNome: m.nome, topicoTitulo: t.titulo }));
             t.subtopicos.forEach(s => {
               if (s.cartoes_erros) s.cartoes_erros.forEach(c => cards.push({ ...c, editalId: e.id, areaId: a.id, materiaId: m.id, topicoId: t.id, subtopicoId: s.id, editalTitulo: e.titulo, materiaNome: m.nome, topicoTitulo: t.titulo, subtopicoTitulo: s.titulo }));
@@ -363,7 +363,7 @@ export function CartoesErrosView() {
     editais.forEach(ed => {
        ed.areas.forEach(ar => {
           ar.materias.forEach(mat => {
-             mat.topicos.forEach(top => {
+             (mat.topicos || []).forEach(top => {
                 if (top.cartoes_erros) top.cartoes_erros.forEach((c:any) => allExisting.push({pergunta: c.pergunta, id: c.id, location: {editalId: ed.id, areaId: ar.id, materiaId: mat.id, topicoId: top.id}}));
                 top.subtopicos?.forEach(sub => {
                    if (sub.cartoes_erros) sub.cartoes_erros.forEach((c:any) => allExisting.push({pergunta: c.pergunta, id: c.id, location: {editalId: ed.id, areaId: ar.id, materiaId: mat.id, topicoId: top.id, subtopicoId: sub.id}}));
@@ -557,7 +557,7 @@ export function CartoesErrosView() {
     let currentCartoes: any[] = [];
     if (!newAssunto.trim()) {
        if (selectedSubtopico) {
-          const s = (topico.subtopicos || []).find(sub => sub.id === selectedSubtopico);
+          const s = (topico?.subtopicos || []).find(sub => sub.id === selectedSubtopico);
           if (s) currentCartoes = s.cartoes_erros || [];
        } else {
           currentCartoes = topico.cartoes_erros || [];
@@ -591,7 +591,7 @@ export function CartoesErrosView() {
   const editalObj = editais.find(e => e.id === selectedEdital);
   const areaObj = editalObj?.areas.find(a => a.id === selectedArea);
   const materiaObj = areaObj?.materias.find(m => m.id === selectedMateria);
-  const topicoObj = materiaObj?.topicos.find(t => t.id === selectedTopico);
+  const topicoObj = (materiaObj?.topicos || []).find(t => t.id === selectedTopico);
 
   if (studySession) {
     const card = studySession.cards[studySession.currentIndex];
@@ -767,12 +767,12 @@ export function CartoesErrosView() {
                    // Search Filter Logic
                    const filteredDecks = !deckSearch.trim() ? hierarchicalDecks : hierarchicalDecks.map(m => {
                       const matchedTopicos: typeof m.topicos = {};
-                      Object.keys(m.topicos).forEach(topId => {
+                      Object.keys(m?.topicos).forEach(topId => {
                         const t = m.topicos[topId];
                         const matchTitle = t.titulo.toLowerCase().includes(deckSearch.toLowerCase().trim());
                         
                         const matchedSubtopicos: typeof t.subtopicos = {};
-                        Object.keys(t.subtopicos).forEach(subKey => {
+                        Object.keys(t?.subtopicos).forEach(subKey => {
                           const s = t.subtopicos[subKey];
                           if (matchTitle || s.titulo.toLowerCase().includes(deckSearch.toLowerCase().trim())) {
                             matchedSubtopicos[subKey] = s;
@@ -881,7 +881,7 @@ export function CartoesErrosView() {
                                   {isMatExpanded && (
                                      <div className="divide-y divide-slate-100 bg-white">
                                         {(() => {
-                                           const topicoKeys = Object.keys(m.topicos);
+                                           const topicoKeys = Object.keys(m?.topicos);
                                            if (topicoKeys.length === 0) {
                                               return (
                                                  <div className="p-4 text-xs text-slate-400 italic text-center">Nenhum tópico cadastrado ainda nesse baralho.</div>
@@ -890,7 +890,7 @@ export function CartoesErrosView() {
                                            return topicoKeys.map(topId => {
                                               const t = m.topicos[topId];
                                               const tStats = getCardsStats(t.cards);
-                                              const subKeys = Object.keys(t.subtopicos);
+                                              const subKeys = Object.keys(t?.subtopicos);
                                               const hasSubDecks = subKeys.length > 0;
                                               const isTopExpanded = expandedTopicos[t.id] || !!deckSearch;
 
@@ -1125,7 +1125,7 @@ export function CartoesErrosView() {
                        <option value="">A Matéria...</option>{areaObj?.materias.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
                     </select>
                     <select value={selectedTopico} onChange={(e) => { setSelectedTopico(e.target.value); setSelectedSubtopico(""); }} className="p-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300" disabled={!selectedMateria}>
-                       <option value="">O Tópico...</option>{materiaObj?.topicos.map(t => <option key={t.id} value={t.id}>{t.titulo}</option>)}
+                       <option value="">O Tópico...</option>{(materiaObj?.topicos || []).map(t => <option key={t.id} value={t.id}>{t.titulo}</option>)}
                     </select>
                     {topicoObj && (
                        <div className="sm:col-span-2 md:col-span-4 grid grid-cols-1 md:grid-cols-2 gap-3 mt-1 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">

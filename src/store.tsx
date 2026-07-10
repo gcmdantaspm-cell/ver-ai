@@ -58,13 +58,13 @@ function sanitizeEdital(obj: any): Edital {
   obj.areas = obj.areas.filter((a: any) => a != null);
   obj.areas.forEach((area: any) => {
       if (!area.materias) area.materias = [];
-      area.materias = (area.materias || []).filter((m: any) => m != null);
-      (area.materias || []).forEach((materia: any) => {
-          if (!materia.topicos) materia.topicos = [];
-          materia.topicos = (materia.topicos || []).filter((t: any) => t != null);
-          (materia.topicos || []).forEach((topico: any) => {
-              if (!topico.subtopicos) topico.subtopicos = [];
-              topico.subtopicos = (topico.subtopicos || []).filter((s: any) => s != null);
+      area.materias = (area?.materias || []).filter((m: any) => m != null);
+      (area?.materias || []).forEach((materia: any) => {
+          if (!materia?.topicos) materia.topicos = [];
+          materia.topicos = (materia?.topicos || []).filter((t: any) => t != null);
+          (materia?.topicos || []).forEach((topico: any) => {
+              if (!topico?.subtopicos) topico.subtopicos = [];
+              topico.subtopicos = (topico?.subtopicos || []).filter((s: any) => s != null);
           });
       });
   });
@@ -241,14 +241,14 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   const toggleVisto = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string, cascade?: boolean) => {
     handleUpdate(editalId, (edital) => {
       const now = new Date().toISOString();
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       
       if (!topico) return;
 
       if (subtopicoId) {
-        const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+        const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
         if (sub) {
           sub.visto = !sub.visto;
           if (sub.visto) {
@@ -269,8 +269,8 @@ export function EditalProvider({ children }: { children: ReactNode }) {
           topico.revisoes_agendadas = [];
         }
         
-        if (cascade && topico.subtopicos.length > 0) {
-           (topico.subtopicos || []).forEach(sub => {
+        if (cascade && topico?.subtopicos.length > 0) {
+           (topico?.subtopicos || []).forEach(sub => {
               sub.visto = topico.visto;
               sub.data_estudo = topico.data_estudo;
               sub.revisoes_agendadas = [...topico.revisoes_agendadas];
@@ -289,9 +289,9 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     const targetEdital = allEditais.find(ed => {
        for (const area of ed.areas) {
           for (const materia of area.materias || []) {
-             for (const topico of materia.topicos || []) {
+             for (const topico of materia?.topicos || []) {
                 if (topico.id === itemId) return true;
-                if (topico.subtopicos.some(s => s.id === itemId)) return true;
+                if (topico?.subtopicos.some(s => s.id === itemId)) return true;
              }
           }
        }
@@ -302,13 +302,13 @@ export function EditalProvider({ children }: { children: ReactNode }) {
        handleUpdate(targetEdital.id, (edital) => {
           for (const area of edital.areas || []) {
             for (const materia of area.materias || []) {
-              for (const topico of materia.topicos || []) {
+              for (const topico of materia?.topicos || []) {
                 if (topico.id === itemId) {
                   if (topico.revisoes_concluidas && topico.revisoes_concluidas > 0) {
                      topico.revisoes_concluidas -= 1;
                   }
                 }
-                for (const sub of topico.subtopicos || []) {
+                for (const sub of topico?.subtopicos || []) {
                   if (sub.id === itemId) {
                     if (sub.revisoes_concluidas && sub.revisoes_concluidas > 0) {
                        sub.revisoes_concluidas -= 1;
@@ -330,9 +330,9 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     const targetEdital = allEditais.find(ed => {
        for (const area of ed.areas) {
           for (const materia of area.materias || []) {
-             for (const topico of materia.topicos || []) {
+             for (const topico of materia?.topicos || []) {
                 if (topico.id === itemId) return true;
-                if (topico.subtopicos.some(s => s.id === itemId)) return true;
+                if (topico?.subtopicos.some(s => s.id === itemId)) return true;
              }
           }
        }
@@ -343,12 +343,12 @@ export function EditalProvider({ children }: { children: ReactNode }) {
        handleUpdate(targetEdital.id, (edital) => {
           for (const area of edital.areas || []) {
             for (const materia of area.materias || []) {
-              for (const topico of materia.topicos || []) {
+              for (const topico of materia?.topicos || []) {
                 if (topico.id === itemId) {
                   topico.revisoes_agendadas = topico.revisoes_agendadas.filter(r => r !== dataRevisao);
                   topico.revisoes_concluidas = (topico.revisoes_concluidas || 0) + 1;
                 }
-                for (const sub of topico.subtopicos || []) {
+                for (const sub of topico?.subtopicos || []) {
                   if (sub.id === itemId) {
                     sub.revisoes_agendadas = sub.revisoes_agendadas.filter(r => r !== dataRevisao);
                     sub.revisoes_concluidas = (sub.revisoes_concluidas || 0) + 1;
@@ -366,24 +366,24 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       if (!areaId) {
         edital.areas.push({ id: uuidv4(), area: title, materias: [] });
       } else if (!materiaId) {
-        const area = (edital.areas || []).find(a => a.id === areaId);
+        const area = (edital?.areas || []).find(a => a.id === areaId);
         if (area) { if (!area.materias) area.materias = []; area.materias.push({ id: uuidv4(), nome: title, topicos: [] }); }
       } else if (!topicoId) {
-        const area = (edital.areas || []).find(a => a.id === areaId);
+        const area = (edital?.areas || []).find(a => a.id === areaId);
         const materia = (area?.materias || []).find(m => m.id === materiaId);
-        if (materia) { if (!materia.topicos) materia.topicos = []; materia.topicos.push({ id: uuidv4(), titulo: title, visto: false, data_estudo: null, revisoes_agendadas: [], subtopicos: [] }); }
+        if (materia) { if (!materia?.topicos) materia.topicos = []; materia.topicos.push({ id: uuidv4(), titulo: title, visto: false, data_estudo: null, revisoes_agendadas: [], subtopicos: [] }); }
       } else {
-        const area = (edital.areas || []).find(a => a.id === areaId);
+        const area = (edital?.areas || []).find(a => a.id === areaId);
         const materia = (area?.materias || []).find(m => m.id === materiaId);
         const topico = (materia?.topicos || []).find(t => t.id === topicoId);
-        if (topico) { if (!topico.subtopicos) topico.subtopicos = []; topico.subtopicos.push({ id: uuidv4(), titulo: title, visto: false, data_estudo: null, revisoes_agendadas: [] }); }
+        if (topico) { if (!topico?.subtopicos) topico.subtopicos = []; topico.subtopicos.push({ id: uuidv4(), titulo: title, visto: false, data_estudo: null, revisoes_agendadas: [] }); }
       }
     });
   };
 
   const addMaterias = (editalId: string, areaId: string, materias: Materia[]) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       if (area) {
         area.materias.push(...materias);
       }
@@ -392,18 +392,18 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const addCustomRevisionDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string, cascade?: boolean) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
 
       if (subtopicoId) {
-        const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+        const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
         if (sub && !sub.revisoes_agendadas.includes(dateStr)) sub.revisoes_agendadas.push(dateStr);
       } else {
         if (!topico.revisoes_agendadas.includes(dateStr)) topico.revisoes_agendadas.push(dateStr);
-        if (cascade && topico.subtopicos.length > 0) {
-          (topico.subtopicos || []).forEach(sub => {
+        if (cascade && topico?.subtopicos.length > 0) {
+          (topico?.subtopicos || []).forEach(sub => {
              if (!sub.revisoes_agendadas.includes(dateStr)) sub.revisoes_agendadas.push(dateStr);
           });
         }
@@ -413,20 +413,20 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const removeRevisionDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string, cascade?: boolean) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
 
       if (subtopicoId) {
-        const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+        const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
         if (sub) {
           sub.revisoes_agendadas = sub.revisoes_agendadas.filter(d => d !== dateStr);
         }
       } else {
         topico.revisoes_agendadas = topico.revisoes_agendadas.filter(d => d !== dateStr);
-        if (cascade && topico.subtopicos.length > 0) {
-          (topico.subtopicos || []).forEach(sub => {
+        if (cascade && topico?.subtopicos.length > 0) {
+          (topico?.subtopicos || []).forEach(sub => {
              sub.revisoes_agendadas = sub.revisoes_agendadas.filter(d => d !== dateStr);
           });
         }
@@ -436,12 +436,12 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const setNextRevisionDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
 
-      const target = subtopicoId ? (topico.subtopicos || []).find(s => s.id === subtopicoId) : topico;
+      const target = subtopicoId ? (topico?.subtopicos || []).find(s => s.id === subtopicoId) : topico;
       if (target) {
         target.revisoes_agendadas = target.revisoes_agendadas.filter((d: string) => isPast(new Date(d)) && !isToday(new Date(d)));
         if (dateStr) {
@@ -453,13 +453,13 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const setStudyDate = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string | null, cascade?: boolean) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
 
       if (subtopicoId) {
-        const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+        const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
         if (sub) {
            sub.data_estudo = dateStr;
            sub.visto = !!dateStr;
@@ -470,8 +470,8 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         topico.visto = !!dateStr;
         if (!dateStr) topico.revisoes_agendadas = [];
         
-        if (cascade && topico.subtopicos.length > 0) {
-           (topico.subtopicos || []).forEach(sub => {
+        if (cascade && topico?.subtopicos.length > 0) {
+           (topico?.subtopicos || []).forEach(sub => {
               sub.data_estudo = dateStr;
               sub.visto = !!dateStr;
               if (!dateStr) sub.revisoes_agendadas = [];
@@ -486,18 +486,18 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       if (type === 'edital') {
         edital.titulo = newTitle;
       } else if(type === 'area') {
-        const item = (edital.areas || []).find(a => a.id === itemId);
+        const item = (edital?.areas || []).find(a => a.id === itemId);
         if(item) item.area = newTitle;
       } else if (type === 'materia') {
-        const area = (edital.areas || []).find(a => a.id === areaId);
+        const area = (edital?.areas || []).find(a => a.id === areaId);
         const item = (area?.materias || []).find(m => m.id === itemId);
         if(item) item.nome = newTitle;
       } else if (type === 'topico') {
-        const m = (edital.areas || []).find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
+        const m = (edital?.areas || []).find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
         const item = m?.topicos.find(t => t.id === itemId);
         if(item) item.titulo = newTitle;
       } else if (type === 'subtopico') {
-        const m = (edital.areas || []).find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
+        const m = (edital?.areas || []).find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
         const t = m?.topicos.find(t => t.subtopicos.some(s => s.id === itemId));
         const sub = (t?.subtopicos || []).find(s => s.id === itemId);
         if(sub) sub.titulo = newTitle;
@@ -509,23 +509,23 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     handleUpdate(editalId, (edital) => {
       if(type === 'area') {
         const targetId = itemId || areaId;
-        edital.areas = (edital.areas || []).filter(a => a.id !== targetId);
+        edital.areas = (edital?.areas || []).filter(a => a.id !== targetId);
       } else if (type === 'materia') {
         const targetId = itemId || materiaId;
-        const area = (edital.areas || []).find(a => a.id === areaId);
-        if(area) area.materias = (area.materias || []).filter(m => m.id !== targetId);
+        const area = (edital?.areas || []).find(a => a.id === areaId);
+        if(area) area.materias = (area?.materias || []).filter(m => m.id !== targetId);
       } else if (type === 'topico') {
         const targetId = itemId;
-        const m = (edital.areas || []).find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
-        if(m) m.topicos = m.topicos.filter(t => t.id !== targetId);
+        const m = (edital?.areas || []).find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
+        if(m) m.topicos = (m?.topicos || []).filter(t => t.id !== targetId);
       } else if (type === 'subtopico') {
         const targetId = itemId;
-        const m = (edital.areas || []).find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
+        const m = (edital?.areas || []).find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
         if(m) {
           const t = parentTopicoId 
-            ? m.topicos.find(t => t.id === parentTopicoId)
-            : m.topicos.find(t => t.subtopicos.some(s => s.id === targetId));
-          if(t) t.subtopicos = t.subtopicos.filter(s => s.id !== targetId);
+            ? (m?.topicos || []).find(t => t.id === parentTopicoId)
+            : (m?.topicos || []).find(t => t.subtopicos.some(s => s.id === targetId));
+          if(t) t.subtopicos = (t?.subtopicos || []).filter(s => s.id !== targetId);
         }
       }
     });
@@ -533,13 +533,13 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const updateNota = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, nota: string) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
 
       if (subtopicoId) {
-        const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+        const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
         if (sub) sub.notas = nota;
       } else {
         topico.notas = nota;
@@ -550,11 +550,11 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   const clearCartoes = (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, subtopicoId?: string) => {
     handleUpdate(editalId, (edital) => {
        if (!areaId || !materiaId) {
-         (edital.areas || []).forEach(area => {
-           (area.materias || []).forEach(materia => {
-             (materia.topicos || []).forEach(topico => {
+         (edital?.areas || []).forEach(area => {
+           (area?.materias || []).forEach(materia => {
+             (materia?.topicos || []).forEach(topico => {
                topico.cartoes = [];
-               (topico.subtopicos || []).forEach(sub => {
+               (topico?.subtopicos || []).forEach(sub => {
                  sub.cartoes = [];
                });
              });
@@ -562,23 +562,23 @@ export function EditalProvider({ children }: { children: ReactNode }) {
          });
          return;
        }
-       const area = (edital.areas || []).find(a => a.id === areaId);
+       const area = (edital?.areas || []).find(a => a.id === areaId);
        const materia = (area?.materias || []).find(m => m.id === materiaId);
        if (!materia) return;
        
        if (topicoId) {
-          const topico = (materia.topicos || []).find(t => t.id === topicoId);
+          const topico = (materia?.topicos || []).find(t => t.id === topicoId);
           if (!topico) return;
           if (subtopicoId) {
-             const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+             const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
              if (sub) sub.cartoes = [];
           } else {
              topico.cartoes = [];
-             (topico.subtopicos || []).forEach(s => s.cartoes = []);
+             (topico?.subtopicos || []).forEach(s => s.cartoes = []);
           }
        } else {
           // Clear everything in materia
-          (materia.topicos || []).forEach(t => {
+          (materia?.topicos || []).forEach(t => {
              t.cartoes = [];
              t.subtopicos.forEach(s => s.cartoes = []);
           });
@@ -588,7 +588,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const removeDuplicateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
@@ -611,7 +611,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       };
 
       if (subtopicoId) {
-        const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+        const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
         if (sub) {
           sub.cartoes = deduplicateArray(sub.cartoes);
         }
@@ -623,7 +623,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const updateCartoes = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string, repetition?: number, interval?: number, easeFactor?: number, nextReview?: string, subtopicoTitulo?: string }[], newSubtopicoTitle?: string) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
@@ -643,7 +643,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
       // 1. Process grouped cards (by subtopic titles)
       Object.entries(groupedBySubSub).forEach(([title, cards]) => {
-        const existingSub = (topico.subtopicos || []).find(
+        const existingSub = (topico?.subtopicos || []).find(
           s => s.titulo.toLowerCase().trim() === title.toLowerCase().trim()
         );
         if (existingSub) {
@@ -663,7 +663,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       // 2. Process default cards as normal
       if (defaultCards.length > 0) {
         if (newSubtopicoTitle) {
-          const existingSub = (topico.subtopicos || []).find(s => s.titulo.toLowerCase().trim() === newSubtopicoTitle.toLowerCase().trim());
+          const existingSub = (topico?.subtopicos || []).find(s => s.titulo.toLowerCase().trim() === newSubtopicoTitle.toLowerCase().trim());
           if (existingSub) {
             existingSub.cartoes = [...(existingSub.cartoes || []), ...(defaultCards as any)];
           } else {
@@ -677,7 +677,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
             });
           }
         } else if (subtopicoId) {
-          const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+          const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
           if (sub) sub.cartoes = defaultCards as any;
         } else {
           topico.cartoes = defaultCards as any;
@@ -688,12 +688,12 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const editCartao = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, newPergunta: string, newResposta: string, novaImagemPergunta?: string, novaImagemResposta?: string, novaOrigem?: string) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
       
-      let cartoes = subtopicoId ? ((topico.subtopicos || []).find(s => s.id === subtopicoId)?.cartoes) : (topico.cartoes);
+      let cartoes = subtopicoId ? ((topico?.subtopicos || []).find(s => s.id === subtopicoId)?.cartoes) : (topico.cartoes);
       if (!cartoes) return;
       
       const cartao = cartoes.find(c => c.id === cartaoId);
@@ -709,12 +709,12 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const updateCartaoSM2 = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, quality: number) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
       
-      let cartoes = subtopicoId ? ((topico.subtopicos || []).find(s => s.id === subtopicoId)?.cartoes) : (topico.cartoes);
+      let cartoes = subtopicoId ? ((topico?.subtopicos || []).find(s => s.id === subtopicoId)?.cartoes) : (topico.cartoes);
       if (!cartoes) return;
       
       const cartao = cartoes.find(c => c.id === cartaoId);
@@ -760,11 +760,11 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   const clearCartoesErros = (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, subtopicoId?: string) => {
     handleUpdate(editalId, (edital) => {
        if (!areaId || !materiaId) {
-         (edital.areas || []).forEach(area => {
-           (area.materias || []).forEach(materia => {
-             (materia.topicos || []).forEach(topico => {
+         (edital?.areas || []).forEach(area => {
+           (area?.materias || []).forEach(materia => {
+             (materia?.topicos || []).forEach(topico => {
                topico.cartoes_erros = [];
-               (topico.subtopicos || []).forEach(sub => {
+               (topico?.subtopicos || []).forEach(sub => {
                  sub.cartoes_erros = [];
                });
              });
@@ -772,23 +772,23 @@ export function EditalProvider({ children }: { children: ReactNode }) {
          });
          return;
        }
-       const area = (edital.areas || []).find(a => a.id === areaId);
+       const area = (edital?.areas || []).find(a => a.id === areaId);
        const materia = (area?.materias || []).find(m => m.id === materiaId);
        if (!materia) return;
        
        if (topicoId) {
-          const topico = (materia.topicos || []).find(t => t.id === topicoId);
+          const topico = (materia?.topicos || []).find(t => t.id === topicoId);
           if (!topico) return;
           if (subtopicoId) {
-             const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+             const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
              if (sub) sub.cartoes_erros = [];
           } else {
              topico.cartoes_erros = [];
-             (topico.subtopicos || []).forEach(s => s.cartoes_erros = []);
+             (topico?.subtopicos || []).forEach(s => s.cartoes_erros = []);
           }
        } else {
           // Clear everything in materia
-          (materia.topicos || []).forEach(t => {
+          (materia?.topicos || []).forEach(t => {
              t.cartoes_erros = [];
              t.subtopicos.forEach(s => s.cartoes_erros = []);
           });
@@ -798,7 +798,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const removeDuplicateCartoesErros = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
@@ -821,7 +821,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       };
 
       if (subtopicoId) {
-        const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+        const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
         if (sub) {
           sub.cartoes_erros = deduplicateArray(sub.cartoes_erros);
         }
@@ -833,7 +833,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const updateCartoesErros = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartoes: { id: string, pergunta: string, resposta: string, imagemPergunta?: string, imagemResposta?: string, origem?: string, repetition?: number, interval?: number, easeFactor?: number, nextReview?: string, subtopicoTitulo?: string }[], newSubtopicoTitle?: string) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
@@ -853,7 +853,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
       // 1. Process grouped cards (by subtopic titles)
       Object.entries(groupedBySubSub).forEach(([title, cards]) => {
-        const existingSub = (topico.subtopicos || []).find(
+        const existingSub = (topico?.subtopicos || []).find(
           s => s.titulo.toLowerCase().trim() === title.toLowerCase().trim()
         );
         if (existingSub) {
@@ -873,7 +873,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       // 2. Process default cards as normal
       if (defaultCards.length > 0) {
         if (newSubtopicoTitle) {
-          const existingSub = (topico.subtopicos || []).find(s => s.titulo.toLowerCase().trim() === newSubtopicoTitle.toLowerCase().trim());
+          const existingSub = (topico?.subtopicos || []).find(s => s.titulo.toLowerCase().trim() === newSubtopicoTitle.toLowerCase().trim());
           if (existingSub) {
             existingSub.cartoes_erros = [...(existingSub.cartoes_erros || []), ...(defaultCards as any)];
           } else {
@@ -887,7 +887,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
             });
           }
         } else if (subtopicoId) {
-          const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+          const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
           if (sub) sub.cartoes_erros = defaultCards as any;
         } else {
           topico.cartoes_erros = defaultCards as any;
@@ -898,12 +898,12 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const editCartaoErro = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, newPergunta: string, newResposta: string, novaImagemPergunta?: string, novaImagemResposta?: string, novaOrigem?: string) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
       
-      let cartoes = subtopicoId ? ((topico.subtopicos || []).find(s => s.id === subtopicoId)?.cartoes_erros) : (topico.cartoes_erros);
+      let cartoes = subtopicoId ? ((topico?.subtopicos || []).find(s => s.id === subtopicoId)?.cartoes_erros) : (topico.cartoes_erros);
       if (!cartoes) return;
       
       const cartao = cartoes.find(c => c.id === cartaoId);
@@ -919,12 +919,12 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const updateCartaoSM2Erro = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, cartaoId: string, quality: number) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
       
-      let cartoes = subtopicoId ? ((topico.subtopicos || []).find(s => s.id === subtopicoId)?.cartoes_erros) : (topico.cartoes_erros);
+      let cartoes = subtopicoId ? ((topico?.subtopicos || []).find(s => s.id === subtopicoId)?.cartoes_erros) : (topico.cartoes_erros);
       if (!cartoes) return;
       
       const cartao = cartoes.find(c => c.id === cartaoId);
@@ -970,13 +970,13 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   
   const updateMetricas = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, acertos: number, erros: number) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
       if (!topico) return;
 
       if (subtopicoId) {
-        const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+        const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
         if (sub) {
            sub.acertos = acertos;
            sub.erros = erros;
@@ -990,7 +990,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const reorderMaterias = (editalId: string, areaId: string, sourceIndex: number, destinationIndex: number) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       if (!area || !area.materias) return;
       const [movedMateria] = area.materias.splice(sourceIndex, 1);
       area.materias.splice(destinationIndex, 0, movedMateria);
@@ -999,22 +999,22 @@ export function EditalProvider({ children }: { children: ReactNode }) {
 
   const reorderTopicos = (editalId: string, areaId: string, materiaId: string, sourceIndex: number, destinationIndex: number) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
-      if (!materia || !materia.topicos) return;
-      const [movedTopico] = materia.topicos.splice(sourceIndex, 1);
-      materia.topicos.splice(destinationIndex, 0, movedTopico);
+      if (!materia || !materia?.topicos) return;
+      const [movedTopico] = materia?.topicos.splice(sourceIndex, 1);
+      materia?.topicos.splice(destinationIndex, 0, movedTopico);
     });
   };
 
   const reorderSubtopicos = (editalId: string, areaId: string, materiaId: string, topicoId: string, sourceIndex: number, destinationIndex: number) => {
     handleUpdate(editalId, (edital) => {
-      const area = (edital.areas || []).find(a => a.id === areaId);
+      const area = (edital?.areas || []).find(a => a.id === areaId);
       const materia = (area?.materias || []).find(m => m.id === materiaId);
       const topico = (materia?.topicos || []).find(t => t.id === topicoId);
-      if (!topico || !topico.subtopicos) return;
-      const [movedSubtopico] = topico.subtopicos.splice(sourceIndex, 1);
-      topico.subtopicos.splice(destinationIndex, 0, movedSubtopico);
+      if (!topico || !topico?.subtopicos) return;
+      const [movedSubtopico] = topico?.subtopicos.splice(sourceIndex, 1);
+      topico?.subtopicos.splice(destinationIndex, 0, movedSubtopico);
     });
   };
 
@@ -1022,11 +1022,11 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   const allCurrentEditais = [...editais, ...managedEditais];
   allCurrentEditais.forEach(edital => {
     if (!edital || !edital.areas) return;
-    (edital.areas || []).forEach(area => {
+    (edital?.areas || []).forEach(area => {
       if (!area || !area.materias) return;
-      (area.materias || []).forEach(materia => {
-        if (!materia || !materia.topicos) return;
-        (materia.topicos || []).forEach(topico => {
+      (area?.materias || []).forEach(materia => {
+        if (!materia || !materia?.topicos) return;
+        (materia?.topicos || []).forEach(topico => {
           if (!topico) return;
           if (topico.revisoes_agendadas) {
              topico.revisoes_agendadas.forEach(revDateStr => {
@@ -1049,8 +1049,8 @@ export function EditalProvider({ children }: { children: ReactNode }) {
              });
           }
           
-          if (topico.subtopicos) {
-             (topico.subtopicos || []).forEach(sub => {
+          if (topico?.subtopicos) {
+             (topico?.subtopicos || []).forEach(sub => {
                if (sub.revisoes_agendadas) {
                   sub.revisoes_agendadas.forEach(revDateStr => {
                     const revDate = new Date(revDateStr);

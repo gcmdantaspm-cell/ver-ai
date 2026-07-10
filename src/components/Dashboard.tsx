@@ -43,9 +43,9 @@ export function Dashboard() {
   
   const filteredEditais = selectedEditalId === 'all' ? editais : editais.filter(e => e.id === selectedEditalId);
   filteredEditais.forEach(edital => {
-    (edital.areas || []).forEach(area => {
-      (area.materias || []).forEach(materia => {
-        (materia.topicos || []).forEach(t => {
+    (edital?.areas || []).forEach(area => {
+      (area?.materias || []).forEach(materia => {
+        (materia?.topicos || []).forEach(t => {
           totalTopics++;
           if (t.visto) doneTopics++;
           if (t.acertos) totalAcertos += t.acertos;

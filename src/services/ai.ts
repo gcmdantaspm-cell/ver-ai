@@ -110,16 +110,16 @@ ${text}`,
     return parsed.map((area: any): AreaConhecimento => ({
       id: uuidv4(),
       area: area.area,
-      materias: (area.materias || []).map((materia: any): Materia => ({
+      materias: (area?.materias || []).filter((m: any) => m != null).map((materia: any): Materia => ({
         id: uuidv4(),
         nome: materia.nome,
-        topicos: (materia.topicos || []).map((topico: any): Topico => ({
+        topicos: (materia?.topicos || []).filter((t: any) => t != null).map((topico: any): Topico => ({
           id: uuidv4(),
           titulo: topico.titulo,
           visto: false,
           data_estudo: null,
           revisoes_agendadas: [],
-          subtopicos: (topico.subtopicos || []).map((sub: any): Subtopico => ({
+          subtopicos: (topico?.subtopicos || []).filter((s: any) => s != null).map((sub: any): Subtopico => ({
             id: uuidv4(),
             titulo: sub.titulo,
             visto: false,
