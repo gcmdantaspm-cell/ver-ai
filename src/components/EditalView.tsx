@@ -32,7 +32,10 @@ import { parseEditalText, generateStudyNotes, generateFlashcards } from "../serv
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 
-function RevisionsList({ item }: { item: any }) {
+
+function RevisionsList({ item, editalId, areaId, materiaId, topicoId, subtopicoId }: { item: any, editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string }) {
+  const { undoRevision, addCustomRevisionDate, removeRevisionDate } = useEdital();
+
   const revs = [];
   const concluidas = item.revisoes_concluidas || 0;
   const agendadas = (item.revisoes_agendadas || []).slice().sort((a: any, b: any) => new Date(a).getTime() - new Date(b).getTime());
@@ -49,7 +52,7 @@ function RevisionsList({ item }: { item: any }) {
          let status = 'future';
          if (isP) status = 'late';
          else if (isT) status = 'today';
-         revs.push({ label: `R${i+1}`, status, date });
+         revs.push({ label: `R${i+1}`, status, date, rawDate: agendadas[agIndex] });
       } else {
          revs.push({ label: `R${i+1}`, status: 'empty', date: null });
       }
@@ -78,8 +81,45 @@ function RevisionsList({ item }: { item: any }) {
             <div className={`px-1 py-0.5 font-bold border-r ${item.visto ? 'border-inherit' : 'border-inherit'}`}>
               {r.label}
             </div>
-            <div className={`px-1 py-0.5 font-mono ${r.status === 'empty' ? 'opacity-50' : ''}`}>
-              {r.status === 'done' ? 'OK' : r.date ? format(r.date, "dd/MM") : '—'}
+            <div className={`px-1 py-0.5 font-mono flex items-center ${r.status === 'empty' ? 'opacity-50' : ''}`}>
+              {r.status === 'done' ? (
+                <button 
+                  onClick={() => {
+                     if(window.confirm("Desfazer esta revisão?")) {
+                        undoRevision(item.id);
+                     }
+                  }}
+                  className="hover:opacity-75 outline-none"
+                  title="Desfazer revisão"
+                >
+                  OK
+                </button>
+              ) : (
+                <div className="relative flex items-center gap-0.5 group/date">
+                  <div className="relative cursor-pointer hover:opacity-80 transition-opacity">
+                    <input type="date" className="absolute inset-0 opacity-0 cursor-pointer w-full z-10" onChange={e => {
+                      if(e.target.value) {
+                         const newDateStr = new Date(e.target.value + 'T12:00:00').toISOString();
+                         if (r.date) removeRevisionDate(editalId, areaId, materiaId, topicoId, subtopicoId, r.rawDate);
+                         addCustomRevisionDate(editalId, areaId, materiaId, topicoId, subtopicoId, newDateStr);
+                      }
+                    }} />
+                    <span>{r.date ? format(r.date, "dd/MM") : '—'}</span>
+                  </div>
+                  {r.date && (
+                    <button 
+                      className="opacity-0 group-hover/date:opacity-100 text-rose-500 hover:text-rose-600 z-20 relative transition-opacity ml-0.5" 
+                      title="Remover data"
+                      onClick={(e) => {
+                         e.stopPropagation();
+                         removeRevisionDate(editalId, areaId, materiaId, topicoId, subtopicoId, r.rawDate);
+                      }}
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -661,7 +701,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                    <span className={`text-[8px] font-bold px-1 py-0.5 rounded self-center shrink-0 ${topico.visto ? 'text-white bg-white/20' : 'text-blue-800 bg-blue-900/10'}`}>{topicoProgress}%</span>
                                                 )}
                                               </div>
-                                              <RevisionsList item={topico} />
+                                              <RevisionsList item={topico} editalId={edital.id} areaId={area.id} materiaId={materia.id} topicoId={topico.id} />
                                             </div>
                                            </div>
                                            
@@ -740,7 +780,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                               <span onDoubleClick={() => handleEdit(sub.id, sub.titulo)} className="cursor-text line-clamp-1 hover:line-clamp-none">{sub.titulo}</span>
                                                             )}
                                                           </div>
-                                                          <RevisionsList item={sub} />
+                                                          <RevisionsList item={sub} editalId={edital.id} areaId={area.id} materiaId={materia.id} topicoId={topico.id} subtopicoId={sub.id} />
                                                         </div>
                                                         </div>
                                                         

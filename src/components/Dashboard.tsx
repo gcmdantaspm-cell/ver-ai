@@ -5,33 +5,35 @@ import { AlertCircle, CheckCircle2, TrendingUp, BookOpen, Clock, Target, Calenda
 
 export function Dashboard() {
   const [selectedMateriaId, setSelectedMateriaId] = useState<string | null>(null);
+  const [selectedEditalId, setSelectedEditalId] = useState<string>('all');
   const { editais, revisions, completeRevision } = useEdital();
 
-  const totalAtrasadas = revisions.filter(r => r.atrasada).length;
-  const totalHoje = revisions.filter(r => !r.atrasada && isToday(new Date(r.dataRevisao))).length;
+  const filteredRevisions = selectedEditalId === 'all' ? revisions : revisions.filter(r => r.editalId === selectedEditalId);
+  const totalAtrasadas = filteredRevisions.filter(r => r.atrasada).length;
+  const totalHoje = filteredRevisions.filter(r => !r.atrasada && isToday(new Date(r.dataRevisao))).length;
 
   const groupedRevisions = useMemo(() => {
     // Sort all by oldest date first
-    const sorted = [...revisions].sort((a, b) => {
+    const sorted = [...filteredRevisions].sort((a, b) => {
       const timeA = new Date(a.dataRevisao).getTime();
       const timeB = new Date(b.dataRevisao).getTime();
       return timeA - timeB;
     });
 
-    const groups: { materiaNome: string, materiaId: string, items: typeof revisions }[] = [];
+    const groups: { materiaNome: string, materiaId: string, editalId?: string, items: typeof revisions }[] = [];
     const idMap = new Map<string, number>();
 
     for (const rev of sorted) {
        const key = rev.materiaId;
        if (!idMap.has(key)) {
           idMap.set(key, groups.length);
-          groups.push({ materiaNome: rev.materiaNome, materiaId: rev.materiaId, items: [] });
+          groups.push({ materiaNome: rev.materiaNome, materiaId: rev.materiaId, editalId: rev.editalId, items: [] });
        }
        groups[idMap.get(key)!].items.push(rev);
     }
     
     return groups;
-  }, [revisions]);
+  }, [filteredRevisions]);
 
   // General Stats Calculation
   let totalTopics = 0;
@@ -39,7 +41,8 @@ export function Dashboard() {
   let totalAcertos = 0;
   let totalErros = 0;
   
-  editais.forEach(edital => {
+  const filteredEditais = selectedEditalId === 'all' ? editais : editais.filter(e => e.id === selectedEditalId);
+  filteredEditais.forEach(edital => {
     edital.areas.forEach(area => {
       area.materias.forEach(materia => {
         materia.topicos.forEach(t => {
@@ -75,9 +78,21 @@ export function Dashboard() {
           <h2 className="text-xl font-display font-bold text-slate-900 tracking-tight">Dashboard Central</h2>
           <p className="text-[10px] text-blue-800 font-bold uppercase tracking-[0.2em] mt-1">Visão Geral de Desempenho</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl border border-slate-200 text-[11px] font-mono font-bold text-slate-400">
-           <Calendar className="w-3.5 h-3.5" />
-           {format(new Date(), "eeee, dd MMMM")}
+        <div className="flex items-center gap-4">
+          <select 
+            value={selectedEditalId} 
+            onChange={e => setSelectedEditalId(e.target.value)}
+            className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 outline-none hover:border-slate-300 focus:border-blue-500 transition-colors shadow-sm"
+          >
+            <option value="all">Todos os Editais</option>
+            {editais.map(e => (
+              <option key={e.id} value={e.id}>{e.titulo || 'Edital sem título'}</option>
+            ))}
+          </select>
+          <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl border border-slate-200 text-[11px] font-mono font-bold text-slate-400">
+             <Calendar className="w-3.5 h-3.5" />
+             {format(new Date(), "eeee, dd MMMM")}
+          </div>
         </div>
       </header>
 

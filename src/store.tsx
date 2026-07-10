@@ -39,6 +39,7 @@ interface EditalContextType {
   reorderSubtopicos: (editalId: string, areaId: string, materiaId: string, topicoId: string, sourceIndex: number, destinationIndex: number) => void;
   revisions: RevisaoAgendada[];
   completeRevision: (topicoOuSubId: string, dataRevisao: string) => void;
+  undoRevision: (topicoOuSubId: string) => void;
   getPublicEdital: (id: string) => Promise<Edital | null>;
   setEditalPublic: (id: string, isPublic: boolean, cycleIdsToPublic?: string[]) => Promise<void>;
   addCiclo: (ciclo: StudyCycle) => void;
@@ -257,6 +258,48 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         }
       }
     });
+  };
+
+  
+  const undoRevision = (itemId: string) => {
+    if (!user) return;
+    
+    // Find which edital contains this itemId
+    const allEditais = [...editais, ...managedEditais];
+    const targetEdital = allEditais.find(ed => {
+       for (const area of ed.areas) {
+          for (const materia of area.materias) {
+             for (const topico of materia.topicos) {
+                if (topico.id === itemId) return true;
+                if (topico.subtopicos.some(s => s.id === itemId)) return true;
+             }
+          }
+       }
+       return false;
+    });
+
+    if (targetEdital) {
+       handleUpdate(targetEdital.id, (edital) => {
+          for (const area of edital.areas) {
+            for (const materia of area.materias) {
+              for (const topico of materia.topicos) {
+                if (topico.id === itemId) {
+                  if (topico.revisoes_concluidas && topico.revisoes_concluidas > 0) {
+                     topico.revisoes_concluidas -= 1;
+                  }
+                }
+                for (const sub of topico.subtopicos) {
+                  if (sub.id === itemId) {
+                    if (sub.revisoes_concluidas && sub.revisoes_concluidas > 0) {
+                       sub.revisoes_concluidas -= 1;
+                    }
+                  }
+                }
+              }
+            }
+          }
+       });
+    }
   };
 
   const completeRevision = (itemId: string, dataRevisao: string) => {
@@ -1086,7 +1129,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       deleteItem, addItem, addMaterias, addCustomRevisionDate,
       removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, updateCartoes, clearCartoes, removeDuplicateCartoes, editCartao, updateCartaoSM2,
       updateCartoesErros, clearCartoesErros, removeDuplicateCartoesErros, editCartaoErro, updateCartaoSM2Erro,
-      updateMetricas, revisions, completeRevision, getPublicEdital, setEditalPublic,
+      updateMetricas, revisions, completeRevision, undoRevision, getPublicEdital, setEditalPublic,
       ciclos, managedCiclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem, getPublicCiclos,
       reorderMaterias, reorderTopicos, reorderSubtopicos
     }}>
