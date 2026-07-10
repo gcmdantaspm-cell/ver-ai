@@ -31,6 +31,63 @@ import {
 import { parseEditalText, generateStudyNotes, generateFlashcards } from "../services/ai";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
+
+function RevisionsList({ item }: { item: any }) {
+  const revs = [];
+  const concluidas = item.revisoes_concluidas || 0;
+  const agendadas = (item.revisoes_agendadas || []).slice().sort((a: any, b: any) => new Date(a).getTime() - new Date(b).getTime());
+  
+  for (let i = 0; i < 8; i++) {
+    if (i < concluidas) {
+      revs.push({ label: `R${i+1}`, status: 'done', date: null });
+    } else {
+      const agIndex = i - concluidas;
+      if (agIndex < agendadas.length) {
+         const date = new Date(agendadas[agIndex]);
+         const isP = isPast(date) && !isToday(date);
+         const isT = isToday(date);
+         let status = 'future';
+         if (isP) status = 'late';
+         else if (isT) status = 'today';
+         revs.push({ label: `R${i+1}`, status, date });
+      } else {
+         revs.push({ label: `R${i+1}`, status: 'empty', date: null });
+      }
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1 mt-1.5 w-full">
+      {revs.map((r, idx) => {
+        let colorClass = 'bg-slate-100 text-slate-400 border-slate-200';
+        if (r.status === 'done') colorClass = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
+        else if (r.status === 'late') colorClass = 'bg-rose-500/10 text-rose-600 border-rose-500/20';
+        else if (r.status === 'today') colorClass = 'bg-amber-500/10 text-amber-600 border-amber-500/20';
+        else if (r.status === 'future') colorClass = 'bg-blue-900/10 text-blue-800 border-blue-900/20';
+        
+        if (item.visto) {
+          if (r.status === 'done') colorClass = 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30';
+          else if (r.status === 'late') colorClass = 'bg-rose-400/20 text-rose-300 border-rose-400/30';
+          else if (r.status === 'today') colorClass = 'bg-amber-400/20 text-amber-300 border-amber-400/30';
+          else if (r.status === 'future') colorClass = 'bg-white/20 text-blue-200 border-white/30';
+          else colorClass = 'bg-white/5 text-white/30 border-white/10';
+        }
+
+        return (
+          <div key={idx} className={`flex items-center text-[8px] sm:text-[9px] border rounded overflow-hidden shadow-sm ${colorClass}`}>
+            <div className={`px-1 py-0.5 font-bold border-r ${item.visto ? 'border-inherit' : 'border-inherit'}`}>
+              {r.label}
+            </div>
+            <div className={`px-1 py-0.5 font-mono ${r.status === 'empty' ? 'opacity-50' : ''}`}>
+              {r.status === 'done' ? 'OK' : r.date ? format(r.date, "dd/MM") : '—'}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function EditalView({ edital }: { edital: Edital, key?: string | number }) {
   const { 
     deleteEdital, 
@@ -593,7 +650,8 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                    <Check className={`w-2.5 h-2.5 transition-opacity ${topico.visto ? 'opacity-100 text-white' : 'opacity-0 peer-checked:opacity-100 text-white'}`} strokeWidth={3} />
                                                 </div>
                                               </label>
-                                              <div className={`text-[10px] font-medium flex-1 flex items-center gap-2 ${topico.visto ? 'text-white' : 'text-slate-800'}`}>
+                                              <div className={`text-[10px] font-medium flex-1 flex flex-col items-start gap-1 w-full ${topico.visto ? 'text-white' : 'text-slate-800'}`}>
+<div className="flex items-center gap-2 w-full">
                                                 {editingItemId === topico.id ? (
                                                   <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'topico')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'topico')} className={`bg-transparent w-full outline-none ${topico.visto ? 'text-white' : 'text-slate-900'}`} />
                                                 ) : (
@@ -603,6 +661,8 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                    <span className={`text-[8px] font-bold px-1 py-0.5 rounded self-center shrink-0 ${topico.visto ? 'text-white bg-white/20' : 'text-blue-800 bg-blue-900/10'}`}>{topicoProgress}%</span>
                                                 )}
                                               </div>
+                                              <RevisionsList item={topico} />
+                                            </div>
                                            </div>
                                            
                                            <div className="w-full lg:col-span-6 flex items-center justify-between lg:grid lg:grid-cols-6 gap-2 pl-6 lg:pl-0">
@@ -672,13 +732,16 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                               <Check className={`w-2 h-2 transition-opacity ${sub.visto ? 'opacity-100 text-white' : 'opacity-0 peer-checked:opacity-100 text-white'}`} strokeWidth={3} />
                                                             </div>
                                                           </label>
-                                                          <div className={`text-[10px] flex-1 break-words w-full ${sub.visto ? 'text-white line-through opacity-80' : 'text-slate-600'}`}>
+                                                          <div className={`text-[10px] flex-1 break-words w-full ${sub.visto ? 'text-white opacity-90' : 'text-slate-600'}`}>
+<div className="flex items-center gap-2 w-full">
                                                             {editingItemId === sub.id ? (
                                                               <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'subtopico', sub.id)} className={`bg-transparent w-full outline-none ${sub.visto ? 'text-white' : 'text-slate-900'}`} />
                                                             ) : (
                                                               <span onDoubleClick={() => handleEdit(sub.id, sub.titulo)} className="cursor-text line-clamp-1 hover:line-clamp-none">{sub.titulo}</span>
                                                             )}
                                                           </div>
+                                                          <RevisionsList item={sub} />
+                                                        </div>
                                                         </div>
                                                         
                                                         <div className="w-full lg:col-span-6 flex items-center justify-between lg:grid lg:grid-cols-6 gap-2 pl-6 sm:pl-4 lg:pl-0 mt-1 lg:mt-0">
