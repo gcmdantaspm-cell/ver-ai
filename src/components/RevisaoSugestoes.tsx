@@ -133,10 +133,10 @@ export function RevisaoSugestoes() {
   // Group by materia for display
   const sugestoesPorMateria = useMemo(() => {
     const grouped = sugestoes.reduce((acc, curr) => {
-      if (!acc[curr.materiaId]) acc[curr.materiaId] = { materiaNome: curr.materiaNome, editalTitulo: curr.editalTitulo, itens: [] };
+      if (!acc[curr.materiaId]) acc[curr.materiaId] = { materiaId: curr.materiaId, materiaNome: curr.materiaNome, editalTitulo: curr.editalTitulo, itens: [] };
       acc[curr.materiaId].itens.push(curr);
       return acc;
-    }, {} as Record<string, { materiaNome: string, editalTitulo: string, itens: Sugestao[] }>);
+    }, {} as Record<string, { materiaId: string, materiaNome: string, editalTitulo: string, itens: Sugestao[] }>);
     
     // Sort matters by the highest diasSemEstudar of its items
     return Object.values(grouped).sort((a, b) => {
