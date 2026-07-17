@@ -83,5 +83,14 @@ service cloud.firestore {
                       
         allow delete: if isSignedIn() && (existing() == null || existing().userId == request.auth.uid || (('managedBy' in existing()) && existing().managedBy == request.auth.uid));
     }
+
+    function isValidUserSettings(data) {
+        return (!('pinnedEditalId' in data) || data.pinnedEditalId is string || data.pinnedEditalId == null);
+    }
+
+    match /users/{userId}/settings/{settingId} {
+        allow read: if isSignedIn() && userId == request.auth.uid;
+        allow write: if isSignedIn() && userId == request.auth.uid && isValidUserSettings(incoming());
+    }
   }
 }

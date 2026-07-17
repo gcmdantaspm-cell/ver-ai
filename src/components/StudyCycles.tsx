@@ -40,16 +40,19 @@ export function StudyCycles({
   customCiclos?: StudyCycle[], 
   isManagedMode?: boolean 
 } = {}) {
-  const store = useEdital();
-  const editais = customEditais || [...store.editais, ...store.managedEditais];
-  const ciclos = customCiclos || [...store.ciclos, ...store.managedCiclos];
-  const addCiclo = store.addCiclo;
-  const deleteCiclo = store.deleteCiclo;
-  const updateCiclo = store.updateCiclo;
-  const toggleCicloItem = store.toggleCicloItem;
+  const { editais: storeEditais, managedEditais, ciclos: storeCiclos, managedCiclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem, pinnedEditalId } = useEdital();
+  const editais = customEditais || [...storeEditais, ...managedEditais];
+  const ciclos = customCiclos || [...storeCiclos, ...managedCiclos];
+  
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedEditalId, setSelectedEditalId] = useState<string>("");
-  const [filterEditalId, setFilterEditalId] = useState<string>("all");
+  const [filterEditalId, setFilterEditalId] = useState<string>(pinnedEditalId || "all");
+
+  useEffect(() => {
+    if (pinnedEditalId) {
+      setFilterEditalId(pinnedEditalId);
+    }
+  }, [pinnedEditalId]);
   
   // Auto-select edital if customEditais is exactly 1
   useEffect(() => {

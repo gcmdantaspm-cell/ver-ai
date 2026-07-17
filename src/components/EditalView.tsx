@@ -25,7 +25,8 @@ import {
   Loader2,
   Sparkles,
   Share2,
-  Hash
+  Hash,
+  Pin
 } from "lucide-react";
 
 import { parseEditalText, generateStudyNotes, generateFlashcards } from "../services/ai";
@@ -148,7 +149,9 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
     ciclos,
     reorderMaterias,
     reorderTopicos,
-    reorderSubtopicos
+    reorderSubtopicos,
+    pinnedEditalId,
+    setPinnedEditalId
   } = useEdital();
   
   const editalCiclos = ciclos.filter(c => c.editalId === edital.id);
@@ -480,6 +483,13 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
           </h2>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[9px] text-blue-800 font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] bg-blue-900/10 px-1.5 py-[1px] rounded border border-blue-900/20">Edital Ativo</span>
+            <button 
+              onClick={() => setPinnedEditalId(pinnedEditalId === edital.id ? null : edital.id)}
+              className={`p-1 flex items-center justify-center rounded-md transition-all border ${pinnedEditalId === edital.id ? 'bg-amber-500 text-white border-amber-600 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:text-amber-500'}`}
+              title={pinnedEditalId === edital.id ? "Desafixar Edital" : "Fixar Edital"}
+            >
+              <Pin className={`w-3 h-3 ${pinnedEditalId === edital.id ? 'fill-current' : ''}`} />
+            </button>
             {edital.importedFrom && (
               <span className="text-[9px] text-purple-700 font-bold uppercase tracking-wider bg-purple-100 px-1.5 py-[1px] rounded border border-purple-200" title={`Importado de: ${edital.importedFrom}`}>
                 Importado: {edital.importedFrom.split(' ')[0]}

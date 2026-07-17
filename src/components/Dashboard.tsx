@@ -5,8 +5,14 @@ import { AlertCircle, CheckCircle2, TrendingUp, BookOpen, Clock, Target, Calenda
 
 export function Dashboard() {
   const [selectedMateriaId, setSelectedMateriaId] = useState<string | null>(null);
-  const [selectedEditalId, setSelectedEditalId] = useState<string>('all');
-  const { editais, revisions, completeRevision } = useEdital();
+  const { editais, revisions, completeRevision, pinnedEditalId } = useEdital();
+  const [selectedEditalId, setSelectedEditalId] = useState<string>(pinnedEditalId || 'all');
+
+  React.useEffect(() => {
+    if (pinnedEditalId) {
+      setSelectedEditalId(pinnedEditalId);
+    }
+  }, [pinnedEditalId]);
 
   const filteredRevisions = selectedEditalId === 'all' ? revisions : revisions.filter(r => r.editalId === selectedEditalId);
   const totalAtrasadas = filteredRevisions.filter(r => r.atrasada).length;

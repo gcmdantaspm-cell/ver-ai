@@ -40,12 +40,49 @@
         }
       },
       "required": ["userId", "titulo", "areas"]
+    },
+    "Ciclo": {
+      "title": "Ciclo",
+      "description": "Represents a study cycle for an edital.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "editalId": { "type": "string" },
+        "nome": { "type": "string" },
+        "items": { "type": "array" },
+        "created_at": { "type": "string" },
+        "targetMinutes": { "type": "number" },
+        "ordem": { "type": "number" },
+        "isPublic": { "type": "boolean" },
+        "ownerName": { "type": "string" },
+        "managedBy": { "type": "string" },
+        "copiedByEmail": { "type": "string" },
+        "copiedByName": { "type": "string" },
+        "originalCycleId": { "type": "string" }
+      },
+      "required": ["userId", "editalId", "nome", "items", "created_at"]
+    },
+    "UserSettings": {
+      "title": "UserSettings",
+      "description": "User application settings.",
+      "type": "object",
+      "properties": {
+        "pinnedEditalId": { "type": "string" }
+      }
     }
   },
   "firestore": {
     "/editais/{editalId}": {
       "schema": { "$ref": "#/entities/Edital" },
       "description": "Stores edital documents containing the structured view."
+    },
+    "/ciclos/{cicloId}": {
+      "schema": { "$ref": "#/entities/Ciclo" },
+      "description": "Stores study cycles."
+    },
+    "/users/{userId}/settings/main": {
+      "schema": { "$ref": "#/entities/UserSettings" },
+      "description": "Stores user settings like pinned edital."
     }
   }
 }

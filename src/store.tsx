@@ -40,6 +40,8 @@ interface EditalContextType {
   revisions: RevisaoAgendada[];
   completeRevision: (topicoOuSubId: string, dataRevisao: string) => void;
   undoRevision: (topicoOuSubId: string) => void;
+  pinnedEditalId: string | null;
+  setPinnedEditalId: (id: string | null) => void;
   getPublicEdital: (id: string) => Promise<Edital | null>;
   setEditalPublic: (id: string, isPublic: boolean, cycleIdsToPublic?: string[]) => Promise<void>;
   addCiclo: (ciclo: StudyCycle) => void;
@@ -77,6 +79,33 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   const [managedEditais, setManagedEditais] = useState<Edital[]>([]);
   const [ciclos, setCiclos] = useState<StudyCycle[]>([]);
   const [managedCiclos, setManagedCiclos] = useState<StudyCycle[]>([]);
+  const [pinnedEditalId, setPinnedEditalIdState] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setPinnedEditalIdState(null);
+      return;
+    }
+    const settingsDoc = doc(db, "users", user.uid, "settings", "main");
+    const unsubscribe = onSnapshot(settingsDoc, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setPinnedEditalIdState(data.pinnedEditalId || null);
+      }
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, `users/${user.uid}/settings/main`);
+    });
+    return unsubscribe;
+  }, [user]);
+
+  const setPinnedEditalId = (id: string | null) => {
+    if (!user) return;
+    setPinnedEditalIdState(id);
+    const settingsDoc = doc(db, "users", user.uid, "settings", "main");
+    setDoc(settingsDoc, { pinnedEditalId: id }, { merge: true }).catch(err => {
+      handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}/settings/main`);
+    });
+  };
 
   useEffect(() => {
     if (!user) {
@@ -1149,7 +1178,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       deleteItem, addItem, addMaterias, addCustomRevisionDate,
       removeRevisionDate, setNextRevisionDate, setStudyDate, updateNota, updateCartoes, clearCartoes, removeDuplicateCartoes, editCartao, updateCartaoSM2,
       updateCartoesErros, clearCartoesErros, removeDuplicateCartoesErros, editCartaoErro, updateCartaoSM2Erro,
-      updateMetricas, revisions, completeRevision, undoRevision, getPublicEdital, setEditalPublic,
+      updateMetricas, revisions, completeRevision, undoRevision, pinnedEditalId, setPinnedEditalId, getPublicEdital, setEditalPublic,
       ciclos, managedCiclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem, getPublicCiclos,
       reorderMaterias, reorderTopicos, reorderSubtopicos
     }}>
