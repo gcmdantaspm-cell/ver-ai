@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from "react";
 import { useEdital } from "../store";
 import { format, isToday } from "date-fns";
-import { AlertCircle, CheckCircle2, TrendingUp, BookOpen, Clock, Target, Calendar, ChevronLeft } from "lucide-react";
+import {  AlertCircle, CheckCircle2, TrendingUp, BookOpen, Clock, Target, Calendar, ChevronLeft , Pin } from "lucide-react";
 
 export function Dashboard() {
   const [selectedMateriaId, setSelectedMateriaId] = useState<string | null>(null);
-  const { editais, revisions, completeRevision, pinnedEditalId } = useEdital();
+  const { editais, revisions, completeRevision, pinnedEditalId, setPinnedEditalId } = useEdital();
   const [selectedEditalId, setSelectedEditalId] = useState<string>(pinnedEditalId || 'all');
 
   React.useEffect(() => {
@@ -85,7 +85,8 @@ export function Dashboard() {
           <p className="text-[10px] text-blue-800 font-bold uppercase tracking-[0.2em] mt-1">Visão Geral de Desempenho</p>
         </div>
         <div className="flex items-center gap-4">
-          <select 
+          <div className="flex items-center gap-2">
+            <select 
             value={selectedEditalId} 
             onChange={e => setSelectedEditalId(e.target.value)}
             className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 outline-none hover:border-slate-300 focus:border-blue-500 transition-colors shadow-sm"
@@ -95,6 +96,16 @@ export function Dashboard() {
               <option key={e.id} value={e.id}>{e.titulo || 'Edital sem título'}</option>
             ))}
           </select>
+            {selectedEditalId !== 'all' && setPinnedEditalId && (
+              <button 
+                onClick={() => setPinnedEditalId(pinnedEditalId === selectedEditalId ? null : selectedEditalId)}
+                className={`p-2 flex items-center justify-center rounded-xl transition-all border ${pinnedEditalId === selectedEditalId ? 'bg-amber-500 text-white border-amber-600 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:text-amber-500'}`}
+                title={pinnedEditalId === selectedEditalId ? "Desafixar Edital" : "Fixar Edital como Padrão"}
+              >
+                <Pin className={`w-4 h-4 ${pinnedEditalId === selectedEditalId ? 'fill-current' : ''}`} />
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl border border-slate-200 text-[11px] font-mono font-bold text-slate-400">
              <Calendar className="w-3.5 h-3.5" />
              {format(new Date(), "eeee, dd MMMM")}

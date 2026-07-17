@@ -4,7 +4,7 @@ import { StudyCycle, StudyCycleItem, Edital } from "../types";
 import { v4 as uuidv4 } from "uuid";
 import { motion, AnimatePresence } from "motion/react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { 
+import {  
   Plus, 
   Trash2, 
   CheckCircle2, 
@@ -24,7 +24,7 @@ import {
   FileSpreadsheet,
   Cloud,
   Layers
-} from "lucide-react";
+, Pin } from "lucide-react";
 import * as XLSX from "xlsx";
 import { generateStudyCycleAI } from "../services/ai";
 
@@ -40,7 +40,7 @@ export function StudyCycles({
   customCiclos?: StudyCycle[], 
   isManagedMode?: boolean 
 } = {}) {
-  const { editais: storeEditais, managedEditais, ciclos: storeCiclos, managedCiclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem, pinnedEditalId } = useEdital();
+  const { editais: storeEditais, managedEditais, ciclos: storeCiclos, managedCiclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem, pinnedEditalId, setPinnedEditalId } = useEdital();
   const editais = customEditais || [...storeEditais, ...managedEditais];
   const ciclos = customCiclos || [...storeCiclos, ...managedCiclos];
   
