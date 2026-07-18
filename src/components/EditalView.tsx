@@ -623,8 +623,27 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                              className="mb-2 rounded-xl border border-slate-200 bg-white overflow-hidden group/mat transition-all hover:bg-white shadow-sm hover:border-slate-300">
                              <div className="flex items-center justify-between px-3 py-2">
                                {filter === 'all' && (
-                                 <div {...providedDrag.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing mr-2">
-                                   <GripVertical className="w-4 h-4" />
+                                 <div className="flex items-center gap-1.5 mr-2">
+                                   <div {...providedDrag.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing">
+                                     <GripVertical className="w-4 h-4" />
+                                   </div>
+                                   <input 
+                                     type="number" 
+                                     min="1"
+                                     max={area.materias.length}
+                                     value={mIndex + 1}
+                                     onChange={(e) => {
+                                       const val = parseInt(e.target.value);
+                                       if (!isNaN(val)) {
+                                         const newIdx = Math.max(0, Math.min(val - 1, area.materias.length - 1));
+                                         if (newIdx !== mIndex) {
+                                           reorderMaterias(edital.id, area.id, mIndex, newIdx);
+                                         }
+                                       }
+                                     }}
+                                     className="w-7 h-6 text-[10px] font-bold text-center rounded bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none text-slate-500 shadow-inner"
+                                     title="Alterar Posição"
+                                   />
                                  </div>
                                )}
                              <button onClick={() => toggleMateria(materia.id)} className="flex items-center gap-3 flex-1 text-left">
@@ -684,8 +703,27 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                         <div className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-2 lg:gap-y-0 border-b border-slate-200 py-1.5 sm:py-2 px-3 sm:px-4 items-start lg:items-center group/item transition-colors ${topico.visto ? 'bg-blue-900' : 'hover:bg-slate-50'}`}>
                                            <div className="lg:col-span-6 flex items-center gap-2 sm:gap-3 w-full">
                                               {filter === 'all' && (
-                                                <div {...providedDragT.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing mr-1">
-                                                  <GripVertical className="w-3.5 h-3.5" />
+                                                <div className="flex items-center gap-1">
+                                                  <div {...providedDragT.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing">
+                                                    <GripVertical className="w-3.5 h-3.5" />
+                                                  </div>
+                                                  <input 
+                                                    type="number" 
+                                                    min="1"
+                                                    max={materia.topicos.length}
+                                                    value={tIndex + 1}
+                                                    onChange={(e) => {
+                                                      const val = parseInt(e.target.value);
+                                                      if (!isNaN(val)) {
+                                                        const newIdx = Math.max(0, Math.min(val - 1, materia.topicos.length - 1));
+                                                        if (newIdx !== tIndex) {
+                                                          reorderTopicos(edital.id, area.id, materia.id, tIndex, newIdx);
+                                                        }
+                                                      }
+                                                    }}
+                                                    className={`w-6 h-5 text-[9px] font-bold text-center rounded bg-transparent border border-slate-300 focus:border-blue-500 outline-none transition-colors ${topico.visto ? 'text-white border-white/20' : 'text-slate-400 bg-white shadow-sm'}`}
+                                                    title="Alterar Posição"
+                                                  />
                                                 </div>
                                               )}
                                               <label className="relative flex items-center justify-center cursor-pointer shrink-0">
@@ -772,8 +810,27 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                         <div className="lg:col-span-6 flex items-center gap-2 sm:gap-2.5 pl-0 sm:pl-4 w-full">
                                                           <CornerDownRight className={`w-3 h-3 shrink-0 ml-1 sm:ml-0 ${sub.visto ? 'text-white/40' : 'text-slate-400'}`} />
                                                           {filter === 'all' && (
-                                                            <div {...providedDragS.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing mr-1">
-                                                              <GripVertical className="w-3.5 h-3.5" />
+                                                            <div className="flex items-center gap-1">
+                                                              <div {...providedDragS.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing">
+                                                                <GripVertical className="w-3.5 h-3.5" />
+                                                              </div>
+                                                              <input 
+                                                                type="number" 
+                                                                min="1"
+                                                                max={topico.subtopicos.length}
+                                                                value={sIndex + 1}
+                                                                onChange={(e) => {
+                                                                  const val = parseInt(e.target.value);
+                                                                  if (!isNaN(val)) {
+                                                                    const newIdx = Math.max(0, Math.min(val - 1, topico.subtopicos.length - 1));
+                                                                    if (newIdx !== sIndex) {
+                                                                      reorderSubtopicos(edital.id, area.id, materia.id, topico.id, sIndex, newIdx);
+                                                                    }
+                                                                  }
+                                                                }}
+                                                                className={`w-6 h-5 text-[9px] font-bold text-center rounded bg-transparent border border-slate-300 focus:border-blue-500 outline-none transition-colors ${sub.visto ? 'text-white border-white/20' : 'text-slate-400 bg-white shadow-sm'}`}
+                                                                title="Alterar Posição"
+                                                              />
                                                             </div>
                                                           )}
                                                           <label className="relative flex items-center justify-center cursor-pointer shrink-0">

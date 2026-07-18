@@ -16,7 +16,7 @@ import { query, collection, where, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
 
 function AppContent() {
-  const { editais, getPublicEdital, addEdital, getPublicCiclos, addCiclo } = useEdital();
+  const { editais, getPublicEdital, addEdital, getPublicCiclos, addCiclo, pinnedEditalId, setPinnedEditalId } = useEdital();
   const [currentView, setCurrentView] = useState<string>("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
