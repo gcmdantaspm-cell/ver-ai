@@ -107,3 +107,17 @@ export interface RevisaoAgendada {
   atrasada: boolean;
   diasAtraso: number;
 }
+
+export interface Discursiva {
+  id: string;
+  userId?: string;
+  topico: string;
+  concluido: boolean;
+  pontuacaoMaxima: number;
+  pontuacaoObtida: number;
+  textoBase: string;
+  comandoQuestao: string;
+  minhaResposta: string;
+  dataCriacao: string;
+  dataConclusao?: string;
+}

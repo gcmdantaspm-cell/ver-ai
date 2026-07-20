@@ -143,6 +143,7 @@ export interface StudyCycleParams {
     nome: string;
     questoes: number;
     peso: number;
+    tempoManual?: number;
   }[];
 }
 
@@ -169,11 +170,16 @@ ${(function() {
   
   let grandTotal = 0;
   const results = sortedSubjects.map(s => {
-    const proportion = totalPoints > 0 ? s.points / totalPoints : 0;
-    let subjectMinutes = Math.max(30, Math.round(proportion * totalMinutesAllCycles));
-    
-    // Round to nearest 5 minutes
-    subjectMinutes = Math.max(30, Math.round(subjectMinutes / 5) * 5);
+    let subjectMinutes;
+    if (s.tempoManual && s.tempoManual > 0) {
+      subjectMinutes = s.tempoManual * params.numCycles;
+    } else {
+      const proportion = totalPoints > 0 ? s.points / totalPoints : 0;
+      subjectMinutes = Math.max(30, Math.round(proportion * totalMinutesAllCycles));
+      
+      // Round to nearest 5 minutes
+      subjectMinutes = Math.max(30, Math.round(subjectMinutes / 5) * 5);
+    }
     
     grandTotal += subjectMinutes;
     return `  * "${s.nome}": ${subjectMinutes} minutes total.`;

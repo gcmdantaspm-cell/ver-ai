@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Edital, Materia, RevisaoAgendada, StudyCycle, StudyCycleItem } from "./types";
+import { Edital, Materia, RevisaoAgendada, StudyCycle, StudyCycleItem, Discursiva } from "./types";
 import { addDays, isPast, isToday, differenceInDays } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 import { collection, doc, onSnapshot, query, setDoc, where, deleteDoc, getDocFromServer, getDocs } from "firebase/firestore";
@@ -49,6 +49,11 @@ interface EditalContextType {
   updateCiclo: (ciclo: StudyCycle) => void;
   toggleCicloItem: (cicloId: string, itemId: string) => void;
   getPublicCiclos: (editalId: string) => Promise<StudyCycle[]>;
+  discursivas: Discursiva[];
+  addDiscursiva: (d: Discursiva) => void;
+  updateDiscursiva: (d: Discursiva) => void;
+  deleteDiscursiva: (id: string) => void;
+  toggleDiscursiva: (id: string) => void;
 }
 
 const EditalContext = createContext<EditalContextType | undefined>(undefined);
@@ -79,6 +84,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   const [managedEditais, setManagedEditais] = useState<Edital[]>([]);
   const [ciclos, setCiclos] = useState<StudyCycle[]>([]);
   const [managedCiclos, setManagedCiclos] = useState<StudyCycle[]>([]);
+  const [discursivas, setDiscursivas] = useState<Discursiva[]>([]);
   const [pinnedEditalId, setPinnedEditalIdState] = useState<string | null>(null);
 
   useEffect(() => {
@@ -111,6 +117,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     if (!user) {
       setEditais([]);
       setCiclos([]);
+      setDiscursivas([]);
       return;
     }
     const q = query(collection(db, "editais"), where("userId", "==", user.uid));

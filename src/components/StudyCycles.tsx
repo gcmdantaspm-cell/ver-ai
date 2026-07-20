@@ -67,7 +67,7 @@ export function StudyCycles({
   const [weeklyHours, setWeeklyHours] = useState<number>(30);
   const [cycleHours, setCycleHours] = useState<number>(10);
   const [numCycles, setNumCycles] = useState<number>(3);
-  const [subjectsParams, setSubjectsParams] = useState<{nome: string, questoes: number, peso: number}[]>([]);
+  const [subjectsParams, setSubjectsParams] = useState<{nome: string, questoes: number, peso: number, tempoManual?: number}[]>([]);
 
   // Editing states
   const [editingCycleId, setEditingCycleId] = useState<string | null>(null);
@@ -102,14 +102,38 @@ export function StudyCycles({
     if (edital) {
       const allMaterias = (edital?.areas || []).flatMap(a => a.materias.map(m => m.nome));
       const uniqueMaterias = Array.from(new Set(allMaterias));
-      setSubjectsParams(uniqueMaterias.map(m => ({ nome: m, questoes: 10, peso: 1 })));
+      setSubjectsParams(uniqueMaterias.map(m => ({ nome: m, questoes: 10, peso: 1, tempoManual: 0 })));
     }
   };
 
-  const handleUpdateSubjectParam = (index: number, field: 'questoes' | 'peso', value: number) => {
+  const handleUpdateSubjectParam = (index: number, field: 'questoes' | 'peso' | 'tempoManual', value: number) => {
+    setSubjectsParams(prev => {
+      const newParams = [...prev];
+      newParams[index] = { ...newParams[index], [field]: value };
+      return newParams;
+    });
+  };
+
+  const handleUpdateSubjectParamsMultiple = (index: number, updates: Partial<{questoes: number, peso: number, tempoManual: number}>) => {
+    setSubjectsParams(prev => {
+      const newParams = [...prev];
+      newParams[index] = { ...newParams[index], ...updates };
+      return newParams;
+    });
+  };
+
+  const handleUpdateSubjectNameParam = (index: number, name: string) => {
     const newParams = [...subjectsParams];
-    newParams[index] = { ...newParams[index], [field]: value };
+    newParams[index] = { ...newParams[index], nome: name };
     setSubjectsParams(newParams);
+  };
+
+  const handleRemoveSubjectParam = (index: number) => {
+    setSubjectsParams(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddSubjectParam = () => {
+    setSubjectsParams(prev => [...prev, { nome: "Nova Matéria", questoes: 10, peso: 1, tempoManual: 0 }]);
   };
 
   const handleGenerateAI = async () => {
@@ -120,7 +144,7 @@ export function StudyCycles({
     setIsGenerating(true);
     try {
       const allMaterias = (edital?.areas || []).flatMap(a => a.materias.map(m => m.nome));
-      const result = await generateStudyCycleAI(edital.titulo, allMaterias, {
+      const result = await generateStudyCycleAI(edital.titulo, subjectsParams.map(s => s.nome), {
         weeklyHours: weeklyHours,
         cycleHours: cycleHours,
         numCycles: numCycles,
@@ -163,14 +187,32 @@ export function StudyCycles({
     if (isManagedMode && selectedEditalId) {
       edital = editais.find(e => e.id === selectedEditalId);
     }
+    
+    const totalMinutesAllCycles = numCycles * cycleHours * 60;
+    const totalPoints = subjectsParams.reduce((acc, s) => acc + (s.questoes * s.peso), 0);
+
     const newCycle: StudyCycle = {
       id: uuidv4(),
       editalId: selectedEditalId || "",
       userId: isManagedMode && edital ? edital.userId : undefined,
       managedBy: isManagedMode ? auth.currentUser?.uid : undefined,
       nome: `Novo Ciclo ${ciclos.length + 1}`,
-      items: [],
-      created_at: new Date().toISOString()
+      items: subjectsParams.map(s => {
+        const proportion = totalPoints > 0 ? (s.questoes * s.peso) / totalPoints : 0;
+        let calcTotalMins = Math.max(30, Math.round(proportion * totalMinutesAllCycles));
+        calcTotalMins = Math.max(30, Math.round(calcTotalMins / 5) * 5);
+        const calcPerCycle = Math.round(calcTotalMins / (numCycles || 1));
+        
+        return {
+          id: uuidv4(),
+          materiaId: uuidv4(),
+          materiaNome: s.nome,
+          duracao: s.tempoManual || calcPerCycle || 60,
+          concluido: false
+        };
+      }),
+      created_at: new Date().toISOString(),
+      targetMinutes: cycleHours * 60
     };
     addCiclo(newCycle);
     setEditingCycleId(newCycle.id);
@@ -925,34 +967,91 @@ export function StudyCycles({
                           </div>
                         </div>
 
-                        <div className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Peso e Questões por Matéria</div>
-                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2 scrollbar-thin">
-                          {subjectsParams.map((param, idx) => (
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tempo por Matéria (por Ciclo)</div>
+<p className="text-[10px] text-slate-400 mb-3 leading-tight">Ajuste o peso/questões para recalcular automaticamente o tempo ideal, ou digite o tempo exato (minutos) que você quer alocar.</p>
+                        
+
+<div className="space-y-2 max-h-48 overflow-y-auto pr-2 scrollbar-thin">
+                          {(() => {
+                            const totalMinutesAllCycles = numCycles * cycleHours * 60;
+                            const totalPoints = subjectsParams.reduce((acc, s) => acc + (s.questoes * s.peso), 0);
+                            return subjectsParams.map((param, idx) => {
+                              const proportion = totalPoints > 0 ? (param.questoes * param.peso) / totalPoints : 0;
+                              let calcTotalMins = Math.max(30, Math.round(proportion * totalMinutesAllCycles));
+                              calcTotalMins = Math.max(30, Math.round(calcTotalMins / 5) * 5);
+                              const calcPerCycle = Math.round(calcTotalMins / (numCycles || 1));
+                              const displayTime = param.tempoManual || calcPerCycle;
+                              return (
+
                             <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100">
-                              <span className="flex-1 text-[11px] font-medium text-slate-700 truncate">{param.nome}</span>
+                              <input 
+                                type="text"
+                                value={param.nome}
+                                onChange={(e) => handleUpdateSubjectNameParam(idx, e.target.value)}
+                                className="flex-1 text-[11px] font-medium text-slate-700 bg-transparent outline-none truncate border-b border-transparent focus:border-slate-300 transition-colors"
+                                placeholder="Nome da matéria"
+                              />
                               <div className="flex gap-1 items-center">
                                 <div className="flex flex-col items-center">
-                                  <span className="text-[8px] text-slate-400 font-bold">QUESTÕES</span>
+                                  <span className="text-[8px] text-slate-400 font-bold" title="Peso indireto via questões">QTD</span>
                                   <input 
                                     type="number"
                                     value={param.questoes}
-                                    onChange={(e) => handleUpdateSubjectParam(idx, 'questoes', parseInt(e.target.value) || 0)}
-                                    className="w-12 text-[10px] border border-slate-100 rounded p-1 text-center font-bold"
+                                    onChange={(e) => {
+                                      handleUpdateSubjectParamsMultiple(idx, { 
+                                        questoes: parseInt(e.target.value) || 0,
+                                        tempoManual: 0 
+                                      });
+                                    }}
+                                    className="w-10 text-[10px] border border-slate-100 rounded p-1 text-center font-bold"
+                                    title="Peso via Questões"
                                   />
                                 </div>
                                 <div className="flex flex-col items-center">
-                                  <span className="text-[8px] text-slate-400 font-bold">PESO</span>
+                                  <span className="text-[8px] text-slate-400 font-bold" title="Peso / Multiplicador">PESO</span>
                                   <input 
                                     type="number"
                                     value={param.peso}
-                                    onChange={(e) => handleUpdateSubjectParam(idx, 'peso', parseInt(e.target.value) || 0)}
+                                    onChange={(e) => {
+                                      handleUpdateSubjectParamsMultiple(idx, { 
+                                        peso: parseInt(e.target.value) || 0,
+                                        tempoManual: 0 
+                                      });
+                                    }}
                                     className="w-10 text-[10px] border border-slate-100 rounded p-1 text-center font-bold"
+                                    title="Multiplicador"
                                   />
                                 </div>
+                                <div className="flex flex-col items-center ml-1">
+                                  <span className="text-[8px] text-indigo-500 font-bold" title="Tempo final por ciclo">MINUTOS</span>
+                                  <input 
+                                    type="number"
+                                    value={displayTime}
+                                    onChange={(e) => handleUpdateSubjectParam(idx, 'tempoManual', parseInt(e.target.value) || 0)}
+                                    className="w-12 text-[10px] border border-indigo-200 bg-indigo-50 text-indigo-700 rounded p-1 text-center font-bold"
+                                    title="Tempo em minutos (Sobrescreve o cálculo)"
+                                  />
+                                </div>
+                                <button 
+                                  onClick={() => handleRemoveSubjectParam(idx)}
+                                  className="ml-1 p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded transition-colors self-end"
+                                  title="Remover matéria do ciclo"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             </div>
-                          ))}
+                          );
+                          })
+                          })()}
                         </div>
+                        <button 
+                          onClick={handleAddSubjectParam}
+                          className="mt-2 w-full py-2 flex items-center justify-center gap-1.5 border border-dashed border-slate-200 rounded-lg text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all font-bold text-[10px] uppercase tracking-wider"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Adicionar Matéria Extra
+                        </button>
                       </div>
                     </motion.div>
                   )}
