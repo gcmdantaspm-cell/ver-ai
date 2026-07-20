@@ -13,6 +13,20 @@ export interface Cartao {
   nextReview?: string; // ISO 8601 string
 }
 
+export interface SubSubtopico {
+  id: string;
+  titulo: string;
+  visto: boolean;
+  data_estudo: string | null;
+  revisoes_agendadas: string[]; // ISO 8601 strings
+  revisoes_concluidas?: number;
+  notas?: string;
+  cartoes?: Cartao[];
+  cartoes_erros?: Cartao[];
+  acertos?: number;
+  erros?: number;
+}
+
 export interface Subtopico {
   id: string;
   titulo: string;
@@ -25,6 +39,7 @@ export interface Subtopico {
   cartoes_erros?: Cartao[];
   acertos?: number;
   erros?: number;
+  subitens?: SubSubtopico[];
 }
 
 export interface Topico {

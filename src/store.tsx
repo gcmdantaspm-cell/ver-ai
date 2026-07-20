@@ -13,10 +13,10 @@ interface EditalContextType {
   managedCiclos: StudyCycle[];
   addEdital: (edital: Edital) => void;
   deleteEdital: (id: string) => void;
-  toggleVisto: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string, cascade?: boolean) => void;
-  updateItemTitle: (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'edital' | 'area' | 'materia' | 'topico' | 'subtopico') => void;
-  deleteItem: (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area' | 'materia' | 'topico' | 'subtopico') => void;
-  addItem: (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title?: string) => void;
+  toggleVisto: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string, subsubtopicoId?: string, cascade?: boolean) => void;
+  updateItemTitle: (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'edital' | 'area' | 'materia' | 'topico' | 'subtopico' | 'subsubtopico') => void;
+  deleteItem: (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area' | 'materia' | 'topico' | 'subtopico' | 'subsubtopico', parentId?: string) => void;
+  addItem: (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title?: string, subtopicoId?: string) => void;
   addMaterias: (editalId: string, areaId: string, materias: Materia[]) => void;
   addCustomRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string, cascade?: boolean) => void;
   removeRevisionDate: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId: string | undefined, dateStr: string, cascade?: boolean) => void;
@@ -168,13 +168,45 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       handleFirestoreError(err, OperationType.GET, "ciclos");
     });
 
-    return () => {
+  
+
+
+  return () => {
       unsubscribeEditais();
       unsubscribeCiclos();
       unsubscribeManagedEditais();
       unsubscribeManagedCiclos();
     };
   }, [user]);
+
+  const addDiscursiva = (d: Discursiva) => {
+    if (!user) return;
+    setDoc(doc(db, "discursivas", d.id), JSON.parse(JSON.stringify({ ...d, userId: user.uid }))).catch(err => {
+      handleFirestoreError(err, OperationType.ADD, "discursivas");
+    });
+  };
+
+  const updateDiscursiva = (d: Discursiva) => {
+    if (!user) return;
+    setDoc(doc(db, "discursivas", d.id), JSON.parse(JSON.stringify({ ...d, userId: user.uid }))).catch(err => {
+      handleFirestoreError(err, OperationType.UPDATE, `discursivas/${d.id}`);
+    });
+  };
+
+  const deleteDiscursiva = (id: string) => {
+    if (!user) return;
+    deleteDoc(doc(db, "discursivas", id)).catch(err => {
+      handleFirestoreError(err, OperationType.DELETE, `discursivas/${id}`);
+    });
+  };
+
+  const toggleDiscursiva = (id: string) => {
+    if (!user) return;
+    const d = discursivas.find(x => x.id === id);
+    if (d) {
+      updateDiscursiva({ ...d, concluido: !d.concluido, dataConclusao: !d.concluido ? new Date().toISOString() : undefined });
+    }
+  };
 
   const addCiclo = (ciclo: StudyCycle) => {
     if (!user) return;
@@ -274,7 +306,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const toggleVisto = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string, cascade?: boolean) => {
+  const toggleVisto = (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string, subsubtopicoId?: string, cascade?: boolean) => {
     handleUpdate(editalId, (edital) => {
       const now = new Date().toISOString();
       const area = (edital?.areas || []).find(a => a.id === areaId);
@@ -283,7 +315,20 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       
       if (!topico) return;
 
-      if (subtopicoId) {
+      if (subsubtopicoId && subtopicoId) {
+        const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
+        const subsub = (sub?.subitens || []).find(s => s.id === subsubtopicoId);
+        if (subsub) {
+          subsub.visto = !subsub.visto;
+          if (subsub.visto) {
+             subsub.data_estudo = now;
+             subsub.revisoes_agendadas = [1, 7, 15, 30].map(days => addDays(new Date(), days).toISOString());
+          } else {
+             subsub.data_estudo = null;
+             subsub.revisoes_agendadas = [];
+          }
+        }
+      } else if (subtopicoId) {
         const sub = (topico?.subtopicos || []).find(s => s.id === subtopicoId);
         if (sub) {
           sub.visto = !sub.visto;
@@ -294,6 +339,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
              sub.data_estudo = null;
              sub.revisoes_agendadas = [];
           }
+
         }
       } else {
         topico.visto = !topico.visto;
@@ -310,6 +356,13 @@ export function EditalProvider({ children }: { children: ReactNode }) {
               sub.visto = topico.visto;
               sub.data_estudo = topico.data_estudo;
               sub.revisoes_agendadas = [...topico.revisoes_agendadas];
+              if (sub.subitens) {
+                 sub.subitens.forEach(subsub => {
+                    subsub.visto = topico.visto;
+                    subsub.data_estudo = topico.data_estudo;
+                    subsub.revisoes_agendadas = [...topico.revisoes_agendadas];
+                 });
+              }
            });
         }
       }
@@ -397,7 +450,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addItem = (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title: string = "Novo Item") => {
+  const addItem = (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title: string = "Novo Item", subtopicoId?: string) => {
     handleUpdate(editalId, (edital) => {
       if (!areaId) {
         edital.areas.push({ id: uuidv4(), area: title, materias: [] });
@@ -412,7 +465,18 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         const area = (edital?.areas || []).find(a => a.id === areaId);
         const materia = (area?.materias || []).find(m => m.id === materiaId);
         const topico = (materia?.topicos || []).find(t => t.id === topicoId);
-        if (topico) { if (!topico?.subtopicos) topico.subtopicos = []; topico.subtopicos.push({ id: uuidv4(), titulo: title, visto: false, data_estudo: null, revisoes_agendadas: [] }); }
+        if (topico) {
+          if (subtopicoId) {
+             const sub = (topico.subtopicos || []).find(s => s.id === subtopicoId);
+             if (sub) {
+                if (!sub.subitens) sub.subitens = [];
+                sub.subitens.push({ id: uuidv4(), titulo: title, visto: false, data_estudo: null, revisoes_agendadas: [] });
+             }
+          } else {
+             if (!topico?.subtopicos) topico.subtopicos = [];
+             topico.subtopicos.push({ id: uuidv4(), titulo: title, visto: false, data_estudo: null, revisoes_agendadas: [] });
+          }
+        }
       }
     });
   };
@@ -541,7 +605,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const deleteItem = (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area'|'materia'|'topico'|'subtopico', parentTopicoId?: string) => {
+  const deleteItem = (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area'|'materia'|'topico'|'subtopico'|'subsubtopico', parentTopicoId?: string) => {
     handleUpdate(editalId, (edital) => {
       if(type === 'area') {
         const targetId = itemId || areaId;
@@ -562,6 +626,18 @@ export function EditalProvider({ children }: { children: ReactNode }) {
             ? (m?.topicos || []).find(t => t.id === parentTopicoId)
             : (m?.topicos || []).find(t => t.subtopicos.some(s => s.id === targetId));
           if(t) t.subtopicos = (t?.subtopicos || []).filter(s => s.id !== targetId);
+        }
+      } else if (type === 'subsubtopico') {
+        const targetId = itemId;
+        const m = (edital?.areas || []).find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
+        if (m) {
+           const t = parentTopicoId
+            ? (m?.topicos || []).find(t => t.id === parentTopicoId)
+            : (m?.topicos || []).find(t => t.subtopicos.some(s => (s.subitens || []).some(ss => ss.id === targetId)));
+           const s = (t?.subtopicos || []).find(s => (s.subitens || []).some(ss => ss.id === targetId));
+           if (s) {
+              s.subitens = (s.subitens || []).filter(ss => ss.id !== targetId);
+           }
         }
       }
     });
@@ -1187,7 +1263,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
       updateCartoesErros, clearCartoesErros, removeDuplicateCartoesErros, editCartaoErro, updateCartaoSM2Erro,
       updateMetricas, revisions, completeRevision, undoRevision, pinnedEditalId, setPinnedEditalId, getPublicEdital, setEditalPublic,
       ciclos, managedCiclos, addCiclo, deleteCiclo, updateCiclo, toggleCicloItem, getPublicCiclos,
-      reorderMaterias, reorderTopicos, reorderSubtopicos
+      reorderMaterias, reorderTopicos, reorderSubtopicos, discursivas, addDiscursiva, updateDiscursiva, deleteDiscursiva, toggleDiscursiva
     }}>
       {children}
     </EditalContext.Provider>
