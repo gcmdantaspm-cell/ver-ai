@@ -700,7 +700,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                            style={{...providedDragT.draggableProps.style, zIndex: 10}}
                                            key={topico.id}>
                                       {tMatch && (
-                                        <div className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-2 lg:gap-y-0 border-b border-slate-200 py-1.5 sm:py-2 px-3 sm:px-4 items-start lg:items-center group/item transition-colors ${topico.visto ? 'bg-blue-900' : 'hover:bg-slate-50'}`}>
+                                        <div className={`flex flex-col lg:grid lg:grid-cols-12 gap-y-2 lg:gap-y-0 border-b border-slate-200 py-1.5 sm:py-2 px-3 sm:px-4 items-start lg:items-center group/item transition-colors ${topico.visto ? 'bg-sky-100' : 'hover:bg-slate-50'}`}>
                                            <div className="lg:col-span-6 flex items-center gap-2 sm:gap-3 w-full">
                                               {filter === 'all' && (
                                                 <div className="flex items-center gap-1">
@@ -721,7 +721,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                         }
                                                       }
                                                     }}
-                                                    className={`w-6 h-5 text-[9px] font-bold text-center rounded bg-transparent border border-slate-300 focus:border-blue-500 outline-none transition-colors ${topico.visto ? 'text-white border-white/20' : 'text-slate-400 bg-white shadow-sm'}`}
+                                                    className={`w-6 h-5 text-[9px] font-bold text-center rounded bg-transparent border border-slate-300 focus:border-blue-500 outline-none transition-colors ${topico.visto ? 'text-blue-900 border-blue-200 bg-white/50' : 'text-slate-400 bg-white shadow-sm'}`}
                                                     title="Alterar Posição"
                                                   />
                                                 </div>
@@ -738,15 +738,15 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                                    <Check className={`w-2.5 h-2.5 transition-opacity ${topico.visto ? 'opacity-100 text-white' : 'opacity-0 peer-checked:opacity-100 text-white'}`} strokeWidth={3} />
                                                 </div>
                                               </label>
-                                              <div className={`text-[10px] font-medium flex-1 flex flex-col items-start gap-1 w-full ${topico.visto ? 'text-white' : 'text-slate-800'}`}>
+                                              <div className={`text-[10px] font-medium flex-1 flex flex-col items-start gap-1 w-full ${topico.visto ? 'text-blue-900' : 'text-slate-800'}`}>
 <div className="flex items-center gap-2 w-full">
                                                 {editingItemId === topico.id ? (
-                                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'topico')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'topico')} className={`bg-transparent w-full outline-none ${topico.visto ? 'text-white' : 'text-slate-900'}`} />
+                                                  <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(area.id, materia.id, topico.id, 'topico')} onKeyDown={e => e.key === 'Enter' && saveEdit(area.id, materia.id, topico.id, 'topico')} className={`bg-transparent w-full outline-none ${topico.visto ? 'text-blue-900' : 'text-slate-900'}`} />
                                                 ) : (
                                                   <span onDoubleClick={() => handleEdit(topico.id, topico.titulo)} className="cursor-text break-words w-full line-clamp-1 hover:line-clamp-none">{topico.titulo}</span>
                                                 )}
                                                 {topicoProgress !== null && topicoProgress > 0 && (
-                                                   <span className={`text-[8px] font-bold px-1 py-0.5 rounded self-center shrink-0 ${topico.visto ? 'text-white bg-white/20' : 'text-blue-800 bg-blue-900/10'}`}>{topicoProgress}%</span>
+                                                   <span className={`text-[8px] font-bold px-1 py-0.5 rounded self-center shrink-0 ${topico.visto ? 'text-blue-800 bg-blue-200' : 'text-blue-800 bg-blue-900/10'}`}>{topicoProgress}%</span>
                                                 )}
                                               </div>
                                               <RevisionsList item={topico} editalId={edital.id} areaId={area.id} materiaId={materia.id} topicoId={topico.id} />
@@ -755,32 +755,32 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
                                            
                                            <div className="w-full lg:col-span-6 flex items-center justify-between lg:grid lg:grid-cols-6 gap-2 pl-6 lg:pl-0">
                                              <div className="lg:col-span-2 flex justify-center">
-                                                <div className={`flex shadow-sm border rounded overflow-hidden text-[9px] ${topico.visto ? 'bg-white/10 border-white/20' : 'bg-white border-slate-300'}`}>
-                                                   <input type="number" placeholder="Ac" value={topico.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, parseInt(e.target.value)||0, topico.erros||0)} className={`w-6 lg:w-7 text-center bg-transparent py-0.5 outline-none font-mono ${topico.visto ? 'text-emerald-300 placeholder-white/30' : 'text-emerald-500'}`} />
-                                                   <div className={`w-px h-2.5 self-center ${topico.visto ? 'bg-white/20' : 'bg-slate-200'}`}></div>
-                                                   <input type="number" placeholder="Er" value={topico.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, topico.acertos||0, parseInt(e.target.value)||0)} className={`w-6 lg:w-7 text-center bg-transparent py-0.5 outline-none font-mono ${topico.visto ? 'text-rose-300 placeholder-white/30' : 'text-rose-500'}`} />
+                                                <div className={`flex shadow-sm border rounded overflow-hidden text-[9px] ${topico.visto ? 'bg-white/50 border-sky-200' : 'bg-white border-slate-300'}`}>
+                                                   <input type="number" placeholder="Ac" value={topico.acertos ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, parseInt(e.target.value)||0, topico.erros||0)} className={`w-6 lg:w-7 text-center bg-transparent py-0.5 outline-none font-mono ${topico.visto ? 'text-emerald-600 placeholder-emerald-200' : 'text-emerald-500'}`} />
+                                                   <div className={`w-px h-2.5 self-center ${topico.visto ? 'bg-sky-200' : 'bg-slate-200'}`}></div>
+                                                   <input type="number" placeholder="Er" value={topico.erros ?? ''} onChange={e => updateMetricas(edital.id, area.id, materia.id, topico.id, undefined, topico.acertos||0, parseInt(e.target.value)||0)} className={`w-6 lg:w-7 text-center bg-transparent py-0.5 outline-none font-mono ${topico.visto ? 'text-rose-600 placeholder-rose-200' : 'text-rose-500'}`} />
                                                 </div>
                                              </div>
   
-                                             <div className={`lg:col-span-1 text-center font-mono text-[9px] ${topico.visto ? 'text-white/70' : 'text-slate-500'}`}>
-                                                <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={`uppercase transition-colors ${topico.visto ? 'hover:text-white' : 'hover:text-blue-800'}`}>
+                                             <div className={`lg:col-span-1 text-center font-mono text-[9px] ${topico.visto ? 'text-blue-700' : 'text-slate-500'}`}>
+                                                <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={`uppercase transition-colors ${topico.visto ? 'hover:text-blue-900' : 'hover:text-blue-800'}`}>
                                                    {topico.data_estudo ? format(new Date(topico.data_estudo), "dd/MM") : "—"}
                                                 </button>
                                              </div>
   
                                              <div className="lg:col-span-2 text-center font-mono text-[9px]">
                                                 {nextRevT ? (
-                                                  <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={isDelayedT ? (topico.visto ? 'text-rose-200 hover:opacity-75' : 'text-rose-400 hover:opacity-75') : isDueTodayT ? (topico.visto ? 'text-amber-200 hover:opacity-75' : 'text-amber-400 hover:opacity-75') : (topico.visto ? 'text-white underline decoration-white/30 hover:opacity-75' : 'text-blue-800 underline decoration-blue-800/30 hover:opacity-75')}>
+                                                  <button onClick={() => setHistoryModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id })} className={isDelayedT ? (topico.visto ? 'text-rose-600 hover:opacity-75' : 'text-rose-400 hover:opacity-75') : isDueTodayT ? (topico.visto ? 'text-amber-600 hover:opacity-75' : 'text-amber-400 hover:opacity-75') : (topico.visto ? 'text-blue-700 underline decoration-blue-300 hover:opacity-75' : 'text-blue-800 underline decoration-blue-800/30 hover:opacity-75')}>
                                                     {format(new Date(nextRevT), "dd/MM")}
                                                   </button>
-                                                ) : <span className={topico.visto ? 'text-white/50' : 'text-slate-500'}>—</span>}
+                                                ) : <span className={topico.visto ? 'text-blue-400' : 'text-slate-500'}>—</span>}
                                              </div>
   
                                              <div className="lg:col-span-1 flex justify-end gap-0.5 opacity-100 lg:opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                                <button onClick={() => setCartoesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, cartoes: topico.cartoes || [], title: topico.titulo })} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-indigo-500'}`}><Sparkles className="w-3 h-3" /></button>
-                                                <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, currentNote: topico.notas || '', title: topico.titulo })} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-amber-500'}`}><StickyNote className="w-3 h-3" /></button>
-                                                <button onClick={() => addItem(edital.id, area.id, materia.id, topico.id)} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-blue-800'}`}><Plus className="w-3 h-3" /></button>
-                                                <button onClick={() => safeConfirm("Excluir tópico?") && deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className={`p-1 ${topico.visto ? 'text-white/60 hover:text-rose-300' : 'text-slate-500 hover:text-rose-500'}`}><Trash2 className="w-3 h-3" /></button>
+                                                <button onClick={() => setCartoesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, cartoes: topico.cartoes || [], title: topico.titulo })} className={`p-1 ${topico.visto ? 'text-sky-500 hover:text-indigo-600' : 'text-slate-500 hover:text-indigo-500'}`}><Sparkles className="w-3 h-3" /></button>
+                                                <button onClick={() => setNotesModal({ isOpen: true, areaId: area.id, materiaId: materia.id, topicoId: topico.id, currentNote: topico.notas || '', title: topico.titulo })} className={`p-1 ${topico.visto ? 'text-sky-500 hover:text-amber-600' : 'text-slate-500 hover:text-amber-500'}`}><StickyNote className="w-3 h-3" /></button>
+                                                <button onClick={() => addItem(edital.id, area.id, materia.id, topico.id)} className={`p-1 ${topico.visto ? 'text-sky-500 hover:text-blue-800' : 'text-slate-500 hover:text-blue-800'}`}><Plus className="w-3 h-3" /></button>
+                                                <button onClick={() => safeConfirm("Excluir tópico?") && deleteItem(edital.id, area.id, materia.id, topico.id, 'topico')} className={`p-1 ${topico.visto ? 'text-sky-500 hover:text-rose-600' : 'text-slate-500 hover:text-rose-500'}`}><Trash2 className="w-3 h-3" /></button>
                                              </div>
                                            </div>
                                         </div>
