@@ -125,7 +125,7 @@ function AppContent() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden relative">
+    <div className="flex h-[100dvh] bg-slate-50 font-sans text-slate-800 overflow-hidden relative">
       {isImporting && (
          <div className="absolute inset-0 z-50 bg-slate-50/80 backdrop-blur-sm flex flex-col items-center justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-blue-900 mb-4" />
@@ -354,7 +354,7 @@ function LoginScreen() {
   const { loginWithGoogle, authError } = useAuth();
   
   return (
-    <div className="flex items-center justify-center h-screen bg-slate-50 font-sans p-4">
+    <div className="flex items-center justify-center h-[100dvh] bg-slate-50 font-sans p-4">
       <div className="bg-white border border-slate-200 p-10 rounded-3xl max-w-sm w-full text-center shadow-2xl flex flex-col items-center relative">
         <div className="w-12 h-12 bg-blue-900 rounded-xl shadow-lg shadow-blue-900/20 mb-6 flex items-center justify-center">
           <BookOpen className="w-6 h-6 text-slate-900" />
@@ -391,7 +391,7 @@ export default function App() {
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-50">
+      <div className="flex items-center justify-center h-[100dvh] bg-slate-50">
         <Loader2 className="w-8 h-8 text-blue-900 animate-spin" />
       </div>
     );

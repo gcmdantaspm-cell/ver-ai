@@ -623,8 +623,8 @@ export function StudyCycles({
                         }}
                         className="cursor-text"
                       >
-                        <p className={`text-sm font-medium truncate ${item.concluido ? 'line-through opacity-60' : ''}`}>{item.materiaNome}</p>
-                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500"><Clock className="w-3 h-3" /> {item.duracao} min</div>
+                        <p className={`text-xs font-bold leading-tight line-clamp-2 ${item.concluido ? 'line-through opacity-60' : ''}`}>{item.materiaNome}</p>
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-0.5"><Clock className="w-3 h-3" /> {item.duracao} min</div>
                       </div>
                     )}
                   </div>
@@ -873,9 +873,9 @@ export function StudyCycles({
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
+              className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] mx-4 overflow-hidden"
             >
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
                 <div>
                   <h3 className="text-xl font-bold text-slate-900">Gerar Novo Ciclo</h3>
                   <p className="text-sm text-slate-500">Escolha como deseja criar seu ciclo de estudos.</p>
@@ -888,7 +888,7 @@ export function StudyCycles({
                 </button>
               </div>
 
-              <div className="p-6 space-y-6">
+              <div className="p-6 space-y-6 overflow-y-auto">
                 <button 
                   onClick={handleAddManualCycle}
                   className="w-full flex items-center gap-4 p-4 border border-slate-200 rounded-xl hover:border-indigo-600 hover:bg-indigo-50/30 transition-all text-left group"
@@ -1070,7 +1070,7 @@ export function StudyCycles({
                 </div>
               </div>
 
-              <div className="p-6 bg-slate-50 border-t border-slate-100">
+              <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
                 <button 
                   disabled={!selectedEditalId || isGenerating}
                   onClick={handleGenerateAI}

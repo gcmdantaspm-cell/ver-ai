@@ -1336,7 +1336,7 @@ export function EditalView({ edital }: { edital: Edital, key?: string | number }
       {/* AI Generate Modal */}
       {aiModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-50 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-slate-200/60 flex flex-col max-h-[90vh]">
+          <div className="bg-slate-50 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-slate-200/60 flex flex-col max-h-[85dvh] mx-4">
             <div className="flex items-center gap-4 py-5 px-6 sm:px-8 border-b border-slate-200 bg-white">
               <div className="w-10 h-10 bg-amber-500 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
                 <Sparkles className="w-5 h-5 text-white" />
