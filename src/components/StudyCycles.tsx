@@ -517,7 +517,7 @@ export function StudyCycles({
                   <div className="flex justify-between items-start w-full">
                     <h2 
                       onDoubleClick={() => { setEditingCycleId(ciclo.id); setEditValue(ciclo.nome); setEditCycleTarget(ciclo.targetMinutes || 0); }}
-                      className="font-bold text-slate-900 line-clamp-1 cursor-text flex-1"
+                      className="text-sm font-bold text-slate-900 line-clamp-2 leading-tight cursor-text flex-1"
                     >
                       {ciclo.nome}
                     </h2>
@@ -623,7 +623,7 @@ export function StudyCycles({
                         }}
                         className="cursor-text"
                       >
-                        <p className={`text-xs font-bold leading-tight line-clamp-2 ${item.concluido ? 'line-through opacity-60' : ''}`}>{item.materiaNome}</p>
+                        <p className={`text-[11px] font-bold leading-tight line-clamp-3 ${item.concluido ? 'line-through opacity-60' : ''}`}>{item.materiaNome}</p>
                         <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-0.5"><Clock className="w-3 h-3" /> {item.duracao} min</div>
                       </div>
                     )}

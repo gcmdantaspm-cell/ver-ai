@@ -35,7 +35,8 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 
 function RevisionsList({ item, editalId, areaId, materiaId, topicoId, subtopicoId }: { item: any, editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string }) {
-  const { undoRevision, addCustomRevisionDate, removeRevisionDate } = useEdital();
+  const { undoRevision, addCustomRevisionDate, removeRevisionDate, completeRevision } = useEdital();
+  const [selectedRev, setSelectedRev] = useState<any>(null);
 
   const revs = [];
   const concluidas = item.revisoes_concluidas || 0;
@@ -61,7 +62,8 @@ function RevisionsList({ item, editalId, areaId, materiaId, topicoId, subtopicoI
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1 mt-1.5 w-full">
+    <>
+    <div className="flex flex-wrap items-center gap-1 mt-1.5 w-full relative">
       {revs.map((r, idx) => {
         let colorClass = 'bg-slate-100 text-slate-400 border-slate-200';
         if (r.status === 'done') colorClass = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
@@ -97,14 +99,22 @@ function RevisionsList({ item, editalId, areaId, materiaId, topicoId, subtopicoI
                 </button>
               ) : (
                 <div className="relative flex items-center gap-0.5 group/date">
-                  <div className="relative cursor-pointer hover:opacity-80 transition-opacity">
-                    <input type="date" className="absolute inset-0 opacity-0 cursor-pointer w-full z-10" onChange={e => {
-                      if(e.target.value) {
-                         const newDateStr = new Date(e.target.value + 'T12:00:00').toISOString();
-                         if (r.date) removeRevisionDate(editalId, areaId, materiaId, topicoId, subtopicoId, r.rawDate);
-                         addCustomRevisionDate(editalId, areaId, materiaId, topicoId, subtopicoId, newDateStr);
+                  <div 
+                    className="relative cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={(e) => {
+                      if (r.status !== 'empty') {
+                        setSelectedRev(r);
                       }
-                    }} />
+                    }}
+                  >
+                    {r.status === 'empty' && (
+                      <input type="date" className="absolute inset-0 opacity-0 cursor-pointer w-full z-10" onChange={e => {
+                        if(e.target.value) {
+                           const newDateStr = new Date(e.target.value + 'T12:00:00').toISOString();
+                           addCustomRevisionDate(editalId, areaId, materiaId, topicoId, subtopicoId, newDateStr);
+                        }
+                      }} />
+                    )}
                     <span>{r.date ? format(r.date, "dd/MM") : '—'}</span>
                   </div>
                   {r.date && (
@@ -126,6 +136,63 @@ function RevisionsList({ item, editalId, areaId, materiaId, topicoId, subtopicoI
         );
       })}
     </div>
+
+    {/* Modal de Revisão */}
+    {selectedRev && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm flex flex-col relative animate-in zoom-in-95 duration-200">
+          <button 
+            onClick={() => setSelectedRev(null)}
+            className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          
+          <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mb-4">
+             <CalendarIcon className="w-6 h-6 text-indigo-600" />
+          </div>
+          
+          <h3 className="text-xl font-bold text-slate-900 mb-2">Revisão {selectedRev.label}</h3>
+          <p className="text-sm text-slate-500 mb-6">Você já concluiu esta revisão?</p>
+          
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={() => {
+                 completeRevision(item.id, selectedRev.rawDate);
+                 setSelectedRev(null);
+              }}
+              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20"
+            >
+              <CheckCircle2 className="w-5 h-5" />
+              Sim, concluída
+            </button>
+            
+            <div className="relative">
+              <button className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl transition-all">
+                <CalendarIcon className="w-5 h-5" />
+                Alterar Data
+              </button>
+              <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={e => {
+                if(e.target.value) {
+                   const newDateStr = new Date(e.target.value + 'T12:00:00').toISOString();
+                   if (selectedRev.date) removeRevisionDate(editalId, areaId, materiaId, topicoId, subtopicoId, selectedRev.rawDate);
+                   addCustomRevisionDate(editalId, areaId, materiaId, topicoId, subtopicoId, newDateStr);
+                   setSelectedRev(null);
+                }
+              }} />
+            </div>
+            
+            <button 
+              onClick={() => setSelectedRev(null)}
+              className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-3 px-4 rounded-xl transition-all"
+            >
+              Ainda não
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
