@@ -14,7 +14,7 @@ interface EditalContextType {
   addEdital: (edital: Edital) => void;
   deleteEdital: (id: string) => void;
   toggleVisto: (editalId: string, areaId: string, materiaId: string, topicoId: string, subtopicoId?: string, subsubtopicoId?: string, cascade?: boolean) => void;
-  updateItemTitle: (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'edital' | 'area' | 'materia' | 'topico' | 'subtopico' | 'subsubtopico') => void;
+  updateItemTitle: (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'edital' | 'area' | 'materia' | 'topico' | 'subtopico' | 'subsubtopico' | 'subsubtopico') => void;
   deleteItem: (editalId: string, areaId: string, materiaId: string, itemId: string, type: 'area' | 'materia' | 'topico' | 'subtopico' | 'subsubtopico', parentId?: string) => void;
   addItem: (editalId: string, areaId?: string, materiaId?: string, topicoId?: string, title?: string, subtopicoId?: string) => void;
   addMaterias: (editalId: string, areaId: string, materias: Materia[]) => void;
@@ -588,7 +588,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const updateItemTitle = (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'edital'|'area'|'materia'|'topico'|'subtopico') => {
+  const updateItemTitle = (editalId: string, areaId: string, materiaId: string, itemId: string, newTitle: string, type: 'edital'|'area'|'materia'|'topico'|'subtopico'|'subsubtopico') => {
     handleUpdate(editalId, (edital) => {
       if (type === 'edital') {
         edital.titulo = newTitle;
@@ -608,6 +608,17 @@ export function EditalProvider({ children }: { children: ReactNode }) {
         const t = m?.topicos.find(t => t.subtopicos.some(s => s.id === itemId));
         const sub = (t?.subtopicos || []).find(s => s.id === itemId);
         if(sub) sub.titulo = newTitle;
+      } else if (type === 'subsubtopico') {
+        const m = (edital?.areas || []).find(a => a.id === areaId)?.materias.find(m => m.id === materiaId);
+        for (const t of m?.topicos || []) {
+          for (const s of t.subtopicos || []) {
+            const subsub = (s.subitens || []).find(ss => ss.id === itemId);
+            if (subsub) {
+              subsub.titulo = newTitle;
+              break;
+            }
+          }
+        }
       }
     });
   };
