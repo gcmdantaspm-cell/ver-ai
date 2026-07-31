@@ -695,23 +695,26 @@ mcpPaths.forEach((pathUri) => {
   app.get(pathUri, (req: Request, res: Response) => {
     const acceptHeader = req.headers.accept || "";
 
-    // Check if SSE transport requested
-    if (acceptHeader.includes("text/event-stream") || req.query.transport === "sse") {
+    // Check if SSE transport requested or explicitly hitting an /sse route
+    if (pathUri.endsWith("/sse") || acceptHeader.includes("text/event-stream") || req.query.transport === "sse") {
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
       res.flushHeaders?.();
 
       const sessionId = (req.query.sessionId as string) || crypto.randomUUID();
-      const endpointUri = `/api/mcp/messages?sessionId=${sessionId}`;
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+      const host = req.headers.host;
+      
+      const messagesPath = pathUri.replace('/sse', '/messages');
+      const baseUri = messagesPath.includes('/messages') ? messagesPath : '/mcp/messages';
+      const endpointUri = `${protocol}://${host}${baseUri}?sessionId=${sessionId}`;
 
-      // Emit required MCP SSE endpoint event
       res.write(`event: endpoint\ndata: ${endpointUri}\n\n`);
 
-      // Keep connection alive with periodic pings
       const keepAlive = setInterval(() => {
         res.write(`: keep-alive\n\n`);
-      }, 15000);
+      }, 10000);
 
       req.on("close", () => {
         clearInterval(keepAlive);
@@ -719,7 +722,6 @@ mcpPaths.forEach((pathUri) => {
       return;
     }
 
-    // Standard GET response for MCP Endpoint validation (e.g., Gemini Custom Connected Apps validator)
     res.json({
       jsonrpc: "2.0",
       result: {
@@ -727,7 +729,7 @@ mcpPaths.forEach((pathUri) => {
         service: "Verticaliza IA MCP Server",
         version: "1.0.0",
         protocolVersion: "2024-11-05",
-        description: "Servidor MCP (Model Context Protocol) do Verticaliza IA para integração com Gemini e outros assistentes de IA.",
+        description: "Servidor MCP",
         mcpEndpoint: "/mcp",
         capabilities: {
           tools: true,
@@ -738,7 +740,6 @@ mcpPaths.forEach((pathUri) => {
     });
   });
 
-  // POST handler for JSON-RPC messages and MCP Tool calls
   app.post(pathUri, (req: Request, res: Response) => {
     handleMCPJsonRpcRequest(req.body, res);
   });

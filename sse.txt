@@ -1,0 +1,3 @@
+event: endpoint
+data: http://localhost:3000/mcp/messages?sessionId=89624c90-ecb8-4db3-8a5e-e9e39b02a48f
+

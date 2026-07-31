@@ -182,7 +182,7 @@ export function EditalProvider({ children }: { children: ReactNode }) {
   const addDiscursiva = (d: Discursiva) => {
     if (!user) return;
     setDoc(doc(db, "discursivas", d.id), JSON.parse(JSON.stringify({ ...d, userId: user.uid }))).catch(err => {
-      handleFirestoreError(err, OperationType.ADD, "discursivas");
+      handleFirestoreError(err, OperationType.CREATE, "discursivas");
     });
   };
 

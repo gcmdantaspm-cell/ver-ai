@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/mcp/sse", "destination": "/api/mcp/sse" },
+    { "source": "/mcp/messages", "destination": "/api/mcp/messages" },
+    { "source": "/api/mcp", "destination": "/api/mcp/sse" }
+  ]
+}
