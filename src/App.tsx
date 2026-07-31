@@ -10,7 +10,8 @@ import { FloatingPomodoro } from "./components/Pomodoro";
 import { SharedHub } from "./components/SharedHub";
 import { CartoesView } from "./components/CartoesView";
 import { CartoesErrosView } from "./components/CartoesErrosView";
-import {  LayoutDashboard, FileText, Plus, BookOpen, Menu, X, ChevronDown, LogOut, Loader2, History, Target, Users, Layers, AlertTriangle , Pin, PenTool } from "lucide-react";
+import { McpSettingsView } from "./components/McpSettingsView";
+import {  LayoutDashboard, FileText, Plus, BookOpen, Menu, X, ChevronDown, LogOut, Loader2, History, Target, Users, Layers, AlertTriangle , Pin, PenTool, Server } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import { v4 as uuidv4 } from "uuid";
 import { query, collection, where, getDocs } from "firebase/firestore";
@@ -186,6 +187,12 @@ function AppContent() {
               <PenTool className="w-4 h-4" /> Mapa da Discursiva
             </button>
             <button
+              onClick={() => navigateTo("mcp")}
+              className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "mcp" ? "bg-blue-900 text-white shadow-md shadow-blue-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
+            >
+              <Server className="w-4 h-4 text-amber-500" /> Servidor MCP (IA)
+            </button>
+            <button
               onClick={() => navigateTo("import")}
               className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${currentView === "import" ? "bg-blue-900 text-white shadow-md shadow-blue-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent"}`}
             >
@@ -282,6 +289,13 @@ function AppContent() {
               <span>Mapa da Discursiva</span>
             </button>
             <button
+              onClick={() => navigateTo("mcp")}
+              className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-1 border ${currentView === "mcp" ? "bg-blue-900 text-white shadow-md border-transparent" : "text-slate-500 hover:bg-slate-100 border-transparent"}`}
+            >
+              <Server className="w-5 h-5 text-amber-500" />
+              <span>Servidor MCP (IA)</span>
+            </button>
+            <button
                onClick={() => navigateTo("import")}
               className={`w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-sm font-medium mb-6 border ${currentView === "import" ? "bg-blue-900 text-white shadow-md border-transparent" : "text-slate-500 hover:bg-slate-100 border-transparent"}`}
             >
@@ -335,6 +349,7 @@ function AppContent() {
          {currentView === "cartoes" && <CartoesView />}
          {currentView === "cartoes_erros" && <CartoesErrosView />}
          {currentView === "discursivas" && <DiscursivasView />}
+         {currentView === "mcp" && <McpSettingsView />}
          {currentView === "import" && <ParseEdital onSuccess={() => navigateTo("dashboard")} />}
          {currentView.startsWith("edital-") && (
             (() => {
