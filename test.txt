@@ -1,0 +1,14 @@
+HTTP/2 200 
+access-control-allow-origin: *
+age: 0
+cache-control: no-cache, no-transform
+content-type: text/event-stream
+date: Fri, 31 Jul 2026 11:29:51 GMT
+server: Vercel
+strict-transport-security: max-age=63072000; includeSubDomains; preload
+x-vercel-cache: MISS
+x-vercel-id: iad1::iad1::mcczp-1785497391690-c309b14fa497
+
+event: endpoint
+data: https://verticaliza-ia.vercel.app/api/mcp/messages?sessionId=fa734f42-5dfc-4390-9b10-2f34052b31ed
+
